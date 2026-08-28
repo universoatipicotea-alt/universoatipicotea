@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Brand } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { Check, Lock, Play } from "lucide-react";
+import { Check, Lock, Play, Volume2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 
