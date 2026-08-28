@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "wouter";
 import { ArrowRight, Menu } from "lucide-react";
 import { Brand } from "./Brand";
+import { InstitutionalFooter } from "./InstitutionalFooter";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 
@@ -81,12 +82,15 @@ export function PublicShell({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main>{children}</main>
-      <footer className="border-t border-[var(--line)] px-5 py-8 sm:px-8 lg:px-10">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <Brand compact />
-          <p className="text-xs text-[var(--ink-soft)]">
-            Universo Atípico · conteúdo com acolhimento e propósito.
-          </p>
+      <footer className="border-t border-[var(--line)] px-5 py-10 sm:px-8 lg:px-10">
+        <div className="mx-auto flex max-w-7xl flex-col gap-8">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <Brand compact />
+            <p className="text-xs text-[var(--ink-soft)]">
+              Universo Atípico · conteúdo com acolhimento e propósito.
+            </p>
+          </div>
+          <InstitutionalFooter />
         </div>
       </footer>
     </div>

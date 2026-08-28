@@ -32,6 +32,7 @@ import { Route as ReceitasRouteImport } from './routes/receitas'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as VslRouteImport } from './routes/vsl'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
+import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
 import { Route as ApiPublicUaImageSplatRouteImport } from './routes/api/public/ua-image/$'
 import { Route as ApiPublicUaVideoSplatRouteImport } from './routes/api/public/ua-video/$'
 
@@ -150,6 +151,11 @@ const ProdutoSlugRoute = ProdutoSlugRouteImport.update({
   path: '/produto/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
+  id: '/api/public/stripe-webhook',
+  path: '/api/public/stripe-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicUaImageSplatRoute = ApiPublicUaImageSplatRouteImport.update({
   id: '/api/public/ua-image/$',
   path: '/api/public/ua-image/$',
@@ -185,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/termos': typeof TermosRoute
   '/vsl': typeof VslRoute
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
   '/api/public/ua-video/$': typeof ApiPublicUaVideoSplatRoute
 }
@@ -212,6 +219,7 @@ export interface FileRoutesByTo {
   '/termos': typeof TermosRoute
   '/vsl': typeof VslRoute
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
   '/api/public/ua-video/$': typeof ApiPublicUaVideoSplatRoute
 }
@@ -240,6 +248,7 @@ export interface FileRoutesById {
   '/termos': typeof TermosRoute
   '/vsl': typeof VslRoute
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
   '/api/public/ua-video/$': typeof ApiPublicUaVideoSplatRoute
 }
@@ -269,6 +278,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/vsl'
     | '/produto/$slug'
+    | '/api/public/stripe-webhook'
     | '/api/public/ua-image/$'
     | '/api/public/ua-video/$'
   fileRoutesByTo: FileRoutesByTo
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/vsl'
     | '/produto/$slug'
+    | '/api/public/stripe-webhook'
     | '/api/public/ua-image/$'
     | '/api/public/ua-video/$'
   id:
@@ -323,6 +334,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/vsl'
     | '/produto/$slug'
+    | '/api/public/stripe-webhook'
     | '/api/public/ua-image/$'
     | '/api/public/ua-video/$'
   fileRoutesById: FileRoutesById
@@ -351,6 +363,7 @@ export interface RootRouteChildren {
   TermosRoute: typeof TermosRoute
   VslRoute: typeof VslRoute
   ProdutoSlugRoute: typeof ProdutoSlugRoute
+  ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
   ApiPublicUaImageSplatRoute: typeof ApiPublicUaImageSplatRoute
   ApiPublicUaVideoSplatRoute: typeof ApiPublicUaVideoSplatRoute
 }
@@ -518,6 +531,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProdutoSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/stripe-webhook': {
+      id: '/api/public/stripe-webhook'
+      path: '/api/public/stripe-webhook'
+      fullPath: '/api/public/stripe-webhook'
+      preLoaderRoute: typeof ApiPublicStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/ua-image/$': {
       id: '/api/public/ua-image/$'
       path: '/api/public/ua-image/$'
@@ -559,6 +579,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermosRoute: TermosRoute,
   VslRoute: VslRoute,
   ProdutoSlugRoute: ProdutoSlugRoute,
+  ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
   ApiPublicUaImageSplatRoute: ApiPublicUaImageSplatRoute,
   ApiPublicUaVideoSplatRoute: ApiPublicUaVideoSplatRoute,
 }
