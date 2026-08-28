@@ -48,7 +48,7 @@ export default function Auth() {
           <div className="max-w-md">
             <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[var(--sage)]">Acesso da comunidade</p>
             <h2 className="display-font mt-3 text-5xl font-semibold leading-[.95] tracking-[-.045em]">{mode === "login" ? "Que bom ter você aqui." : "Vamos criar seu espaço."}</h2>
-            <p className="mt-5 text-sm leading-7 text-[var(--ink-soft)]">{mode === "login" ? "Entre com seu e-mail e senha para continuar sua jornada." : "Seu cadastro é gratuito e leva menos de um minuto."}</p>
+            <p className="mt-5 text-sm leading-7 text-[var(--ink-soft)]">{mode === "login" ? "Entre com seu e-mail e senha para continuar sua jornada." : "Crie sua conta em menos de um minuto e ative sua assinatura."}</p>
             <form onSubmit={submit} className="mt-9 space-y-5">
               {mode === "register" ? <div className="space-y-2"><Label htmlFor="name">Como podemos chamar você?</Label><Input id="name" autoComplete="name" value={name} onChange={event => setName(event.target.value)} placeholder="Seu nome" required minLength={2} /></div> : null}
               <div className="space-y-2"><Label htmlFor="email">E-mail</Label><Input id="email" type="email" autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="voce@email.com" required /></div>
