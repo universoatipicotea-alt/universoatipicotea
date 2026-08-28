@@ -40,6 +40,27 @@ function fail(message: string): never {
   throw new Error(message);
 }
 
+function requestOrigin(): string {
+  const request = getRequest();
+  const explicit = request?.headers.get("origin");
+  if (explicit) return explicit;
+  const referer = request?.headers.get("referer");
+  if (referer) {
+    try {
+      return new URL(referer).origin;
+    } catch {
+      // ignora referer inválido
+    }
+  }
+  const host = request?.headers.get("x-forwarded-host") ?? request?.headers.get("host");
+  if (host) {
+    const proto = request?.headers.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+    return `${proto}://${host}`;
+  }
+  return "http://localhost:8080";
+}
+
+
 async function authUserFromRequest() {
   const request = getRequest();
   const header = request?.headers.get("authorization") ?? "";
