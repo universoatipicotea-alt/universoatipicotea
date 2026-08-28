@@ -15,6 +15,8 @@ import { Route as AcademiaAtipicaRouteImport } from './routes/academia-atipica'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as AssinaturaRouteImport } from './routes/assinatura'
+import { Route as AssinaturaECancelamentoRouteImport } from './routes/assinatura-e-cancelamento'
+import { Route as AvisoDeResponsabilidadeRouteImport } from './routes/aviso-de-responsabilidade'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ComunidadeRouteImport } from './routes/comunidade'
@@ -25,7 +27,9 @@ import { Route as InicioRouteImport } from './routes/inicio'
 import { Route as MasterRouteImport } from './routes/master'
 import { Route as MinhaAssinaturaRouteImport } from './routes/minha-assinatura'
 import { Route as PerfilRouteImport } from './routes/perfil'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ReceitasRouteImport } from './routes/receitas'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as VslRouteImport } from './routes/vsl'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
 import { Route as ApiPublicUaImageSplatRouteImport } from './routes/api/public/ua-image/$'
@@ -59,6 +63,16 @@ const AjudaRoute = AjudaRouteImport.update({
 const AssinaturaRoute = AssinaturaRouteImport.update({
   id: '/assinatura',
   path: '/assinatura',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssinaturaECancelamentoRoute = AssinaturaECancelamentoRouteImport.update({
+  id: '/assinatura-e-cancelamento',
+  path: '/assinatura-e-cancelamento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AvisoDeResponsabilidadeRoute = AvisoDeResponsabilidadeRouteImport.update({
+  id: '/aviso-de-responsabilidade',
+  path: '/aviso-de-responsabilidade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BibliotecaRoute = BibliotecaRouteImport.update({
@@ -111,9 +125,19 @@ const PerfilRoute = PerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReceitasRoute = ReceitasRouteImport.update({
   id: '/receitas',
   path: '/receitas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VslRoute = VslRouteImport.update({
@@ -144,6 +168,8 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/ajuda': typeof AjudaRoute
   '/assinatura': typeof AssinaturaRoute
+  '/assinatura-e-cancelamento': typeof AssinaturaECancelamentoRoute
+  '/aviso-de-responsabilidade': typeof AvisoDeResponsabilidadeRoute
   '/biblioteca': typeof BibliotecaRoute
   '/checkout': typeof CheckoutRoute
   '/comunidade': typeof ComunidadeRoute
@@ -154,7 +180,9 @@ export interface FileRoutesByFullPath {
   '/master': typeof MasterRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/perfil': typeof PerfilRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/receitas': typeof ReceitasRoute
+  '/termos': typeof TermosRoute
   '/vsl': typeof VslRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
@@ -167,6 +195,8 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/ajuda': typeof AjudaRoute
   '/assinatura': typeof AssinaturaRoute
+  '/assinatura-e-cancelamento': typeof AssinaturaECancelamentoRoute
+  '/aviso-de-responsabilidade': typeof AvisoDeResponsabilidadeRoute
   '/biblioteca': typeof BibliotecaRoute
   '/checkout': typeof CheckoutRoute
   '/comunidade': typeof ComunidadeRoute
@@ -177,7 +207,9 @@ export interface FileRoutesByTo {
   '/master': typeof MasterRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/perfil': typeof PerfilRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/receitas': typeof ReceitasRoute
+  '/termos': typeof TermosRoute
   '/vsl': typeof VslRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
@@ -191,6 +223,8 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/ajuda': typeof AjudaRoute
   '/assinatura': typeof AssinaturaRoute
+  '/assinatura-e-cancelamento': typeof AssinaturaECancelamentoRoute
+  '/aviso-de-responsabilidade': typeof AvisoDeResponsabilidadeRoute
   '/biblioteca': typeof BibliotecaRoute
   '/checkout': typeof CheckoutRoute
   '/comunidade': typeof ComunidadeRoute
@@ -201,7 +235,9 @@ export interface FileRoutesById {
   '/master': typeof MasterRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/perfil': typeof PerfilRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/receitas': typeof ReceitasRoute
+  '/termos': typeof TermosRoute
   '/vsl': typeof VslRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
@@ -216,6 +252,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ajuda'
     | '/assinatura'
+    | '/assinatura-e-cancelamento'
+    | '/aviso-de-responsabilidade'
     | '/biblioteca'
     | '/checkout'
     | '/comunidade'
@@ -226,7 +264,9 @@ export interface FileRouteTypes {
     | '/master'
     | '/minha-assinatura'
     | '/perfil'
+    | '/privacidade'
     | '/receitas'
+    | '/termos'
     | '/vsl'
     | '/produto/$slug'
     | '/api/public/ua-image/$'
@@ -239,6 +279,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ajuda'
     | '/assinatura'
+    | '/assinatura-e-cancelamento'
+    | '/aviso-de-responsabilidade'
     | '/biblioteca'
     | '/checkout'
     | '/comunidade'
@@ -249,7 +291,9 @@ export interface FileRouteTypes {
     | '/master'
     | '/minha-assinatura'
     | '/perfil'
+    | '/privacidade'
     | '/receitas'
+    | '/termos'
     | '/vsl'
     | '/produto/$slug'
     | '/api/public/ua-image/$'
@@ -262,6 +306,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ajuda'
     | '/assinatura'
+    | '/assinatura-e-cancelamento'
+    | '/aviso-de-responsabilidade'
     | '/biblioteca'
     | '/checkout'
     | '/comunidade'
@@ -272,7 +318,9 @@ export interface FileRouteTypes {
     | '/master'
     | '/minha-assinatura'
     | '/perfil'
+    | '/privacidade'
     | '/receitas'
+    | '/termos'
     | '/vsl'
     | '/produto/$slug'
     | '/api/public/ua-image/$'
@@ -286,6 +334,8 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AjudaRoute: typeof AjudaRoute
   AssinaturaRoute: typeof AssinaturaRoute
+  AssinaturaECancelamentoRoute: typeof AssinaturaECancelamentoRoute
+  AvisoDeResponsabilidadeRoute: typeof AvisoDeResponsabilidadeRoute
   BibliotecaRoute: typeof BibliotecaRoute
   CheckoutRoute: typeof CheckoutRoute
   ComunidadeRoute: typeof ComunidadeRoute
@@ -296,7 +346,9 @@ export interface RootRouteChildren {
   MasterRoute: typeof MasterRoute
   MinhaAssinaturaRoute: typeof MinhaAssinaturaRoute
   PerfilRoute: typeof PerfilRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
   ReceitasRoute: typeof ReceitasRoute
+  TermosRoute: typeof TermosRoute
   VslRoute: typeof VslRoute
   ProdutoSlugRoute: typeof ProdutoSlugRoute
   ApiPublicUaImageSplatRoute: typeof ApiPublicUaImageSplatRoute
@@ -345,6 +397,20 @@ declare module '@tanstack/react-router' {
       path: '/assinatura'
       fullPath: '/assinatura'
       preLoaderRoute: typeof AssinaturaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assinatura-e-cancelamento': {
+      id: '/assinatura-e-cancelamento'
+      path: '/assinatura-e-cancelamento'
+      fullPath: '/assinatura-e-cancelamento'
+      preLoaderRoute: typeof AssinaturaECancelamentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aviso-de-responsabilidade': {
+      id: '/aviso-de-responsabilidade'
+      path: '/aviso-de-responsabilidade'
+      fullPath: '/aviso-de-responsabilidade'
+      preLoaderRoute: typeof AvisoDeResponsabilidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/biblioteca': {
@@ -417,11 +483,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerfilRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/receitas': {
       id: '/receitas'
       path: '/receitas'
       fullPath: '/receitas'
       preLoaderRoute: typeof ReceitasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vsl': {
@@ -462,6 +542,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AjudaRoute: AjudaRoute,
   AssinaturaRoute: AssinaturaRoute,
+  AssinaturaECancelamentoRoute: AssinaturaECancelamentoRoute,
+  AvisoDeResponsabilidadeRoute: AvisoDeResponsabilidadeRoute,
   BibliotecaRoute: BibliotecaRoute,
   CheckoutRoute: CheckoutRoute,
   ComunidadeRoute: ComunidadeRoute,
@@ -472,7 +554,9 @@ const rootRouteChildren: RootRouteChildren = {
   MasterRoute: MasterRoute,
   MinhaAssinaturaRoute: MinhaAssinaturaRoute,
   PerfilRoute: PerfilRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
   ReceitasRoute: ReceitasRoute,
+  TermosRoute: TermosRoute,
   VslRoute: VslRoute,
   ProdutoSlugRoute: ProdutoSlugRoute,
   ApiPublicUaImageSplatRoute: ApiPublicUaImageSplatRoute,
