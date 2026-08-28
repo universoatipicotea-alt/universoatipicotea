@@ -20,7 +20,10 @@ export function PublicShell({ children }: { children: ReactNode }) {
                 <Menu size={19} />
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[290px] border-r border-[var(--line)] bg-[#f7f4ee] p-5">
+            <SheetContent
+              side="left"
+              className="w-[290px] border-r border-[var(--line)] bg-[#f7f4ee] p-5"
+            >
               <SheetHeader className="text-left">
                 <SheetTitle>
                   <Brand />
@@ -47,20 +50,32 @@ export function PublicShell({ children }: { children: ReactNode }) {
           <Brand compact />
         </div>
         <nav className="hidden items-center gap-5 lg:flex">
-          <Link href="/biblioteca" className="text-sm font-bold text-[var(--ink-soft)] hover:text-[var(--ink)]">
+          <Link
+            href="/biblioteca"
+            className="text-sm font-bold text-[var(--ink-soft)] hover:text-[var(--ink)]"
+          >
             Biblioteca gratuita
           </Link>
-          <Link href="/entrar" className="text-sm font-extrabold text-[var(--sage-deep)] hover:underline">
+          <Link
+            href="/entrar"
+            className="text-sm font-extrabold text-[var(--sage-deep)] hover:underline"
+          >
             Entrar
           </Link>
-          <Button asChild className="pressable rounded-xl bg-[var(--sage-deep)] font-extrabold text-white hover:bg-[var(--ink)]">
+          <Button
+            asChild
+            className="pressable rounded-xl bg-[var(--sage-deep)] font-extrabold text-white hover:bg-[var(--ink)]"
+          >
             <Link href="/vsl">
               Quero fazer parte <ArrowRight size={15} className="ml-2" />
             </Link>
           </Button>
         </nav>
         <div className="lg:hidden">
-          <Button asChild className="h-10 rounded-xl bg-[var(--sage-deep)] px-3 text-xs font-extrabold text-white">
+          <Button
+            asChild
+            className="h-10 rounded-xl bg-[var(--sage-deep)] px-3 text-xs font-extrabold text-white"
+          >
             <Link href="/vsl">Quero fazer parte</Link>
           </Button>
         </div>
@@ -69,7 +84,9 @@ export function PublicShell({ children }: { children: ReactNode }) {
       <footer className="border-t border-[var(--line)] px-5 py-8 sm:px-8 lg:px-10">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <Brand compact />
-          <p className="text-xs text-[var(--ink-soft)]">Universo Atípico · conteúdo com acolhimento e propósito.</p>
+          <p className="text-xs text-[var(--ink-soft)]">
+            Universo Atípico · conteúdo com acolhimento e propósito.
+          </p>
         </div>
       </footer>
     </div>
