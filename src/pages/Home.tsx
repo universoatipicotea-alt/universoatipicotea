@@ -1,6 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import heroAsset from "@/assets/universo-atipico-hero.png.asset.json";
 import { Brand } from "@/components/Brand";
+import { PublicHeader } from "@/components/PublicHeader";
 import { InstitutionalFooter } from "@/components/InstitutionalFooter";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
