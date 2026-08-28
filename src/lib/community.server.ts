@@ -525,15 +525,23 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       };
     }
     case "billing.createCheckout": {
-      const user = await requireUser();
+      // Pagamento pode ser iniciado sem conta: a conta é criada após o pagamento.
+      const user = await ensureUaUser();
       const { createCheckoutSession } = await import("./billing.server");
       return createCheckoutSession({
-        authId: user.authId,
-        email: user.email,
-        name: user.name,
+        authId: user?.authId ?? null,
+        email: user?.email ?? null,
+        name: user?.name ?? null,
         origin: requestOrigin(),
       });
     }
+    case "billing.session": {
+      const sessionId = String(input?.sessionId ?? "");
+      if (!sessionId) fail("Sessão de pagamento inválida.");
+      const { getCheckoutSessionInfo } = await import("./billing.server");
+      return getCheckoutSessionInfo(sessionId);
+    }
+
     case "billing.sync": {
       const user = await requireUser();
       const { syncSubscription } = await import("./billing.server");
