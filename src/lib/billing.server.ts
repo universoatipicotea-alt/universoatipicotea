@@ -22,22 +22,29 @@ async function findCustomerId(stripe: Stripe, email: string) {
 }
 
 export async function createCheckoutSession(params: {
-  authId: string;
-  email: string | null;
-  name: string | null;
+  authId?: string | null;
+  email?: string | null;
+  name?: string | null;
   origin: string;
 }) {
-  if (!params.email) throw new Error("Sua conta precisa de um e-mail válido para assinar.");
   const stripe = stripeClient();
-  const customerId = await findCustomerId(stripe, params.email);
+  const customerId = params.email ? await findCustomerId(stripe, params.email) : undefined;
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
-    ...(customerId ? { customer: customerId } : { customer_email: params.email }),
+    ...(customerId
+      ? { customer: customerId }
+      : params.email
+        ? { customer_email: params.email }
+        : {}),
     line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
-    client_reference_id: params.authId,
-    metadata: { auth_id: params.authId },
-    subscription_data: { metadata: { auth_id: params.authId } },
+    ...(params.authId
+      ? {
+          client_reference_id: params.authId,
+          metadata: { auth_id: params.authId },
+          subscription_data: { metadata: { auth_id: params.authId } },
+        }
+      : {}),
     allow_promotion_codes: true,
     locale: "pt-BR",
     success_url: `${params.origin}/checkout?status=sucesso&session_id={CHECKOUT_SESSION_ID}`,
@@ -47,6 +54,22 @@ export async function createCheckoutSession(params: {
   if (!session.url) throw new Error("Não foi possível iniciar o pagamento. Tente novamente.");
   return { url: session.url, sessionId: session.id };
 }
+
+/**
+ * Dados públicos de uma sessão de checkout: usado para pré-preencher o cadastro
+ * feito após o pagamento.
+ */
+export async function getCheckoutSessionInfo(sessionId: string) {
+  const stripe = stripeClient();
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  const email =
+    session.customer_details?.email ?? (session.customer_email as string | null) ?? null;
+  return {
+    email,
+    paid: session.payment_status === "paid" || session.status === "complete",
+  };
+}
+
 
 /**
  * Lê o estado real no Stripe e sincroniza a tabela `subscriptions`.
