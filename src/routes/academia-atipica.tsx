@@ -1,16 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-import Page from "@/pages/AcademiaLanding";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
+/**
+ * A landing antiga `/academia-atipica` foi unificada com a home.
+ * Preservamos o path com redirecionamento permanente para não quebrar
+ * links já divulgados em redes sociais, anúncios ou mensagens.
+ */
 export const Route = createFileRoute("/academia-atipica")({
-  component: Page,
-  head: () => ({
-    meta: [
-      { title: "Academia Atípica — Universo Atípico" },
-      { name: "description", content: "Conteúdo aprofundado, trilhas guiadas e materiais especiais da Academia Atípica." },
-      { property: "og:title", content: "Academia Atípica — Universo Atípico" },
-      { property: "og:description", content: "Conteúdo aprofundado, trilhas guiadas e materiais especiais da Academia Atípica." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  loader: () => redirect({ to: "/", statusCode: 301 }),
 });
