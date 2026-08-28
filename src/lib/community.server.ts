@@ -216,7 +216,7 @@ async function getLandingSettings() {
       show_product_shelf: true,
       product_shelf_title: "Escolhas que podem apoiar sua jornada",
       product_shelf_description:
-        "Recomendações externas escolhidas pelo Universo Atípico. A comunidade continua gratuita e a decisão é sempre sua.",
+        "Recomendações externas escolhidas pelo Universo Atípico. Sua assinatura continua a mesma e a decisão é sempre sua.",
       updated_by: null,
       updated_at: new Date(0).toISOString(),
     },
