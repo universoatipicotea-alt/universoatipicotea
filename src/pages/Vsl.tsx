@@ -158,7 +158,7 @@ export default function Vsl() {
                   Próximo passo
                 </p>
                 <h2 className="display-font mt-3 text-3xl font-semibold tracking-[-0.03em] text-[var(--ink)]">
-                  Sua vaga na comunidade
+                  Seu acesso ao Universo Atípico
                 </h2>
                 <ul className="mt-5 space-y-3">
                   {benefits.map((item) => (
@@ -176,13 +176,14 @@ export default function Vsl() {
                   </p>
                   <p className="display-font mt-1 text-4xl font-semibold text-[var(--ink)]">
                     {funnel?.priceLabel ?? "R$ 49,90"}
+                    <span className="ml-1 font-sans text-sm font-bold text-[var(--ink-soft)]">/mês</span>
                   </p>
                 </div>
                 <Button
                   onClick={() => setLocation("/checkout")}
                   className="pressable h-14 rounded-xl bg-[var(--sage-deep)] px-8 text-base font-extrabold text-white shadow-[0_12px_24px_rgba(34,91,73,.18)] transition hover:-translate-y-0.5 hover:bg-[var(--ink)] hover:shadow-[0_16px_30px_rgba(34,91,73,.22)]"
                 >
-                  {funnel?.ctaLabel ?? "Quero fazer parte da comunidade"}
+                  {funnel?.ctaLabel ?? "Começar agora"}
                 </Button>
               </div>
             </div>

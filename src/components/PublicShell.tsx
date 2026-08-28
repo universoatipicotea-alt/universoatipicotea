@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "wouter";
 import { ArrowRight, Menu } from "lucide-react";
 import { Brand } from "./Brand";
+import { InstitutionalFooter } from "./InstitutionalFooter";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 
@@ -34,7 +35,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
                   Início
                 </Link>
                 <Link href="/biblioteca" className="rounded-xl px-3 py-3 hover:bg-white">
-                  Biblioteca gratuita
+                  Biblioteca
                 </Link>
                 <Link href="/entrar" className="rounded-xl px-3 py-3 hover:bg-white">
                   Entrar
@@ -54,7 +55,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
             href="/biblioteca"
             className="text-sm font-bold text-[var(--ink-soft)] hover:text-[var(--ink)]"
           >
-            Biblioteca gratuita
+            Biblioteca
           </Link>
           <Link
             href="/entrar"
@@ -67,7 +68,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
             className="pressable rounded-xl bg-[var(--sage-deep)] font-extrabold text-white hover:bg-[var(--ink)]"
           >
             <Link href="/vsl">
-              Quero fazer parte <ArrowRight size={15} className="ml-2" />
+              Começar agora <ArrowRight size={15} className="ml-2" />
             </Link>
           </Button>
         </nav>
@@ -76,17 +77,20 @@ export function PublicShell({ children }: { children: ReactNode }) {
             asChild
             className="h-10 rounded-xl bg-[var(--sage-deep)] px-3 text-xs font-extrabold text-white"
           >
-            <Link href="/vsl">Quero fazer parte</Link>
+            <Link href="/vsl">Começar agora</Link>
           </Button>
         </div>
       </header>
       <main>{children}</main>
-      <footer className="border-t border-[var(--line)] px-5 py-8 sm:px-8 lg:px-10">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <Brand compact />
-          <p className="text-xs text-[var(--ink-soft)]">
-            Universo Atípico · conteúdo com acolhimento e propósito.
-          </p>
+      <footer className="border-t border-[var(--line)] px-5 py-10 sm:px-8 lg:px-10">
+        <div className="mx-auto flex max-w-7xl flex-col gap-8">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <Brand compact />
+            <p className="text-xs text-[var(--ink-soft)]">
+              Universo Atípico · conteúdo com acolhimento e propósito.
+            </p>
+          </div>
+          <InstitutionalFooter />
         </div>
       </footer>
     </div>

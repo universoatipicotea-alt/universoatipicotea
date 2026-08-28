@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { Brand } from "./Brand";
+import { InstitutionalFooter } from "./InstitutionalFooter";
 
 const nav = [
   { to: "/", label: "Início" },
@@ -42,7 +43,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
           <div>
             <Brand compact />
             <p className="mt-3 max-w-sm text-sm leading-6 text-[var(--ink-soft)]">
-              Apoio, conhecimento e comunidade para cada jornada atípica.
+              Conhecimento, recursos e comunidade para acompanhar cada jornada atípica.
             </p>
           </div>
           <nav className="flex flex-wrap gap-5 text-sm font-extrabold text-[var(--ink)]">
@@ -55,6 +56,9 @@ export function SiteShell({ children }: { children: ReactNode }) {
               Comunidade
             </Link>
           </nav>
+        </div>
+        <div className="mx-auto max-w-[1200px] px-5 pb-8 sm:px-8">
+          <InstitutionalFooter />
         </div>
         <p className="border-t border-[var(--line)] px-5 py-5 text-center text-xs text-[var(--ink-soft)] sm:px-8">
           © {new Date().getFullYear()} Universo Atípico. Feito com cuidado.

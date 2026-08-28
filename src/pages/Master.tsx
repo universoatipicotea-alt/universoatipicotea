@@ -83,7 +83,7 @@ export default function Master() {
   const [product, setProduct] = useState<ProductForm>(blankProduct());
   const [campaign, setCampaign] = useState<CampaignForm>(blankCampaign());
   const [conversion, setConversion] = useState({ productId: 0, campaignId: 0, amount: "", note: "", occurredAt: new Date().toISOString().slice(0, 10) });
-  const [settings, setSettings] = useState({ showProductShelf: true, productShelfTitle: "Escolhas que podem apoiar sua jornada", productShelfDescription: "Recomendações externas escolhidas pelo Universo Atípico. A comunidade continua gratuita e a decisão é sempre sua." });
+  const [settings, setSettings] = useState({ showProductShelf: true, productShelfTitle: "Escolhas que podem apoiar sua jornada", productShelfDescription: "Recomendações externas escolhidas pelo Universo Atípico. Sua assinatura continua a mesma e a decisão é sempre sua." });
   const [accountSearch, setAccountSearch] = useState("");
   const imageInput = useRef<HTMLInputElement>(null);
   const data = master.data;
