@@ -503,6 +503,30 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         metrics,
       };
     }
+    case "billing.createCheckout": {
+      const user = await requireUser();
+      const { createCheckoutSession } = await import("./billing.server");
+      return createCheckoutSession({
+        authId: user.authId,
+        email: user.email,
+        name: user.name,
+        origin: requestOrigin(),
+      });
+    }
+    case "billing.sync": {
+      const user = await requireUser();
+      const { syncSubscription } = await import("./billing.server");
+      return syncSubscription({
+        authId: user.authId,
+        email: user.email,
+        sessionId: input?.sessionId ?? null,
+      });
+    }
+    case "billing.portal": {
+      const user = await requireUser();
+      const { createPortalSession } = await import("./billing.server");
+      return createPortalSession({ email: user.email, origin: requestOrigin() });
+    }
     case "community.subscription.me":
       return getSubscriptionStatus(await requireUser());
     case "community.subscription.cancel": {
