@@ -103,12 +103,14 @@ export default function Vsl() {
                 src={videoSrc}
                 className="absolute inset-0 h-full w-full object-cover"
                 playsInline
+                autoPlay
+                muted={muted}
                 onEnded={handleEnded}
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
                 controlsList="nodownload noplaybackrate nofullscreen"
                 disablePictureInPicture
-                preload="metadata"
+                preload="auto"
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--ink)] text-white">
