@@ -15,6 +15,30 @@ export default function Vsl() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [watched, setWatched] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [muted, setMuted] = useState(true);
+
+  // Autoplay assim que o vídeo estiver disponível (mudo, por política dos navegadores)
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.muted = true;
+    const tryPlay = () => {
+      void el.play().catch(() => {
+        /* navegador bloqueou: o botão de play continua disponível */
+      });
+    };
+    if (el.readyState >= 2) tryPlay();
+    else el.addEventListener("loadeddata", tryPlay, { once: true });
+    return () => el.removeEventListener("loadeddata", tryPlay);
+  }, [funnel?.vslVideoPath]);
+
+  const unmute = () => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.muted = false;
+    setMuted(false);
+    void el.play().catch(() => {});
+  };
 
   useEffect(() => {
     try {
