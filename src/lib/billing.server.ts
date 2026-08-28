@@ -155,3 +155,118 @@ export async function createPortalSession(params: { email: string | null; origin
   });
   return { url: portal.url };
 }
+
+/**
+ * Processa eventos de webhook do Stripe: garante a liberação do acesso mesmo
+ * quando o redirecionamento do navegador falha depois do pagamento.
+ */
+export async function verifyStripeEvent(rawBody: string, signature: string | null) {
+  const secret = process.env["STRIPE_WEBHOOK_SECRET"];
+  if (!secret) throw new Error("Webhook não configurado.");
+  if (!signature) throw new Error("Assinatura ausente.");
+  const stripe = stripeClient();
+  return stripe.webhooks.constructEventAsync(rawBody, signature, secret);
+}
+
+async function resolveAuthId(params: { authId?: string | null; email?: string | null }) {
+  if (params.authId) return params.authId;
+  if (!params.email) return null;
+  const { data } = await db()
+    .from("ua_users")
+    .select("auth_id")
+    .ilike("email", params.email)
+    .maybeSingle();
+  return (data?.auth_id as string | null) ?? null;
+}
+
+export async function handleStripeEvent(event: Stripe.Event) {
+  const stripe = stripeClient();
+
+  const applySubscription = async (subscription: Stripe.Subscription, sessionId?: string | null) => {
+    let email: string | null = null;
+    const customer = subscription.customer;
+    const customerId = typeof customer === "string" ? customer : customer?.id;
+    if (customerId) {
+      try {
+        const c = await stripe.customers.retrieve(customerId);
+        if (c && !("deleted" in c && c.deleted)) email = (c as Stripe.Customer).email ?? null;
+      } catch {
+        // segue com metadata
+      }
+    }
+
+    const authId = await resolveAuthId({
+      authId: subscription.metadata?.["auth_id"] ?? null,
+      email,
+    });
+    if (!authId) return { handled: false as const, reason: "usuário ainda não cadastrado" };
+
+    const active = subscription.status === "active" || subscription.status === "trialing";
+    const periodEndSeconds =
+      (subscription as unknown as { current_period_end?: number }).current_period_end ??
+      subscription.items.data[0]?.current_period_end ??
+      null;
+
+    const values = {
+      user_id: authId,
+      provider: "stripe",
+      provider_subscription_id: subscription.id,
+      provider_checkout_session_id: sessionId ?? null,
+      status: active ? "active" : subscription.status,
+      current_period_end: periodEndSeconds
+        ? new Date(periodEndSeconds * 1000).toISOString()
+        : null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: existing } = await db()
+      .from("subscriptions")
+      .select("id")
+      .eq("provider_subscription_id", subscription.id)
+      .maybeSingle();
+
+    if (existing?.id) await db().from("subscriptions").update(values).eq("id", existing.id);
+    else await db().from("subscriptions").insert(values);
+
+    await db()
+      .from("ua_users")
+      .update({ membership_status: active ? "member" : "visitor" })
+      .eq("auth_id", authId);
+
+    return { handled: true as const, active };
+  };
+
+  switch (event.type) {
+    case "checkout.session.completed": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const subId =
+        typeof session.subscription === "string"
+          ? session.subscription
+          : session.subscription?.id;
+      if (!subId) return { handled: false as const, reason: "sessão sem assinatura" };
+      const subscription = await stripe.subscriptions.retrieve(subId);
+      return applySubscription(subscription, session.id);
+    }
+    case "customer.subscription.created":
+    case "customer.subscription.updated":
+    case "customer.subscription.deleted":
+    case "invoice.payment_succeeded":
+    case "invoice.payment_failed": {
+      const object = event.data.object as Stripe.Subscription | Stripe.Invoice;
+      let subscription: Stripe.Subscription | null = null;
+      if ("object" in object && object.object === "subscription") {
+        subscription = object as Stripe.Subscription;
+      } else {
+        const invoice = object as Stripe.Invoice;
+        const subRef = (invoice as unknown as { subscription?: string | Stripe.Subscription })
+          .subscription;
+        const subId = typeof subRef === "string" ? subRef : subRef?.id;
+        if (subId) subscription = await stripe.subscriptions.retrieve(subId);
+      }
+      if (!subscription) return { handled: false as const, reason: "evento sem assinatura" };
+      return applySubscription(subscription);
+    }
+    default:
+      return { handled: false as const, reason: "evento ignorado" };
+  }
+}
