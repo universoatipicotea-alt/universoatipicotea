@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Brand } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { Check, Lock, Play } from "lucide-react";
+import { Check, Lock, Play, Volume2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 
@@ -15,6 +15,30 @@ export default function Vsl() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [watched, setWatched] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [muted, setMuted] = useState(true);
+
+  // Autoplay assim que o vídeo estiver disponível (mudo, por política dos navegadores)
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.muted = true;
+    const tryPlay = () => {
+      void el.play().catch(() => {
+        /* navegador bloqueou: o botão de play continua disponível */
+      });
+    };
+    if (el.readyState >= 2) tryPlay();
+    else el.addEventListener("loadeddata", tryPlay, { once: true });
+    return () => el.removeEventListener("loadeddata", tryPlay);
+  }, [funnel?.vslVideoPath]);
+
+  const unmute = () => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.muted = false;
+    setMuted(false);
+    void el.play().catch(() => {});
+  };
 
   useEffect(() => {
     try {
@@ -79,18 +103,33 @@ export default function Vsl() {
                 src={videoSrc}
                 className="absolute inset-0 h-full w-full object-cover"
                 playsInline
+                autoPlay
+                muted={muted}
                 onEnded={handleEnded}
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
                 controlsList="nodownload noplaybackrate nofullscreen"
                 disablePictureInPicture
-                preload="metadata"
+                preload="auto"
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--ink)] text-white">
                 <Play size={48} className="opacity-40" />
                 <p className="mt-4 text-sm font-medium text-white/70">Vídeo em preparação.</p>
               </div>
+            )}
+
+            {isPlaying && muted && videoSrc && (
+              <button
+                type="button"
+                onClick={unmute}
+                className="absolute inset-0 flex items-end justify-center bg-transparent pb-8"
+                aria-label="Ativar som"
+              >
+                <span className="flex items-center gap-2 rounded-full bg-white/95 px-5 py-3 text-sm font-extrabold text-[var(--ink)] shadow-xl transition hover:scale-105">
+                  <Volume2 size={18} /> Ativar som
+                </span>
+              </button>
             )}
 
             {!isPlaying && videoSrc && (
