@@ -6,5 +6,72 @@ import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 
 export function PublicShell({ children }: { children: ReactNode }) {
-  return <div className="page-texture min-h-screen overflow-hidden bg-[var(--paper)] text-[var(--ink)]"><header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10"><div className="lg:hidden"><Sheet><SheetTrigger asChild><button type="button" className="grid h-10 w-10 place-items-center rounded-xl border border-[var(--line)] bg-white text-[var(--sage-deep)]" aria-label="Abrir navegação"><Menu size={19} /></button></SheetTrigger><SheetContent side="left" className="w-[290px] border-r border-[var(--line)] bg-[#f7f4ee] p-5"><SheetHeader className="text-left"><SheetTitle><Brand /></SheetTitle></SheetHeader><nav className="mt-9 flex flex-col gap-2 text-sm font-extrabold"><Link href="/inicio" className="rounded-xl px-3 py-3 hover:bg-white">Início</Link><Link href="/biblioteca" className="rounded-xl px-3 py-3 hover:bg-white">Biblioteca gratuita</Link><Link href="/academia-atipica" className="rounded-xl px-3 py-3 hover:bg-white">Academia Atípica</Link><Link href="/entrar" className="rounded-xl px-3 py-3 hover:bg-white">Entrar</Link></nav></SheetContent></Sheet></div><div className="hidden lg:block"><Brand /></div><div className="lg:hidden"><Brand compact /></div><nav className="hidden items-center gap-5 lg:flex"><Link href="/biblioteca" className="text-sm font-bold text-[var(--ink-soft)] hover:text-[var(--ink)]">Biblioteca gratuita</Link><Link href="/academia-atipica" className="text-sm font-bold text-[var(--ink-soft)] hover:text-[var(--ink)]">Academia Atípica</Link><Link href="/entrar" className="text-sm font-extrabold text-[var(--sage-deep)] hover:underline">Entrar</Link><Button asChild className="pressable rounded-xl bg-[var(--sage-deep)] font-extrabold text-white hover:bg-[var(--ink)]"><Link href="/academia-atipica">Quero fazer parte <ArrowRight size={15} className="ml-2" /></Link></Button></nav><div className="lg:hidden"><Button asChild className="h-10 rounded-xl bg-[var(--sage-deep)] px-3 text-xs font-extrabold text-white"><Link href="/academia-atipica">Quero fazer parte</Link></Button></div></header><main>{children}</main><footer className="border-t border-[var(--line)] px-5 py-8 sm:px-8 lg:px-10"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 sm:flex-row sm:items-center"><Brand compact /><p className="text-xs text-[var(--ink-soft)]">Universo Atípico · conteúdo com acolhimento e propósito.</p></div></footer></div>;
+  return (
+    <div className="page-texture min-h-screen overflow-hidden bg-[var(--paper)] text-[var(--ink)]">
+      <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
+        <div className="lg:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                className="grid h-10 w-10 place-items-center rounded-xl border border-[var(--line)] bg-white text-[var(--sage-deep)]"
+                aria-label="Abrir navegação"
+              >
+                <Menu size={19} />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[290px] border-r border-[var(--line)] bg-[#f7f4ee] p-5">
+              <SheetHeader className="text-left">
+                <SheetTitle>
+                  <Brand />
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="mt-9 flex flex-col gap-2 text-sm font-extrabold">
+                <Link href="/" className="rounded-xl px-3 py-3 hover:bg-white">
+                  Início
+                </Link>
+                <Link href="/biblioteca" className="rounded-xl px-3 py-3 hover:bg-white">
+                  Biblioteca gratuita
+                </Link>
+                <Link href="/entrar" className="rounded-xl px-3 py-3 hover:bg-white">
+                  Entrar
+                </Link>
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
+        <div className="hidden lg:block">
+          <Brand />
+        </div>
+        <div className="lg:hidden">
+          <Brand compact />
+        </div>
+        <nav className="hidden items-center gap-5 lg:flex">
+          <Link href="/biblioteca" className="text-sm font-bold text-[var(--ink-soft)] hover:text-[var(--ink)]">
+            Biblioteca gratuita
+          </Link>
+          <Link href="/entrar" className="text-sm font-extrabold text-[var(--sage-deep)] hover:underline">
+            Entrar
+          </Link>
+          <Button asChild className="pressable rounded-xl bg-[var(--sage-deep)] font-extrabold text-white hover:bg-[var(--ink)]">
+            <Link href="/vsl">
+              Quero fazer parte <ArrowRight size={15} className="ml-2" />
+            </Link>
+          </Button>
+        </nav>
+        <div className="lg:hidden">
+          <Button asChild className="h-10 rounded-xl bg-[var(--sage-deep)] px-3 text-xs font-extrabold text-white">
+            <Link href="/vsl">Quero fazer parte</Link>
+          </Button>
+        </div>
+      </header>
+      <main>{children}</main>
+      <footer className="border-t border-[var(--line)] px-5 py-8 sm:px-8 lg:px-10">
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <Brand compact />
+          <p className="text-xs text-[var(--ink-soft)]">Universo Atípico · conteúdo com acolhimento e propósito.</p>
+        </div>
+      </footer>
+    </div>
+  );
 }

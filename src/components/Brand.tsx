@@ -14,7 +14,7 @@ export function Brand({ compact = false, inverted = false }: BrandProps) {
 
   return (
     <Link
-      href="/inicio"
+      href="/"
       className={`brand-constellation inline-flex items-center ${inverted ? "rounded-xl bg-white px-3 py-2" : ""}`}
       aria-label="Universo Atípico — página inicial"
     >
