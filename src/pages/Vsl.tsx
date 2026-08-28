@@ -119,6 +119,19 @@ export default function Vsl() {
               </div>
             )}
 
+            {isPlaying && muted && videoSrc && (
+              <button
+                type="button"
+                onClick={unmute}
+                className="absolute inset-0 flex items-end justify-center bg-transparent pb-8"
+                aria-label="Ativar som"
+              >
+                <span className="flex items-center gap-2 rounded-full bg-white/95 px-5 py-3 text-sm font-extrabold text-[var(--ink)] shadow-xl transition hover:scale-105">
+                  <Volume2 size={18} /> Ativar som
+                </span>
+              </button>
+            )}
+
             {!isPlaying && videoSrc && (
               <button
                 type="button"
