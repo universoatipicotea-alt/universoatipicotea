@@ -2,13 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 
 /**
  * Entrega o vídeo do funil VSL a partir do armazenamento privado.
- * Gera uma URL assinada de curta duração e redireciona para ela,
- * evitando expor links permanentes do storage.
+ * Gera uma URL assinada de curta duração e faz proxy dos bytes,
+ * garantindo Content-Type correto e suporte a Range (seek no player),
+ * sem expor links permanentes do storage.
  */
 export const Route = createFileRoute("/api/public/ua-video/$")({
   server: {
     handlers: {
-      GET: async ({ params }) => {
+      GET: async ({ params, request }) => {
         const key = (params as { _splat?: string })._splat ?? "";
         if (!key || key.includes("..")) return new Response("Not found", { status: 404 });
 
@@ -22,7 +23,29 @@ export const Route = createFileRoute("/api/public/ua-video/$")({
           return new Response("Not found", { status: 404 });
         }
 
-        return Response.redirect(data.signedUrl, 302);
+        const headers = new Headers();
+        const range = request.headers.get("range");
+        if (range) headers.set("range", range);
+
+        const upstream = await fetch(data.signedUrl, { headers });
+        if (!upstream.ok && upstream.status !== 206) {
+          console.error("[ua-video] upstream error:", upstream.status);
+          return new Response("Not found", { status: 404 });
+        }
+
+        const responseHeaders = new Headers();
+        responseHeaders.set("content-type", "video/mp4");
+        responseHeaders.set("accept-ranges", "bytes");
+        responseHeaders.set("cache-control", "private, max-age=300");
+        for (const name of ["content-length", "content-range"]) {
+          const value = upstream.headers.get(name);
+          if (value) responseHeaders.set(name, value);
+        }
+
+        return new Response(upstream.body, {
+          status: upstream.status,
+          headers: responseHeaders,
+        });
       },
     },
   },
