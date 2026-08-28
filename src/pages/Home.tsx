@@ -1,6 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import heroAsset from "@/assets/universo-atipico-hero.png.asset.json";
 import { Brand } from "@/components/Brand";
+import { PublicHeader } from "@/components/PublicHeader";
 import { InstitutionalFooter } from "@/components/InstitutionalFooter";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
@@ -34,17 +35,7 @@ export default function Home() {
 
   return (
     <div className="page-texture min-h-screen overflow-hidden bg-[var(--paper)]">
-      <header className="border-b border-[var(--line)] bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-5 py-4 sm:px-8 lg:px-12">
-          <Brand />
-          <Link
-            href={isAuthenticated ? "/comunidade" : "/entrar"}
-            className="text-sm font-extrabold text-[var(--ink)] hover:text-[var(--blue)]"
-          >
-            {isAuthenticated ? "Acessar" : "Entrar"}
-          </Link>
-        </div>
-      </header>
+      <PublicHeader />
 
       <main>
         <section className="relative isolate overflow-hidden bg-[var(--ink)]">
