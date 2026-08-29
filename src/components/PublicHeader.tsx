@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, Menu } from "lucide-react";
 import { Brand } from "./Brand";
@@ -21,6 +21,9 @@ const NAV_ITEMS = [
 
 export function PublicHeader() {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeMenu = () => setMenuOpen(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -40,19 +43,27 @@ export function PublicHeader() {
       <div className="mx-auto flex h-[76px] max-w-7xl items-center gap-4 px-5 sm:px-8 lg:px-10">
         {/* Mobile: hamburger */}
         <div className="lg:hidden">
-          <Sheet>
+          <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
             <SheetTrigger asChild>
               <button
+                ref={menuButtonRef}
                 type="button"
                 className="grid h-11 w-11 place-items-center rounded-xl text-[var(--ink)] transition-colors hover:bg-[var(--ink)]/5"
-                aria-label="Abrir navegação"
+                aria-label={menuOpen ? "Fechar navegação" : "Abrir navegação"}
+                aria-expanded={menuOpen}
+                aria-controls="menu-mobile"
               >
                 <Menu size={21} />
               </button>
             </SheetTrigger>
             <SheetContent
+              id="menu-mobile"
               side="left"
               className="w-[300px] border-r border-[var(--line)] bg-[#fdfcf9] p-6"
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                menuButtonRef.current?.focus();
+              }}
             >
               <SheetHeader className="text-left">
                 <SheetTitle>
@@ -67,6 +78,7 @@ export function PublicHeader() {
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={closeMenu}
                     className="rounded-xl px-4 py-3.5 text-[15px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--ink)]/5"
                   >
                     {item.label}
@@ -74,6 +86,7 @@ export function PublicHeader() {
                 ))}
                 <Link
                   href="/entrar"
+                  onClick={closeMenu}
                   className="rounded-xl px-4 py-3.5 text-[15px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--ink)]/5"
                 >
                   Entrar
@@ -83,7 +96,7 @@ export function PublicHeader() {
                 asChild
                 className="pressable mt-6 h-12 w-full rounded-xl bg-[var(--ink)] text-[15px] font-extrabold text-white hover:bg-[var(--sage-deep)]"
               >
-                <Link href="/vsl">
+                <Link href="/vsl" onClick={closeMenu}>
                   Começar agora <ArrowRight size={16} className="ml-2" />
                 </Link>
               </Button>
@@ -93,6 +106,7 @@ export function PublicHeader() {
             </SheetContent>
           </Sheet>
         </div>
+
 
         {/* Logo */}
         <div className="flex min-w-0 items-center">
