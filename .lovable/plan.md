@@ -1,60 +1,29 @@
-# Pós-checkout, biblioteca de PDFs e acesso só após pagamento
+# Menu lateral mobile: foco preso, Escape e retorno do foco
 
-## 1. Página de confirmação pós-checkout (`/obrigado`)
+## Situação atual
 
-Nova rota para onde o Stripe devolve o cliente depois do pagamento.
+O menu mobile do cabeçalho público (`src/components/PublicHeader.tsx`) usa o componente Sheet, que já traz travamento de foco, fechamento com Escape e devolução do foco ao botão que abriu. O que falta é o comportamento em volta disso:
 
-- Lê o `session_id` da URL e consulta o status real da assinatura no servidor.
-- Três estados claros: **processando** (com nova checagem automática), **pagamento confirmado** e **pagamento não concluído** (com botão para tentar de novo).
-- Confirmado e sem conta: mostra o formulário de criação de conta já com o e-mail usado no pagamento preenchido e bloqueado; ao concluir, vincula a assinatura e leva direto para `/comunidade`.
-- Confirmado e já logado: redireciona automaticamente para `/comunidade` em poucos segundos.
-- O `success_url` do Stripe passa a apontar para `/obrigado`.
+- O menu não fecha ao tocar em um item de navegação (os links são de rolagem por âncora, então o painel continua aberto por cima do conteúdo).
+- Não há confirmação de que o foco volta ao botão do menu depois de navegar.
+- O mesmo padrão precisa valer para o menu lateral da área logada (`src/components/DashboardLayout.tsx`).
 
-## 2. Entrada só depois do pagamento (`/entrar`)
+## O que será feito
 
-- Remove o botão/alternância "Criar conta" da página de login.
-- A página passa a ter apenas login + um link discreto "Ainda não é assinante? Começar agora" que leva ao checkout.
-- A criação de conta fica disponível apenas na confirmação pós-pagamento (e para quem chega com um pagamento válido).
+1. **Controlar a abertura do menu** no cabeçalho público: estado próprio de aberto/fechado, para poder fechá-lo por código.
+2. **Fechar ao escolher um item**: qualquer link do menu (navegação, "Entrar", "Começar agora") fecha o painel antes de navegar/rolar.
+3. **Escape**: garantido pelo painel; confirmado em teste, incluindo quando o foco está em um link interno.
+4. **Devolver o foco ao botão do menu** sempre que o painel fecha — por Escape, por clique fora ou por escolha de item —, usando uma referência ao botão e devolvendo o foco após o fechamento.
+5. **Foco preso enquanto aberto**: Tab e Shift+Tab circulam apenas entre os elementos do painel; o conteúdo atrás fica inerte para leitores de tela.
+6. **Estado anunciado**: o botão passa a expor `aria-expanded` e `aria-controls`, com rótulo alternando entre "Abrir navegação" e "Fechar navegação".
+7. **Mesmo tratamento no menu lateral da área logada**, para que o comportamento seja idêntico dentro e fora da plataforma.
 
-## 3. Publicar os 6 PDFs enviados
+## Verificação
 
-Os arquivos vão para o armazenamento privado e entram no banco já publicados:
-
-Biblioteca (guias):
-- Autismo: 40 Dicas para Agir em Família
-- Guia de Desfralde para Crianças Autistas — Edição Premium
-- Guia Técnica: Introdução Gradual de Novos Alimentos (TEA)
-- Guia de Substituições para Alergias Alimentares (TEA)
-
-Receitas:
-- Mini Ebook: 5 Receitas (Autismo e TDAH)
-- Receitas Saudáveis e Criativas
-
-Cada material recebe título, resumo, categoria e capa próprios.
-
-## 4. Capas
-
-Capas exclusivas desenhadas para cada material, no estilo atual da marca (papel, tinta, verde profundo, dourado) — nada de placeholder. Aplicadas nos cards da Biblioteca e das Receitas.
-
-## 5. Campo de PDF das receitas na Administração
-
-- Nova aba **Receitas** no painel de administração, com o mesmo padrão da aba Guias: título, resumo, categoria, ordem, status, **upload de PDF** e **upload de capa**.
-- O upload de PDF passa a aceitar arquivos grandes (até ~50 MB), enviando direto para o armazenamento em vez de trafegar embutido na requisição — os arquivos atuais têm entre 25 e 46 MB e não passariam pelo limite antigo de 12 MB.
-- Listagem lateral com edição das receitas já cadastradas.
-
-## 6. Leitura em boa qualidade no celular
-
-Ajustes no leitor de PDF:
-- Renderização na densidade real da tela (retina) em vez de escala fixa — texto nítido no celular.
-- Largura ajustada automaticamente à tela, com zoom por pinça e botões de zoom.
-- Carregamento por página conforme a rolagem, para PDFs grandes abrirem rápido no 4G.
-- Barra de controles compacta e alcançável com o polegar em telas pequenas.
-- Conteúdo continua protegido: entregue por link temporário assinado, nunca por URL pública.
+Teste automatizado de teclado no navegador: abrir com Enter, percorrer com Tab até o fim e confirmar que volta ao primeiro item, pressionar Escape e conferir que o painel fecha e o foco está de novo no botão do menu; repetir fechando por clique em um item.
 
 ## Detalhes técnicos
 
-- `/obrigado`: rota TanStack com `head()` próprio; status via `billing.session` + `billing.sync` já existentes, mais um estado de re-tentativa enquanto o webhook não confirmou.
-- Upload grande: `createSignedUploadUrl` no bucket privado `guias-pdf`, com o navegador enviando o arquivo direto e o servidor apenas registrando a chave.
-- Receitas seguem a tabela `ua_test_guides` (já usada por `/receitas`); guias seguem `ua_guides`.
-- Leitor: `devicePixelRatio` no `viewport` do pdf.js, `IntersectionObserver` para renderização sob demanda.
-- Ingestão dos 6 PDFs por upload ao armazenamento + migração com os registros e capas.
+- `Sheet` controlado por `open`/`onOpenChange`; `ref` no gatilho e `onCloseAutoFocus` para devolver o foco explicitamente.
+- Fechamento dos links via `onClick` que zera o estado antes da navegação por âncora.
+- Nenhuma mudança visual: identidade, espaçamentos e conteúdo do menu permanecem como estão.
