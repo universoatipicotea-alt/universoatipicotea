@@ -184,7 +184,10 @@ function DashboardLayoutContent({
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       isActive={isActive}
-                      onClick={() => setLocation(item.path)}
+                      onClick={() => {
+                        setOpenMobile(false);
+                        setLocation(item.path);
+                      }}
                       tooltip={item.label}
                       className={`h-10 transition-all font-normal`}
                     >
