@@ -774,6 +774,25 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       const user = await requireAdmin();
       return saveUpload(input, PDF_BUCKET, `community/guides/${user.id}/pdfs`);
     }
+    /**
+     * PDFs grandes (25–50 MB) não cabem numa requisição embutida em base64.
+     * Aqui devolvemos uma URL assinada para o navegador enviar direto ao
+     * armazenamento privado; o servidor só registra a chave depois.
+     */
+    case "community.files.signedPdfUpload": {
+      const user = await requireAdmin();
+      const key = `community/guides/${user.id}/pdfs/${safeName(String(input.fileName ?? "material.pdf"), "application/pdf")}`;
+      const { data, error } = await db().storage.from(PDF_BUCKET).createSignedUploadUrl(key);
+      if (error || !data) fail(error?.message ?? "Não foi possível preparar o envio.");
+      return {
+        key,
+        token: data!.token,
+        signedUrl: data!.signedUrl,
+        url: `/api/protected-pdf/key/${encodeURIComponent(key)}`,
+      };
+    }
+
+
 
     /* --------------------------------- admin --------------------------------- */
     case "community.admin.dashboard": {
