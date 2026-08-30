@@ -852,6 +852,35 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       else await db().from("ua_guides").insert({ ...values, created_by: user.id });
       return { success: true };
     }
+    case "community.admin.testGuides": {
+      await requireAdmin();
+      const { data } = await db()
+        .from("ua_test_guides")
+        .select("*")
+        .order("status", { ascending: true })
+        .order("created_at", { ascending: false });
+      return camel(data ?? []);
+    }
+    case "community.admin.saveTestGuide": {
+      const user = await requireAdmin();
+      const values = {
+        title: input.title,
+        summary: input.summary,
+        content: input.content ?? null,
+        category: input.category,
+        callout: input.callout ?? null,
+        accent_color: input.accentColor ?? "#0b2b26",
+        cover_image_key: input.coverImageKey ?? null,
+        cover_image_url: input.coverImageUrl ?? null,
+        pdf_key: input.pdfKey ?? null,
+        pdf_url: input.pdfUrl ?? null,
+        status: input.status,
+        updated_at: new Date().toISOString(),
+      };
+      if (input.id) await db().from("ua_test_guides").update(values).eq("id", Number(input.id));
+      else await db().from("ua_test_guides").insert({ ...values, created_by: user.id });
+      return { success: true };
+    }
     case "community.admin.saveFacilitator": {
       const user = await requireAdmin();
       const values = {
