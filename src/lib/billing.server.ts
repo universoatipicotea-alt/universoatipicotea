@@ -47,7 +47,7 @@ export async function createCheckoutSession(params: {
       : {}),
     allow_promotion_codes: true,
     locale: "pt-BR",
-    success_url: `${params.origin}/checkout?status=sucesso&session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `${params.origin}/obrigado?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${params.origin}/checkout?status=cancelado`,
   });
 
@@ -61,14 +61,96 @@ export async function createCheckoutSession(params: {
  */
 export async function getCheckoutSessionInfo(sessionId: string) {
   const stripe = stripeClient();
-  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ["subscription"] });
   const email =
     session.customer_details?.email ?? (session.customer_email as string | null) ?? null;
-  return {
-    email,
-    paid: session.payment_status === "paid" || session.status === "complete",
-  };
+
+  const subscription =
+    session.subscription && typeof session.subscription !== "string" ? session.subscription : null;
+  const subscriptionStatus = subscription?.status ?? null;
+  const paid = session.payment_status === "paid" || session.status === "complete";
+  const active =
+    paid && (!subscriptionStatus || ["active", "trialing"].includes(subscriptionStatus));
+
+  // Estado normalizado usado pela página /obrigado.
+  const state: "aprovado" | "pendente" | "recusado" | "cancelado" | "expirado" = active
+    ? "aprovado"
+    : session.status === "expired"
+      ? "cancelado"
+      : subscriptionStatus === "canceled"
+        ? "expirado"
+        : session.payment_status === "unpaid" && subscriptionStatus === "past_due"
+          ? "recusado"
+          : "pendente";
+
+  // Já existe conta com esse e-mail?
+  let hasAccount = false;
+  if (email) {
+    const { data } = await db().from("ua_users").select("id").ilike("email", email).maybeSingle();
+    hasAccount = Boolean(data);
+  }
+
+  return { email, paid, active, state, subscriptionStatus, hasAccount };
 }
+
+/**
+ * Cria a conta apenas quando o pagamento da sessão está confirmado.
+ * O cadastro público está desativado: esta é a única porta de entrada.
+ */
+export async function activateAccountFromSession(params: {
+  sessionId: string;
+  name: string;
+  password: string;
+}) {
+  const info = await getCheckoutSessionInfo(params.sessionId);
+  if (!info.active || !info.email)
+    throw new Error("Pagamento ainda não confirmado. Aguarde alguns instantes e tente novamente.");
+  if (params.password.length < 8) throw new Error("A senha precisa ter pelo menos 8 caracteres.");
+
+  const email = info.email.toLowerCase();
+  const created = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password: params.password,
+    email_confirm: true,
+    user_metadata: { name: params.name },
+  });
+
+  let authId = created.data.user?.id ?? null;
+  if (created.error) {
+    const already = /already|registered|exists/i.test(created.error.message);
+    if (!already) throw new Error(created.error.message);
+    throw new Error("Já existe uma conta com este e-mail. Entre com sua senha.");
+  }
+  if (!authId) throw new Error("Não foi possível criar a conta. Tente novamente.");
+
+  const { data: existing } = await db()
+    .from("ua_users")
+    .select("id")
+    .ilike("email", email)
+    .maybeSingle();
+  if (existing?.id) {
+    await db()
+      .from("ua_users")
+      .update({ auth_id: authId, membership_status: "member", account_status: "active" })
+      .eq("id", existing.id);
+  } else {
+    const { count } = await db().from("ua_users").select("id", { count: "exact", head: true });
+    await db().from("ua_users").insert({
+      auth_id: authId,
+      name: params.name,
+      email,
+      role: (count ?? 0) === 0 ? "master" : "user",
+      account_status: "active",
+      membership_status: "member",
+      last_signed_in: new Date().toISOString(),
+    });
+  }
+
+  await syncSubscription({ authId, email, sessionId: params.sessionId });
+  return { email, success: true as const };
+}
+
+
 
 
 /**
