@@ -97,11 +97,6 @@ export default function Admin() {
     if (file.size > rules.max) { toast.error(`${rules.name === "PDF" ? "O PDF" : "A imagem"} excede o tamanho permitido.`); return; }
     const dataUrl = await readAsDataUrl(file);
     if (kind === "pdf") { await uploadPdf.mutateAsync({ fileName: file.name, dataUrl }); }
-    else if (kind === "recipePdf") {
-      const result = await uploadPdf.mutateAsync({ fileName: file.name, dataUrl });
-      setRecipeForm(current => ({ ...current, pdfKey: result.key, pdfUrl: result.url }));
-      toast.success("PDF da receita carregado. Salve para publicar.");
-    }
     else {
       const result = await uploadContentImage.mutateAsync({ fileName: file.name, dataUrl });
       if (kind === "guideImage") setGuideForm(current => ({ ...current, coverImageKey: result.key, coverImageUrl: result.url }));
