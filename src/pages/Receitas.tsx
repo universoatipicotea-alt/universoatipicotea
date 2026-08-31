@@ -4,12 +4,12 @@ import PdfReader from "@/components/PdfReaderClient";
 import { RecipeCover } from "@/components/RecipeCover";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { RECIPE_CATEGORIES } from "@/lib/recipe-categories";
 import { ArrowRight, ChefHat, Clock3, Heart, LockKeyhole, Maximize2, Search, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
 
-export const RECIPE_CATEGORIES = ["Café da manhã", "Almoço", "Lanche", "Jantar", "Doces", "Bebidas", "Rápidas", "Outros"];
 const categories = ["Todas", ...RECIPE_CATEGORIES];
 
 function readingTime(summary: string, content?: string | null) {
