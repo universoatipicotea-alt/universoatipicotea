@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 const benefits = [
   { icon: ChefHat, title: "Biblioteca de receitas", text: "Receitas completas para diferentes momentos da rotina." },
   { icon: Sparkles, title: "Novos conteúdos", text: "Novas possibilidades para descobrir e experimentar." },
-  { icon: Compass, title: "Jornadas de aprendizagem", text: "Caminhos organizados para transformar informação em repertório." },
+  { icon: Compass, title: "Academia Atípica", text: "Caminhos organizados para transformar informação em repertório." },
   { icon: UsersRound, title: "Comunidade", text: "Trocas, perguntas e pertencimento com outras famílias." },
   { icon: BookOpen, title: "Guias complementares", text: "Materiais de apoio para voltar sempre que precisar." },
 ];

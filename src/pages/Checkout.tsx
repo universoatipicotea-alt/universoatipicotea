@@ -9,7 +9,7 @@ import { useLocation } from "wouter";
 
 const benefits = [
   "Receitas completas para a rotina",
-  "Jornadas de aprendizagem",
+  "Academia Atípica",
   "Comunidade e trocas entre famílias",
   "Guias complementares exclusivos",
 ];
