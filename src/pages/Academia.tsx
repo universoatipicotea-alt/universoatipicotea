@@ -288,7 +288,7 @@ export default function Academia() {
             Novos conteúdos
           </span>
           <span className="rounded-full bg-[var(--sage-pale)] px-3 py-1.5 text-[var(--sage-deep)]">
-            Jornadas
+            Academia Atípica
           </span>
           <span className="rounded-full bg-[var(--sage-pale)] px-3 py-1.5 text-[var(--sage-deep)]">
             Comunidade
