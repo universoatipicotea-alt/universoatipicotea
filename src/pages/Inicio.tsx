@@ -135,7 +135,7 @@ export default function Inicio() {
   const videos = data?.videos ?? [];
 
   const openGuide = (id: number) => setLocation(`/biblioteca?guide=${id}`);
-  const openRecipe = (id: number) => setLocation(`/facilitadores?tab=test-product&guide=${id}`);
+  const openRecipe = (id: number) => setLocation(`/receitas?guide=${id}`);
 
   return (
     <MemberShell eyebrow={eyebrow} title={title} description={description}>
