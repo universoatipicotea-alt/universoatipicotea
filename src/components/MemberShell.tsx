@@ -3,6 +3,20 @@ import { BookOpen, ChefHat, CircleHelp, CircleUserRound, Compass, CreditCard, Cr
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
+import { call } from "@/lib/trpc";
+
+const PREFETCH_BY_HREF: Record<string, Array<[string, unknown]>> = {
+  "/inicio": [["community.memberDashboard", null]],
+  "/receitas": [["community.publicAcademiaGuides", null]],
+  "/academia": [["community.publicAcademiaGuides", null]],
+  "/biblioteca": [["community.publicGuides", null], ["community.memberDashboard", null]],
+  "/forum": [["community.forum.list", null]],
+  "/facilitadores": [["community.memberDashboard", null]],
+  "/minha-assinatura": [["community.subscription.me", null]],
+  "/perfil": [["community.profile.me", null]],
+  "/admin": [["community.admin.dashboard", null]],
+};
 import { Brand } from "./Brand";
 import { PublicShell } from "./PublicShell";
 import { Button } from "./ui/button";
@@ -22,7 +36,15 @@ const navigation = [
 const mobileNavigation = navigation.filter(item => ["/inicio", "/receitas", "/academia", "/biblioteca", "/perfil"].includes(item.href));
 
 function Initials({ name }: { name?: string | null }) { const initials = (name || "UA").split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase(); return <span className="grid h-10 w-10 place-items-center rounded-full bg-[var(--sage-pale)] text-xs font-extrabold text-[var(--sage-deep)]">{initials}</span>; }
-function SideLink({ href, label, icon: Icon, active, onClick, collapsed = false }: { href: string; label: string; icon: typeof Home; active: boolean; onClick?: () => void; collapsed?: boolean }) { return <Link href={href} onClick={onClick} title={collapsed ? label : undefined} aria-label={label} aria-current={active ? "page" : undefined} className={`nav-link flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold ${collapsed ? "justify-center" : ""} ${active ? "bg-white text-[var(--sage-deep)] shadow-[0_8px_18px_rgba(8,31,77,.08)] ring-1 ring-[var(--line)]" : "text-[var(--ink-soft)] hover:bg-white/75 hover:text-[var(--ink)]"}`}><Icon size={18} strokeWidth={1.8} /><span className={collapsed ? "sr-only" : ""}>{label}</span></Link>; }
+function SideLink({ href, label, icon: Icon, active, onClick, collapsed = false }: { href: string; label: string; icon: typeof Home; active: boolean; onClick?: () => void; collapsed?: boolean }) {
+  const queryClient = useQueryClient();
+  const prefetch = () => {
+    for (const [path, input] of PREFETCH_BY_HREF[href] ?? []) {
+      void queryClient.prefetchQuery({ queryKey: [path, input], queryFn: () => call(path, input ?? undefined) });
+    }
+  };
+  return <Link href={href} onMouseEnter={prefetch} onFocus={prefetch} onTouchStart={prefetch} onClick={onClick} title={collapsed ? label : undefined} aria-label={label} aria-current={active ? "page" : undefined} className={`nav-link flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold ${collapsed ? "justify-center" : ""} ${active ? "bg-white text-[var(--sage-deep)] shadow-[0_8px_18px_rgba(8,31,77,.08)] ring-1 ring-[var(--line)]" : "text-[var(--ink-soft)] hover:bg-white/75 hover:text-[var(--ink)]"}`}><Icon size={18} strokeWidth={1.8} /><span className={collapsed ? "sr-only" : ""}>{label}</span></Link>;
+}
 
 export function MemberShell({ children, eyebrow, title, description, allowGuest = false }: { children: ReactNode; eyebrow: string; title: string; description: string; allowGuest?: boolean }) {
   const { user, loading, logout } = useAuth();
