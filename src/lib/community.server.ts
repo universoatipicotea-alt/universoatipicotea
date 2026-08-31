@@ -547,7 +547,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
 
     /* -------------------------------- público -------------------------------- */
     case "community.landing": {
-      const [metrics, guides, facilitators, featuredProducts, landingSettings, topics] =
+      const [metrics, guides, facilitators, featuredProducts, landingSettings, topics, preview] =
         await Promise.all([
           getCommunityMetrics(),
           listPublishedGuides(),
@@ -555,6 +555,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
           listPublishedProducts(true),
           getLandingSettings(),
           listTopics(false),
+          listPublicPreview(),
         ]);
       return {
         metrics,
@@ -563,8 +564,10 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         featuredProducts: featuredProducts.slice(0, 3),
         landingSettings,
         topics: topics.slice(0, 3),
+        preview,
       };
     }
+
     case "community.funnel.get":
       return getFunnelSettings();
     case "community.funnel.update":
