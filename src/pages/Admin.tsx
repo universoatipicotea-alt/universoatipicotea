@@ -52,13 +52,13 @@ async function readAsDataUrl(file: File) {
   });
 }
 
-function statusLabel(status: "draft" | "published" | "visible" | "hidden") {
-  return status === "published" || status === "visible" ? "Publicado" : status === "hidden" ? "Oculto" : "Rascunho";
+function statusLabel(status: "draft" | "published" | "archived" | "visible" | "hidden") {
+  return status === "published" || status === "visible" ? "Publicado" : status === "hidden" ? "Oculto" : status === "archived" ? "Arquivado" : "Rascunho";
 }
 
-function StatusPill({ status }: { status: "draft" | "published" | "visible" | "hidden" }) {
+function StatusPill({ status }: { status: "draft" | "published" | "archived" | "visible" | "hidden" }) {
   const active = status === "published" || status === "visible";
-  return <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] ${active ? "bg-[var(--sage-pale)] text-[var(--sage-deep)]" : status === "hidden" ? "bg-[#f5e7df] text-[#9c583c]" : "bg-[var(--lavender)] text-[#665d81]"}`}>{statusLabel(status)}</span>;
+  return <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] ${active ? "bg-[var(--sage-pale)] text-[var(--sage-deep)]" : status === "hidden" || status === "archived" ? "bg-[#f5e7df] text-[#9c583c]" : "bg-[var(--lavender)] text-[#665d81]"}`}>{statusLabel(status)}</span>;
 }
 
 function Stat({ label, value, icon: Icon }: { label: string; value?: number; icon: typeof UsersRound }) {
