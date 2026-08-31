@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { MemberShell } from "@/components/MemberShell";
 import { Button } from "@/components/ui/button";
-import { trpc } from "@/lib/trpc";
+import { call, trpc } from "@/lib/trpc";
 import { ArrowRight, Check, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -33,7 +33,6 @@ export default function Checkout() {
     onError: (error: Error) => toast.error(error.message),
   });
   const sync = trpc.billing.sync.useMutation();
-  const register = trpc.auth.register.useMutation();
 
   const sessionInfo = trpc.billing.session.useQuery(
     { sessionId },
@@ -71,11 +70,11 @@ export default function Checkout() {
     if (password.length < 8) return toast.error("A senha precisa ter pelo menos 8 caracteres.");
     setCreating(true);
     try {
-      await register.mutateAsync({ name: name.trim(), email: email.trim(), password });
-      await sync.mutateAsync({ sessionId });
+      await call("billing.activate", { sessionId, name: name.trim(), password });
+      await call("auth.login", { email: email.trim(), password });
       setLinked(true);
       toast.success("Conta criada e acesso liberado!");
-      setLocation("/comunidade");
+      setLocation("/inicio");
     } catch (error) {
       toast.error((error as Error).message);
     } finally {
