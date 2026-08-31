@@ -525,26 +525,55 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
             </fieldset>
 
             <fieldset className="rounded-2xl border border-[var(--line)] bg-white p-5">
-              <legend className="px-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--sage)]">Capa</legend>
+              <legend className="px-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--sage)]">Prévia da capa</legend>
               <div
                 onDragOver={event => event.preventDefault()}
                 onDrop={dropHandler(handleCover)}
                 className="flex flex-wrap items-center gap-4 rounded-xl border border-dashed border-[var(--line)] p-4"
               >
-                <div className="h-24 w-36 overflow-hidden rounded-xl bg-[var(--linen)]">
-                  {form.coverImageUrl ? (
-                    <img src={form.coverImageUrl} alt="Prévia da capa" className="h-full w-full object-cover" />
+                <div className="grid h-40 w-32 place-items-center overflow-hidden rounded-xl bg-[var(--linen)] p-2">
+                  {coverBusy ? (
+                    <Loader2 size={20} className="animate-spin text-[var(--sage-deep)]" />
+                  ) : form.coverImageUrl ? (
+                    <img src={form.coverImageUrl} alt="Prévia da capa" className="max-h-full max-w-full object-contain" />
                   ) : (
                     <div className="grid h-full place-items-center text-[var(--ink-soft)]"><ImageIcon size={20} /></div>
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-extrabold">Arraste uma imagem ou selecione</p>
-                  <p className="mt-1 text-xs text-[var(--ink-soft)]">JPG, PNG ou WEBP até 6 MB.</p>
-                  <div className="mt-3 flex gap-2">
+                  <p className="text-sm font-extrabold">Gerada automaticamente a partir da primeira página do PDF.</p>
+                  <p className="mt-1 text-xs text-[var(--ink-soft)]">
+                    Ao enviar ou substituir o PDF, a capa é recriada sozinha, preservando a proporção original da página.
+                    O envio manual de imagem é opcional (JPG, PNG ou WEBP até 6 MB).
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {form.pdfKey || form.pdfUrl ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={coverBusy || !form.id}
+                        onClick={async () => {
+                          if (!form.id) return;
+                          setCoverBusy(true);
+                          try {
+                            const cover = await generateCoverFromPdf(`/api/protected-pdf/test-guide/${form.id}`, form.title || "capa");
+                            setForm(current => ({ ...current, coverImageKey: cover.key, coverImageUrl: cover.url }));
+                            toast.success("Capa regenerada.");
+                          } catch {
+                            toast.error("Não foi possível gerar a capa deste PDF.");
+                          } finally {
+                            setCoverBusy(false);
+                          }
+                        }}
+                        className="rounded-xl text-xs font-extrabold"
+                      >
+                        {coverBusy ? <Loader2 size={14} className="mr-2 animate-spin" /> : <RefreshCw size={14} className="mr-2" />}
+                        Regenerar da página 1
+                      </Button>
+                    ) : null}
                     <Button type="button" variant="outline" onClick={() => coverInput.current?.click()} disabled={coverBusy} className="rounded-xl text-xs font-extrabold">
-                      {coverBusy ? <Loader2 size={14} className="mr-2 animate-spin" /> : <Upload size={14} className="mr-2" />}
-                      {form.coverImageUrl ? "Substituir" : "Selecionar"}
+                      <Upload size={14} className="mr-2" />
+                      Enviar imagem manual
                     </Button>
                     {form.coverImageUrl ? (
                       <Button
@@ -560,6 +589,7 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
                 </div>
                 <input ref={coverInput} type="file" accept="image/*" className="hidden" onChange={event => { handleCover(event.target.files?.[0]); event.target.value = ""; }} />
               </div>
+
             </fieldset>
 
             <fieldset className="rounded-2xl border border-[var(--line)] bg-white p-5">
