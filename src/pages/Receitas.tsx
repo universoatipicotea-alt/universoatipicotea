@@ -63,8 +63,8 @@ export default function Receitas() {
   }, [selectedRecipeId]);
 
 
-  const recipes = useMemo(() => (guides.data || []).filter(guide => guide.category.toLocaleLowerCase("pt-BR").includes("aliment")), [guides.data]);
-  const filteredRecipes = useMemo(() => recipes.filter(recipe => matchesCategory(recipe.title, recipe.summary, recipe.category, category) && `${recipe.title} ${recipe.summary}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))), [recipes, category, query]);
+  const recipes = useMemo(() => guides.data || [], [guides.data]);
+  const filteredRecipes = useMemo(() => recipes.filter(recipe => matchesCategory(recipe.category, category) && `${recipe.title} ${recipe.summary}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))), [recipes, category, query]);
 
   const toggleFavorite = (id: number) => {
     setFavorites(current => {
