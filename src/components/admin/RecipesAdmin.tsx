@@ -131,6 +131,8 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
   const [sort, setSort] = useState<"recent" | "title">("recent");
   const [coverBusy, setCoverBusy] = useState(false);
   const [pdfProgress, setPdfProgress] = useState<number | null>(null);
+  const [migrating, setMigrating] = useState(false);
+
   const coverInput = useRef<HTMLInputElement>(null);
   const pdfInput = useRef<HTMLInputElement>(null);
 
