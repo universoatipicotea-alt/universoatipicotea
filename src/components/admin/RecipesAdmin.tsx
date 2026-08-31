@@ -170,6 +170,8 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
   });
   const uploadImage = trpc.community.files.uploadContentImage.useMutation();
   const signedPdf = trpc.community.files.signedPdfUpload.useMutation();
+  const updateCover = trpc.community.admin.updateContentCover.useMutation();
+
 
   const rows = (recipes.data ?? []) as RecipeRow[];
   const list = useMemo(() => {
