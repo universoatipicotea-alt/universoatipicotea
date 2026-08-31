@@ -25,7 +25,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui
 const navigation = [
   { href: "/inicio", label: "Início", icon: Home },
   { href: "/receitas", label: "Receitas", icon: ChefHat },
-  { href: "/academia", label: "Jornadas", icon: Compass },
+  { href: "/academia", label: "Academia Atípica", icon: Compass },
   { href: "/biblioteca", label: "Biblioteca", icon: BookOpen },
   { href: "/forum", label: "Comunidade", icon: MessageCircle },
   { href: "/facilitadores", label: "Facilitadores", icon: Lightbulb },
