@@ -153,7 +153,7 @@ async function assertMemberContent(user: UaUser) {
     .eq("status", "active")
     .maybeSingle();
   if (sub) return;
-  fail("Este conteúdo é exclusivo para membros.");
+  fail("ACESSO_RESTRITO: este conteúdo é exclusivo para assinantes ativos.");
 }
 
 /* ------------------------------- consultas ------------------------------- */
@@ -467,10 +467,13 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     case "community.publicGuides":
       return listPublishedGuides();
     case "community.publicAcademiaGuides":
+      await assertMemberContent(await requireUser());
       return listTestGuides(false);
     case "community.forum.list":
+      await assertMemberContent(await requireUser());
       return listTopics(false);
     case "community.forum.detail":
+      await assertMemberContent(await requireUser());
       return getTopicDetail(Number(input.topicId), false);
     case "community.products.resolve": {
       const { data: product } = await db()
@@ -626,6 +629,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.forum.createTopic": {
       const user = await requireUser();
+      await assertMemberContent(user);
       const { error } = await db().from("ua_forum_topics").insert({
         title: input.title,
         body: input.body,
@@ -637,6 +641,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.forum.addComment": {
       const user = await requireUser();
+      await assertMemberContent(user);
       const { data: topic } = await db()
         .from("ua_forum_topics")
         .select("id,status,comment_count")
