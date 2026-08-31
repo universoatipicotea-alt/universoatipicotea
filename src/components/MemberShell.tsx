@@ -9,7 +9,7 @@ import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 
 const navigation = [
-  { href: "/comunidade", label: "Início", icon: Home },
+  { href: "/inicio", label: "Início", icon: Home },
   { href: "/receitas", label: "Receitas", icon: ChefHat },
   { href: "/academia", label: "Jornadas", icon: Compass },
   { href: "/biblioteca", label: "Biblioteca", icon: BookOpen },
@@ -19,7 +19,7 @@ const navigation = [
   { href: "/ajuda", label: "Ajuda e segurança", icon: CircleHelp },
   { href: "/perfil", label: "Meu perfil", icon: CircleUserRound },
 ];
-const mobileNavigation = navigation.filter(item => ["/comunidade", "/receitas", "/academia", "/biblioteca", "/perfil"].includes(item.href));
+const mobileNavigation = navigation.filter(item => ["/inicio", "/receitas", "/academia", "/biblioteca", "/perfil"].includes(item.href));
 
 function Initials({ name }: { name?: string | null }) { const initials = (name || "UA").split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase(); return <span className="grid h-10 w-10 place-items-center rounded-full bg-[var(--sage-pale)] text-xs font-extrabold text-[var(--sage-deep)]">{initials}</span>; }
 function SideLink({ href, label, icon: Icon, active, onClick, collapsed = false }: { href: string; label: string; icon: typeof Home; active: boolean; onClick?: () => void; collapsed?: boolean }) { return <Link href={href} onClick={onClick} title={collapsed ? label : undefined} aria-label={label} aria-current={active ? "page" : undefined} className={`nav-link flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold ${collapsed ? "justify-center" : ""} ${active ? "bg-white text-[var(--sage-deep)] shadow-[0_8px_18px_rgba(8,31,77,.08)] ring-1 ring-[var(--line)]" : "text-[var(--ink-soft)] hover:bg-white/75 hover:text-[var(--ink)]"}`}><Icon size={18} strokeWidth={1.8} /><span className={collapsed ? "sr-only" : ""}>{label}</span></Link>; }
@@ -32,7 +32,7 @@ export function MemberShell({ children, eyebrow, title, description, allowGuest 
   useEffect(() => { window.localStorage.setItem("ua-sidebar-collapsed", String(sidebarCollapsed)); }, [sidebarCollapsed]);
   if (loading) return <div className="min-h-screen bg-[var(--paper)] p-6"><div className="mx-auto h-8 max-w-6xl animate-pulse rounded-full bg-[var(--sage-pale)]" /></div>;
   if (!user && allowGuest) return <PublicShell><div className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 lg:px-10"><div className="mb-10 border-b border-[var(--line)] pb-8"><p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[var(--sage)]">{eyebrow}</p><h1 className="display-font mt-3 text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">{title}</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--ink-soft)]">{description}</p></div>{children}</div></PublicShell>;
-  if (!user) return <div className="page-texture grid min-h-screen place-items-center p-6"><section className="soft-card w-full max-w-lg rounded-[2rem] p-8 text-center sm:p-12"><div className="mx-auto mb-8 w-fit"><Brand /></div><p className="mb-3 text-xs font-extrabold uppercase tracking-[0.18em] text-[var(--sage)]">Área exclusiva da comunidade</p><h1 className="display-font text-4xl font-semibold leading-none">Entre para continuar sua jornada.</h1><p className="mx-auto mt-5 max-w-md text-sm leading-7 text-[var(--ink-soft)]">O acesso é por assinatura de R$ 49,90/mês. Entre com sua conta para acessar os materiais, conversas e seu perfil.</p><Button onClick={() => setLocation("/entrar")} className="pressable mt-8 h-12 rounded-xl bg-[var(--sage-deep)] px-6 font-bold text-white hover:bg-[var(--ink)]">Entrar</Button><Link href="/inicio" className="mt-5 block text-sm font-bold text-[var(--sage-deep)] underline underline-offset-4">Voltar para a página inicial</Link></section></div>;
+  if (!user) return <div className="page-texture grid min-h-screen place-items-center p-6"><section className="soft-card w-full max-w-lg rounded-[2rem] p-8 text-center sm:p-12"><div className="mx-auto mb-8 w-fit"><Brand /></div><p className="mb-3 text-xs font-extrabold uppercase tracking-[0.18em] text-[var(--sage)]">Área exclusiva da comunidade</p><h1 className="display-font text-4xl font-semibold leading-none">Entre para continuar sua jornada.</h1><p className="mx-auto mt-5 max-w-md text-sm leading-7 text-[var(--ink-soft)]">O acesso é por assinatura de R$ 49,90/mês. Entre com sua conta para acessar os materiais, conversas e seu perfil.</p><Button onClick={() => setLocation("/entrar")} className="pressable mt-8 h-12 rounded-xl bg-[var(--sage-deep)] px-6 font-bold text-white hover:bg-[var(--ink)]">Entrar</Button><Link href="/" className="mt-5 block text-sm font-bold text-[var(--sage-deep)] underline underline-offset-4">Voltar para a página inicial</Link></section></div>;
   const isAdmin = ["admin", "master"].includes(user.role);
   const isMaster = user.role === "master";
   const accountLabel = isMaster ? "Admin Master" : user.role === "admin" ? "Administrador" : "Membro";
