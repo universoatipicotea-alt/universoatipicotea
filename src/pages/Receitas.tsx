@@ -38,6 +38,12 @@ export default function Receitas() {
   const isMember = Boolean(user && (["admin", "master"].includes(user.role) || user.membershipStatus === "member"));
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Todas");
+  const readerRef = useRef<HTMLElement>(null);
+  const [selectedRecipeId, setSelectedRecipeId] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null;
+    const value = Number(new URLSearchParams(window.location.search).get("guide"));
+    return Number.isInteger(value) && value > 0 ? value : null;
+  });
   const [favorites, setFavorites] = useState<number[]>(() => {
     try {
       return JSON.parse(localStorage.getItem(`ua-favorite-recipes:${user?.id ?? "guest"}`) || "[]");
@@ -45,6 +51,26 @@ export default function Receitas() {
       return [];
     }
   });
+
+  const selectedRecipe = guides.data?.find(item => item.id === selectedRecipeId) ?? null;
+  const closeReader = () => {
+    setSelectedRecipeId(null);
+    setLocation("/receitas");
+  };
+
+  useEffect(() => {
+    if (selectedRecipe && readerRef.current) readerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [selectedRecipe]);
+
+  useEffect(() => {
+    if (!selectedRecipeId) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeReader();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [selectedRecipeId]);
+
 
   const recipes = useMemo(() => (guides.data || []).filter(guide => guide.category.toLocaleLowerCase("pt-BR").includes("aliment")), [guides.data]);
   const filteredRecipes = useMemo(() => recipes.filter(recipe => matchesCategory(recipe.title, recipe.summary, recipe.category, category) && `${recipe.title} ${recipe.summary}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))), [recipes, category, query]);
