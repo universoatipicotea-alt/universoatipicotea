@@ -26,6 +26,7 @@ import { Route as ForumRouteImport } from './routes/forum'
 import { Route as InicioRouteImport } from './routes/inicio'
 import { Route as MasterRouteImport } from './routes/master'
 import { Route as MinhaAssinaturaRouteImport } from './routes/minha-assinatura'
+import { Route as NovaSenhaRouteImport } from './routes/nova-senha'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ReceitasRouteImport } from './routes/receitas'
@@ -121,6 +122,11 @@ const MinhaAssinaturaRoute = MinhaAssinaturaRouteImport.update({
   path: '/minha-assinatura',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NovaSenhaRoute = NovaSenhaRouteImport.update({
+  id: '/nova-senha',
+  path: '/nova-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PerfilRoute = PerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
@@ -185,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/inicio': typeof InicioRoute
   '/master': typeof MasterRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
+  '/nova-senha': typeof NovaSenhaRoute
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
   '/receitas': typeof ReceitasRoute
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/inicio': typeof InicioRoute
   '/master': typeof MasterRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
+  '/nova-senha': typeof NovaSenhaRoute
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
   '/receitas': typeof ReceitasRoute
@@ -242,6 +250,7 @@ export interface FileRoutesById {
   '/inicio': typeof InicioRoute
   '/master': typeof MasterRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
+  '/nova-senha': typeof NovaSenhaRoute
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
   '/receitas': typeof ReceitasRoute
@@ -272,6 +281,7 @@ export interface FileRouteTypes {
     | '/inicio'
     | '/master'
     | '/minha-assinatura'
+    | '/nova-senha'
     | '/perfil'
     | '/privacidade'
     | '/receitas'
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/inicio'
     | '/master'
     | '/minha-assinatura'
+    | '/nova-senha'
     | '/perfil'
     | '/privacidade'
     | '/receitas'
@@ -328,6 +339,7 @@ export interface FileRouteTypes {
     | '/inicio'
     | '/master'
     | '/minha-assinatura'
+    | '/nova-senha'
     | '/perfil'
     | '/privacidade'
     | '/receitas'
@@ -357,6 +369,7 @@ export interface RootRouteChildren {
   InicioRoute: typeof InicioRoute
   MasterRoute: typeof MasterRoute
   MinhaAssinaturaRoute: typeof MinhaAssinaturaRoute
+  NovaSenhaRoute: typeof NovaSenhaRoute
   PerfilRoute: typeof PerfilRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   ReceitasRoute: typeof ReceitasRoute
@@ -489,6 +502,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MinhaAssinaturaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/nova-senha': {
+      id: '/nova-senha'
+      path: '/nova-senha'
+      fullPath: '/nova-senha'
+      preLoaderRoute: typeof NovaSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/perfil': {
       id: '/perfil'
       path: '/perfil'
@@ -573,6 +593,7 @@ const rootRouteChildren: RootRouteChildren = {
   InicioRoute: InicioRoute,
   MasterRoute: MasterRoute,
   MinhaAssinaturaRoute: MinhaAssinaturaRoute,
+  NovaSenhaRoute: NovaSenhaRoute,
   PerfilRoute: PerfilRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   ReceitasRoute: ReceitasRoute,
