@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { trpc } from "@/lib/trpc";
+import { call, trpc } from "@/lib/trpc";
 import { renderPdfCoverFromFile, renderPdfCoverFromUrl } from "@/lib/pdf-thumbnail";
 import { RECIPE_CATEGORIES } from "@/lib/recipe-categories";
 
@@ -237,11 +237,14 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
   };
 
   /** Gera a capa a partir da página 1 do PDF e envia para o armazenamento. */
-  const generateCoverFromPdf = async (source: File | string, baseName: string) => {
-    const thumbnail =
-      typeof source === "string"
-        ? await renderPdfCoverFromUrl(source)
-        : await renderPdfCoverFromFile(source);
+  const generateCoverFromPdf = async (source: File | number, baseName: string) => {
+    let thumbnail;
+    if (typeof source === "number") {
+      const resolved = (await call("community.pdfSource", { sourceType: "testGuide", documentId: source })) as { url: string };
+      thumbnail = await renderPdfCoverFromUrl(resolved.url);
+    } else {
+      thumbnail = await renderPdfCoverFromFile(source);
+    }
     const fileName = `${baseName.replace(/\.pdf$/i, "") || "capa"}-capa.${thumbnail.extension}`;
     return uploadImage.mutateAsync({ fileName, dataUrl: thumbnail.dataUrl });
   };
@@ -290,7 +293,7 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
     let done = 0;
     for (const row of targets) {
       try {
-        const cover = await generateCoverFromPdf(`/api/protected-pdf/test-guide/${row.id}`, row.title);
+        const cover = await generateCoverFromPdf(row.id, row.title);
         await updateCover.mutateAsync({ kind: "recipe", id: row.id, coverImageKey: cover.key, coverImageUrl: cover.url });
         done += 1;
       } catch {
@@ -569,7 +572,7 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
                           if (!form.id) return;
                           setCoverBusy(true);
                           try {
-                            const cover = await generateCoverFromPdf(`/api/protected-pdf/test-guide/${form.id}`, form.title || "capa");
+                            const cover = await generateCoverFromPdf(form.id, form.title || "capa");
                             setForm(current => ({ ...current, coverImageKey: cover.key, coverImageUrl: cover.url }));
                             toast.success("Capa regenerada.");
                           } catch {
