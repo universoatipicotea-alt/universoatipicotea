@@ -9,7 +9,7 @@ import { call } from "@/lib/trpc";
 const PREFETCH_BY_HREF: Record<string, Array<[string, unknown]>> = {
   "/inicio": [["community.memberDashboard", null]],
   "/receitas": [["community.publicAcademiaGuides", null]],
-  "/academia": [["community.publicAcademiaGuides", null]],
+  "/academia": [["community.publicGuides", null]],
   "/biblioteca": [["community.publicGuides", null], ["community.memberDashboard", null]],
   "/forum": [["community.forum.list", null]],
   "/facilitadores": [["community.memberDashboard", null]],
