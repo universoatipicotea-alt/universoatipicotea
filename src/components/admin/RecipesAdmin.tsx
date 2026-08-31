@@ -3,8 +3,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { trpc } from "@/lib/trpc";
+import { call, trpc } from "@/lib/trpc";
+import { renderPdfCoverFromFile, renderPdfCoverFromUrl } from "@/lib/pdf-thumbnail";
 import { RECIPE_CATEGORIES } from "@/lib/recipe-categories";
+
 import {
   Archive,
   ChefHat,
@@ -14,6 +16,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
   Upload,
@@ -129,6 +132,8 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
   const [sort, setSort] = useState<"recent" | "title">("recent");
   const [coverBusy, setCoverBusy] = useState(false);
   const [pdfProgress, setPdfProgress] = useState<number | null>(null);
+  const [migrating, setMigrating] = useState(false);
+
   const coverInput = useRef<HTMLInputElement>(null);
   const pdfInput = useRef<HTMLInputElement>(null);
 
@@ -166,6 +171,8 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
   });
   const uploadImage = trpc.community.files.uploadContentImage.useMutation();
   const signedPdf = trpc.community.files.signedPdfUpload.useMutation();
+  const updateCover = trpc.community.admin.updateContentCover.useMutation();
+
 
   const rows = (recipes.data ?? []) as RecipeRow[];
   const list = useMemo(() => {
@@ -229,6 +236,19 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
     }
   };
 
+  /** Gera a capa a partir da página 1 do PDF e envia para o armazenamento. */
+  const generateCoverFromPdf = async (source: File | number, baseName: string) => {
+    let thumbnail;
+    if (typeof source === "number") {
+      const resolved = (await call("community.pdfSource", { sourceType: "testGuide", documentId: source })) as { url: string };
+      thumbnail = await renderPdfCoverFromUrl(resolved.url);
+    } else {
+      thumbnail = await renderPdfCoverFromFile(source);
+    }
+    const fileName = `${baseName.replace(/\.pdf$/i, "") || "capa"}-capa.${thumbnail.extension}`;
+    return uploadImage.mutateAsync({ fileName, dataUrl: thumbnail.dataUrl });
+  };
+
   const handlePdf = async (file?: File | null) => {
     if (!file) return;
     if (file.type !== "application/pdf") {
@@ -245,12 +265,48 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
       await uploadWithProgress(target.signedUrl, file, setPdfProgress);
       setForm(current => ({ ...current, pdfKey: target.key, pdfUrl: target.url, pdfName: file.name }));
       toast.success("PDF carregado.");
+      setCoverBusy(true);
+      try {
+        const cover = await generateCoverFromPdf(file, file.name);
+        setForm(current => ({ ...current, coverImageKey: cover.key, coverImageUrl: cover.url }));
+        toast.success("Capa gerada a partir da primeira página.");
+      } catch {
+        toast.error("O PDF foi enviado, mas não foi possível gerar a capa automaticamente.");
+      } finally {
+        setCoverBusy(false);
+      }
     } catch (error: any) {
       toast.error(error?.message || "Não foi possível enviar o PDF.");
     } finally {
       setPdfProgress(null);
     }
   };
+
+  /** Regenera a capa de materiais existentes usando a página 1 do PDF salvo. */
+  const regenerateCovers = async () => {
+    const targets = rows.filter(row => row.pdfKey);
+    if (!targets.length) {
+      toast.error("Nenhum material com PDF para processar.");
+      return;
+    }
+    setMigrating(true);
+    let done = 0;
+    for (const row of targets) {
+      try {
+        const cover = await generateCoverFromPdf(row.id, row.title);
+        await updateCover.mutateAsync({ kind: "recipe", id: row.id, coverImageKey: cover.key, coverImageUrl: cover.url });
+        done += 1;
+      } catch {
+        /* segue para o próximo material */
+      }
+    }
+    setMigrating(false);
+    await refresh();
+    toast[done ? "success" : "error"](
+      done ? `${done} de ${targets.length} capas regeneradas.` : "Não foi possível regenerar as capas.",
+    );
+  };
+
 
   const dropHandler = (handler: (file?: File | null) => void) => (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -286,9 +342,21 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
             {rows.length} cadastradas · {publishedCount} publicadas
           </p>
         </div>
-        <Button type="button" onClick={openNew} className="pressable rounded-xl bg-[var(--sage-deep)] text-xs font-extrabold text-white">
-          <Plus size={15} className="mr-2" /> Nova receita
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={regenerateCovers}
+            disabled={migrating}
+            className="rounded-xl text-xs font-extrabold"
+          >
+            {migrating ? <Loader2 size={15} className="mr-2 animate-spin" /> : <RefreshCw size={15} className="mr-2" />}
+            Regenerar capas dos PDFs
+          </Button>
+          <Button type="button" onClick={openNew} className="pressable rounded-xl bg-[var(--sage-deep)] text-xs font-extrabold text-white">
+            <Plus size={15} className="mr-2" /> Nova receita
+          </Button>
+        </div>
       </div>
 
       <div className="mt-6 grid gap-3 rounded-2xl border border-[var(--line)] bg-white p-4 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
@@ -348,9 +416,9 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
         <div className="mt-6 space-y-3">
           {list.map(row => (
             <article key={row.id} className="flex flex-wrap items-center gap-4 rounded-2xl border border-[var(--line)] bg-white p-4">
-              <div className="h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-[var(--linen)]">
+              <div className="grid h-20 w-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-[var(--linen)] p-1">
                 {row.coverImageUrl ? (
-                  <img src={row.coverImageUrl} alt={`Capa de ${row.title}`} className="h-full w-full object-cover" />
+                  <img src={row.coverImageUrl} alt={`Capa de ${row.title}`} loading="lazy" className="max-h-full max-w-full object-contain" />
                 ) : (
                   <div className="grid h-full place-items-center text-[var(--ink-soft)]">
                     <ImageIcon size={18} />
@@ -473,26 +541,55 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
             </fieldset>
 
             <fieldset className="rounded-2xl border border-[var(--line)] bg-white p-5">
-              <legend className="px-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--sage)]">Capa</legend>
+              <legend className="px-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--sage)]">Prévia da capa</legend>
               <div
                 onDragOver={event => event.preventDefault()}
                 onDrop={dropHandler(handleCover)}
                 className="flex flex-wrap items-center gap-4 rounded-xl border border-dashed border-[var(--line)] p-4"
               >
-                <div className="h-24 w-36 overflow-hidden rounded-xl bg-[var(--linen)]">
-                  {form.coverImageUrl ? (
-                    <img src={form.coverImageUrl} alt="Prévia da capa" className="h-full w-full object-cover" />
+                <div className="grid h-40 w-32 place-items-center overflow-hidden rounded-xl bg-[var(--linen)] p-2">
+                  {coverBusy ? (
+                    <Loader2 size={20} className="animate-spin text-[var(--sage-deep)]" />
+                  ) : form.coverImageUrl ? (
+                    <img src={form.coverImageUrl} alt="Prévia da capa" className="max-h-full max-w-full object-contain" />
                   ) : (
                     <div className="grid h-full place-items-center text-[var(--ink-soft)]"><ImageIcon size={20} /></div>
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-extrabold">Arraste uma imagem ou selecione</p>
-                  <p className="mt-1 text-xs text-[var(--ink-soft)]">JPG, PNG ou WEBP até 6 MB.</p>
-                  <div className="mt-3 flex gap-2">
+                  <p className="text-sm font-extrabold">Gerada automaticamente a partir da primeira página do PDF.</p>
+                  <p className="mt-1 text-xs text-[var(--ink-soft)]">
+                    Ao enviar ou substituir o PDF, a capa é recriada sozinha, preservando a proporção original da página.
+                    O envio manual de imagem é opcional (JPG, PNG ou WEBP até 6 MB).
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {form.pdfKey || form.pdfUrl ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={coverBusy || !form.id}
+                        onClick={async () => {
+                          if (!form.id) return;
+                          setCoverBusy(true);
+                          try {
+                            const cover = await generateCoverFromPdf(form.id, form.title || "capa");
+                            setForm(current => ({ ...current, coverImageKey: cover.key, coverImageUrl: cover.url }));
+                            toast.success("Capa regenerada.");
+                          } catch {
+                            toast.error("Não foi possível gerar a capa deste PDF.");
+                          } finally {
+                            setCoverBusy(false);
+                          }
+                        }}
+                        className="rounded-xl text-xs font-extrabold"
+                      >
+                        {coverBusy ? <Loader2 size={14} className="mr-2 animate-spin" /> : <RefreshCw size={14} className="mr-2" />}
+                        Regenerar da página 1
+                      </Button>
+                    ) : null}
                     <Button type="button" variant="outline" onClick={() => coverInput.current?.click()} disabled={coverBusy} className="rounded-xl text-xs font-extrabold">
-                      {coverBusy ? <Loader2 size={14} className="mr-2 animate-spin" /> : <Upload size={14} className="mr-2" />}
-                      {form.coverImageUrl ? "Substituir" : "Selecionar"}
+                      <Upload size={14} className="mr-2" />
+                      Enviar imagem manual
                     </Button>
                     {form.coverImageUrl ? (
                       <Button
@@ -508,6 +605,7 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
                 </div>
                 <input ref={coverInput} type="file" accept="image/*" className="hidden" onChange={event => { handleCover(event.target.files?.[0]); event.target.value = ""; }} />
               </div>
+
             </fieldset>
 
             <fieldset className="rounded-2xl border border-[var(--line)] bg-white p-5">
