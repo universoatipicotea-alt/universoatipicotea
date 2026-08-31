@@ -1028,7 +1028,22 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       if (error) fail(error.message);
       return { success: true };
     }
+    case "community.admin.updateContentCover": {
+      await requireAdmin();
+      const table = input.kind === "recipe" ? "ua_test_guides" : "ua_guides";
+      const { error } = await db()
+        .from(table)
+        .update({
+          cover_image_key: input.coverImageKey ?? null,
+          cover_image_url: input.coverImageUrl ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", Number(input.id));
+      if (error) fail(error.message);
+      return { success: true };
+    }
     case "community.admin.deleteContent": {
+
       await requireAdmin();
       const table = input.kind === "recipe" ? "ua_test_guides" : "ua_guides";
       const { error } = await db().from(table).delete().eq("id", Number(input.id));
