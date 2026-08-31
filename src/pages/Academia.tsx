@@ -230,7 +230,7 @@ export default function Academia() {
                       onClick={() =>
                         setLocation(
                           isMember
-                            ? `/facilitadores?tab=test-product&guide=${guide.id}`
+                            ? `/receitas?guide=${guide.id}`
                             : "/checkout",
                         )
                       }
