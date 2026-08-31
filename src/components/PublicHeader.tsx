@@ -12,12 +12,12 @@ import {
 } from "./ui/sheet";
 
 const NAV_ITEMS = [
-  { label: "Sobre o Universo", href: "/#sobre" },
-  { label: "Como funciona", href: "/#como-funciona" },
-  { label: "Recursos", href: "/#recursos" },
+  { label: "Sobre", href: "/#sobre" },
+  { label: "O que você encontra", href: "/#o-que-encontra" },
   { label: "Comunidade", href: "/#comunidade" },
-  { label: "Blog", href: "/#blog" },
+  { label: "Dúvidas", href: "/#duvidas" },
 ];
+
 
 export function PublicHeader() {
   const [scrolled, setScrolled] = useState(false);
