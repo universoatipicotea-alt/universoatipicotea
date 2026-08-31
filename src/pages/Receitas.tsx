@@ -1,11 +1,13 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ContentEmpty, MemberShell, SectionHeading } from "@/components/MemberShell";
+import PdfReader from "@/components/PdfReaderClient";
 import { RecipeCover } from "@/components/RecipeCover";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { ArrowRight, ChefHat, Clock3, Heart, LockKeyhole, Search, Sparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowRight, ChefHat, Clock3, Heart, LockKeyhole, Maximize2, Search, Sparkles, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
+
 
 const categories = ["Todas", "Café da manhã", "Almoço", "Lanche", "Jantar", "Doces", "Bebidas", "Rápidas"];
 
