@@ -72,7 +72,8 @@ export async function renderPdfCoverFromFile(file: File) {
 }
 
 export async function renderPdfCoverFromUrl(url: string) {
-  const response = await fetch(url, { credentials: "include" });
+  const sameOrigin = url.startsWith("/");
+  const response = await fetch(url, sameOrigin ? { credentials: "include" } : {});
   if (!response.ok) throw new Error("Não foi possível baixar o PDF para gerar a capa.");
   return renderPdfCover(await response.arrayBuffer());
 }
