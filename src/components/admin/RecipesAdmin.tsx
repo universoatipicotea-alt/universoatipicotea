@@ -16,6 +16,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
   Upload,
@@ -338,9 +339,21 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
             {rows.length} cadastradas · {publishedCount} publicadas
           </p>
         </div>
-        <Button type="button" onClick={openNew} className="pressable rounded-xl bg-[var(--sage-deep)] text-xs font-extrabold text-white">
-          <Plus size={15} className="mr-2" /> Nova receita
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={regenerateCovers}
+            disabled={migrating}
+            className="rounded-xl text-xs font-extrabold"
+          >
+            {migrating ? <Loader2 size={15} className="mr-2 animate-spin" /> : <RefreshCw size={15} className="mr-2" />}
+            Regenerar capas dos PDFs
+          </Button>
+          <Button type="button" onClick={openNew} className="pressable rounded-xl bg-[var(--sage-deep)] text-xs font-extrabold text-white">
+            <Plus size={15} className="mr-2" /> Nova receita
+          </Button>
+        </div>
       </div>
 
       <div className="mt-6 grid gap-3 rounded-2xl border border-[var(--line)] bg-white p-4 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
@@ -400,9 +413,9 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
         <div className="mt-6 space-y-3">
           {list.map(row => (
             <article key={row.id} className="flex flex-wrap items-center gap-4 rounded-2xl border border-[var(--line)] bg-white p-4">
-              <div className="h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-[var(--linen)]">
+              <div className="grid h-20 w-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-[var(--linen)] p-1">
                 {row.coverImageUrl ? (
-                  <img src={row.coverImageUrl} alt={`Capa de ${row.title}`} className="h-full w-full object-cover" />
+                  <img src={row.coverImageUrl} alt={`Capa de ${row.title}`} loading="lazy" className="max-h-full max-w-full object-contain" />
                 ) : (
                   <div className="grid h-full place-items-center text-[var(--ink-soft)]">
                     <ImageIcon size={18} />
