@@ -9,26 +9,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
 
-const categories = ["Todas", "Café da manhã", "Almoço", "Lanche", "Jantar", "Doces", "Bebidas", "Rápidas"];
+export const RECIPE_CATEGORIES = ["Café da manhã", "Almoço", "Lanche", "Jantar", "Doces", "Bebidas", "Rápidas", "Outros"];
+const categories = ["Todas", ...RECIPE_CATEGORIES];
 
 function readingTime(summary: string, content?: string | null) {
   const words = `${summary || ""} ${content || ""}`.trim().split(/\s+/).filter(Boolean).length;
   return `${Math.max(3, Math.ceil(words / 160))} min`;
 }
 
-function matchesCategory(title: string, summary: string, category: string, selected: string) {
+function matchesCategory(category: string, selected: string) {
   if (selected === "Todas") return true;
-  const text = `${title} ${summary} ${category}`.toLocaleLowerCase("pt-BR");
-  const terms: Record<string, string[]> = {
-    "Café da manhã": ["café", "manhã", "desjejum"],
-    Almoço: ["almoço", "refeição", "principal"],
-    Lanche: ["lanche", "snack"],
-    Jantar: ["jantar", "noite"],
-    Doces: ["doce", "sobremesa"],
-    Bebidas: ["bebida", "suco", "vitamina"],
-    Rápidas: ["rápida", "rápido", "prátic", "fácil"],
-  };
-  return (terms[selected] || [selected]).some(term => text.includes(term));
+  return (category || "").toLocaleLowerCase("pt-BR").trim() === selected.toLocaleLowerCase("pt-BR");
 }
 
 export default function Receitas() {
