@@ -40,22 +40,7 @@ type FacilitatorForm = {
 };
 
 const newGuide = (): GuideForm => ({ title: "", summary: "", content: "", category: "Rotina", pdfKey: null, pdfUrl: null, coverImageKey: null, coverImageUrl: null, status: "draft", position: 0 });
-type RecipeForm = {
-  id?: number;
-  title: string;
-  summary: string;
-  content: string;
-  category: string;
-  callout: string;
-  accentColor: string;
-  pdfKey: string | null;
-  pdfUrl: string | null;
-  coverImageKey: string | null;
-  coverImageUrl: string | null;
-  status: "draft" | "published";
-};
 
-const newRecipe = (): RecipeForm => ({ title: "", summary: "", content: "", category: "Rotina", callout: "", accentColor: "#0b2b26", pdfKey: null, pdfUrl: null, coverImageKey: null, coverImageUrl: null, status: "draft" });
 const newFacilitator = (): FacilitatorForm => ({ title: "", summary: "", category: "Rotina", sourceLabel: "", linkUrl: "", imageKey: null, imageUrl: null, status: "draft", position: 0 });
 
 async function readAsDataUrl(file: File) {
@@ -87,9 +72,6 @@ export default function Admin() {
   const [tab, setTab] = useState<"overview" | "guides" | "recipes" | "facilitators" | "moderation">("overview");
   const [guideForm, setGuideForm] = useState<GuideForm>(newGuide());
   const [facilitatorForm, setFacilitatorForm] = useState<FacilitatorForm>(newFacilitator());
-  const [recipeForm, setRecipeForm] = useState<RecipeForm>(newRecipe());
-  const recipePdfInput = useRef<HTMLInputElement>(null);
-  const recipeCoverInput = useRef<HTMLInputElement>(null);
   const recipes = trpc.community.admin.testGuides.useQuery(undefined, { enabled: ["admin", "master"].includes(user?.role || "") });
   const [detailTopicId, setDetailTopicId] = useState<number | null>(null);
   const pdfInput = useRef<HTMLInputElement>(null);
@@ -106,12 +88,11 @@ export default function Admin() {
   const moderateComment = trpc.community.admin.moderateComment.useMutation({ onSuccess: async () => { if (detailTopicId) await utils.community.admin.topicDetail.invalidate({ topicId: detailTopicId }); await refreshContent(); toast.success("Visibilidade do comentário atualizada."); }, onError: error => toast.error(error.message) });
   const uploadPdf = trpc.community.files.uploadGuidePdf.useMutation({ onSuccess: result => { setGuideForm(current => ({ ...current, pdfKey: result.key, pdfUrl: result.url })); toast.success("PDF carregado. Salve o guia para publicar a alteração."); }, onError: error => toast.error(error.message) });
   const uploadContentImage = trpc.community.files.uploadContentImage.useMutation({ onError: error => toast.error(error.message) });
-  const saveRecipe = trpc.community.admin.saveTestGuide.useMutation({ onSuccess: async () => { await Promise.all([refreshContent(), utils.community.admin.testGuides.invalidate(), utils.community.publicAcademiaGuides.invalidate()]); setRecipeForm(newRecipe()); toast.success("Receita salva com sucesso."); }, onError: error => toast.error(error.message) });
 
-  const uploadFile = async (event: ChangeEvent<HTMLInputElement>, kind: "pdf" | "guideImage" | "facilitatorImage" | "recipePdf" | "recipeImage") => {
+  const uploadFile = async (event: ChangeEvent<HTMLInputElement>, kind: "pdf" | "guideImage" | "facilitatorImage") => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const rules = kind === "pdf" || kind === "recipePdf" ? { accepted: ["application/pdf"], max: 12 * 1024 * 1024, name: "PDF" } : { accepted: ["image/jpeg", "image/png", "image/webp"], max: 6 * 1024 * 1024, name: "imagem JPG, PNG ou WEBP" };
+    const rules = kind === "pdf" ? { accepted: ["application/pdf"], max: 12 * 1024 * 1024, name: "PDF" } : { accepted: ["image/jpeg", "image/png", "image/webp"], max: 6 * 1024 * 1024, name: "imagem JPG, PNG ou WEBP" };
     if (!rules.accepted.includes(file.type)) { toast.error(`Envie um arquivo ${rules.name}.`); return; }
     if (file.size > rules.max) { toast.error(`${rules.name === "PDF" ? "O PDF" : "A imagem"} excede o tamanho permitido.`); return; }
     const dataUrl = await readAsDataUrl(file);
@@ -124,7 +105,6 @@ export default function Admin() {
     else {
       const result = await uploadContentImage.mutateAsync({ fileName: file.name, dataUrl });
       if (kind === "guideImage") setGuideForm(current => ({ ...current, coverImageKey: result.key, coverImageUrl: result.url }));
-      else if (kind === "recipeImage") setRecipeForm(current => ({ ...current, coverImageKey: result.key, coverImageUrl: result.url }));
       else setFacilitatorForm(current => ({ ...current, imageKey: result.key, imageUrl: result.url }));
       toast.success("Imagem carregada. Salve o conteúdo para confirmar a alteração.");
     }
@@ -134,10 +114,6 @@ export default function Admin() {
   const submitGuide = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     await saveGuide.mutateAsync({ ...guideForm, content: guideForm.content || null });
-  };
-  const submitRecipe = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await saveRecipe.mutateAsync({ ...recipeForm, content: recipeForm.content || null, callout: recipeForm.callout || null });
   };
   const submitFacilitator = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
