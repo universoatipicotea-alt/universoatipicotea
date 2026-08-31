@@ -229,6 +229,16 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
     }
   };
 
+  /** Gera a capa a partir da página 1 do PDF e envia para o armazenamento. */
+  const generateCoverFromPdf = async (source: File | string, baseName: string) => {
+    const thumbnail =
+      typeof source === "string"
+        ? await renderPdfCoverFromUrl(source)
+        : await renderPdfCoverFromFile(source);
+    const fileName = `${baseName.replace(/\.pdf$/i, "") || "capa"}-capa.${thumbnail.extension}`;
+    return uploadImage.mutateAsync({ fileName, dataUrl: thumbnail.dataUrl });
+  };
+
   const handlePdf = async (file?: File | null) => {
     if (!file) return;
     if (file.type !== "application/pdf") {
@@ -245,12 +255,48 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
       await uploadWithProgress(target.signedUrl, file, setPdfProgress);
       setForm(current => ({ ...current, pdfKey: target.key, pdfUrl: target.url, pdfName: file.name }));
       toast.success("PDF carregado.");
+      setCoverBusy(true);
+      try {
+        const cover = await generateCoverFromPdf(file, file.name);
+        setForm(current => ({ ...current, coverImageKey: cover.key, coverImageUrl: cover.url }));
+        toast.success("Capa gerada a partir da primeira página.");
+      } catch {
+        toast.error("O PDF foi enviado, mas não foi possível gerar a capa automaticamente.");
+      } finally {
+        setCoverBusy(false);
+      }
     } catch (error: any) {
       toast.error(error?.message || "Não foi possível enviar o PDF.");
     } finally {
       setPdfProgress(null);
     }
   };
+
+  /** Regenera a capa de materiais existentes usando a página 1 do PDF salvo. */
+  const regenerateCovers = async () => {
+    const targets = rows.filter(row => row.pdfKey);
+    if (!targets.length) {
+      toast.error("Nenhum material com PDF para processar.");
+      return;
+    }
+    setMigrating(true);
+    let done = 0;
+    for (const row of targets) {
+      try {
+        const cover = await generateCoverFromPdf(`/api/protected-pdf/test-guide/${row.id}`, row.title);
+        await updateCover.mutateAsync({ kind: "recipe", id: row.id, coverImageKey: cover.key, coverImageUrl: cover.url });
+        done += 1;
+      } catch {
+        /* segue para o próximo material */
+      }
+    }
+    setMigrating(false);
+    await refresh();
+    toast[done ? "success" : "error"](
+      done ? `${done} de ${targets.length} capas regeneradas.` : "Não foi possível regenerar as capas.",
+    );
+  };
+
 
   const dropHandler = (handler: (file?: File | null) => void) => (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
