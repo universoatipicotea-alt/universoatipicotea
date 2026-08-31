@@ -140,7 +140,7 @@ export function ChipFilter({
 
 export type ContentStatus = "draft" | "published" | "archived";
 
-const statusMeta: Record<ContentStatus, { label: string; className: string }> = {
+export const statusMeta: Record<ContentStatus, { label: string; className: string }> = {
   published: { label: "Publicado", className: "bg-[var(--sage-pale)] text-[var(--sage-deep)]" },
   draft: { label: "Rascunho", className: "bg-[var(--lavender)] text-[#665d81]" },
   archived: { label: "Arquivado", className: "bg-[#f5e7df] text-[#9c583c]" },

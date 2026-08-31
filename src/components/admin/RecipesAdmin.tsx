@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { call, trpc } from "@/lib/trpc";
 import { renderPdfCoverFromFile, renderPdfCoverFromUrl } from "@/lib/pdf-thumbnail";
 import { RECIPE_CATEGORIES } from "@/lib/recipe-categories";
-import { StatusPill } from "@/components/ds";
+import { StatusPill, statusMeta } from "@/components/ds";
 
 import {
   Archive,
