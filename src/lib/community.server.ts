@@ -368,6 +368,111 @@ async function listTestGuides(includeDrafts = false) {
   });
 }
 
+/** Prévia pública: apenas capa, título, categoria e resumo curto. */
+async function listPublicPreview() {
+  const [guidesResult, recipesResult] = await Promise.all([
+    db()
+      .from("ua_guides")
+      .select("id,title,summary,category,cover_image_url,position,published_at")
+      .eq("status", "published")
+      .order("position", { ascending: true })
+      .limit(6),
+    db()
+      .from("ua_test_guides")
+      .select("id,title,summary,category,cover_image_url,accent_color,created_at")
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .limit(6),
+  ]);
+  const trim = (value: string | null) =>
+    !value ? "" : value.length > 180 ? `${value.slice(0, 177)}...` : value;
+  return {
+    guides: (guidesResult.data ?? []).map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      category: row.category,
+      summary: trim(row.summary),
+      coverImageUrl: row.cover_image_url ?? null,
+    })),
+    recipes: (recipesResult.data ?? []).map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      category: row.category,
+      summary: trim(row.summary),
+      coverImageUrl: row.cover_image_url ?? null,
+      accentColor: row.accent_color ?? "#0b2b26",
+    })),
+  };
+}
+
+/** Progresso real de leitura do usuário, com dados do conteúdo correspondente. */
+async function listMemberProgress(userId: number) {
+  const { data: rows } = await db()
+    .from("ua_reading_progress")
+    .select("source_type,document_id,current_page,page_count,updated_at")
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false })
+    .limit(12);
+  const progress = rows ?? [];
+  if (!progress.length) return [];
+
+  const guideIds = progress.filter((r: any) => r.source_type !== "testGuide").map((r: any) => r.document_id);
+  const recipeIds = progress.filter((r: any) => r.source_type === "testGuide").map((r: any) => r.document_id);
+
+  const [guides, recipes] = await Promise.all([
+    guideIds.length
+      ? db()
+          .from("ua_guides")
+          .select("id,title,category,cover_image_url,status")
+          .in("id", guideIds)
+      : Promise.resolve({ data: [] as any[] }),
+    recipeIds.length
+      ? db()
+          .from("ua_test_guides")
+          .select("id,title,category,cover_image_url,accent_color,status")
+          .in("id", recipeIds)
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
+
+  const byKey = new Map<string, any>();
+  for (const row of guides.data ?? []) byKey.set(`guide:${row.id}`, row);
+  for (const row of recipes.data ?? []) byKey.set(`testGuide:${row.id}`, row);
+
+  return progress
+    .map((row: any) => {
+      const sourceType = row.source_type === "testGuide" ? "testGuide" : "guide";
+      const content = byKey.get(`${sourceType}:${row.document_id}`);
+      if (!content || content.status !== "published") return null;
+      const pageCount = Number(row.page_count ?? 0);
+      const currentPage = Number(row.current_page ?? 1);
+      return {
+        sourceType,
+        documentId: row.document_id,
+        title: content.title,
+        category: content.category,
+        coverImageUrl: content.cover_image_url ?? null,
+        accentColor: content.accent_color ?? null,
+        currentPage,
+        pageCount,
+        percent: pageCount > 0 ? Math.min(100, Math.round((currentPage / pageCount) * 100)) : 0,
+        updatedAt: row.updated_at,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
+/**
+ * Vídeos disponíveis para membros. Hoje só existe o vídeo do funil de vendas,
+ * que não é conteúdo da área de membros: por isso a lista fica vazia até que
+ * vídeos de membros sejam cadastrados.
+ */
+async function listMemberVideos() {
+  return [] as { id: string; title: string; description: string; url: string; coverImageUrl: string | null }[];
+}
+
+
+
 
 /* -------------------------------- uploads -------------------------------- */
 
