@@ -620,22 +620,30 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       const user = await requireUser();
       await assertMemberContent(user);
       const { profile, preferences } = await ensureMemberProfile(user);
-      const [guides, facilitators, products, recentTopics, metrics] = await Promise.all([
-        listPublishedGuides(),
-        listPublishedFacilitators(),
-        listPublishedProducts(),
-        listTopics(false),
-        getCommunityMetrics(),
-      ]);
+      const [guides, recipes, facilitators, products, recentTopics, metrics, progress, videos] =
+        await Promise.all([
+          listPublishedGuides(),
+          listTestGuides(false),
+          listPublishedFacilitators(),
+          listPublishedProducts(),
+          listTopics(false),
+          getCommunityMetrics(),
+          listMemberProgress(user.id),
+          listMemberVideos(),
+        ]);
       return {
         profile,
         preferences,
         guides,
+        recipes,
         facilitators,
         products,
         recentTopics: recentTopics.slice(0, 4),
         metrics,
+        progress,
+        videos,
       };
+
     }
     case "billing.createCheckout": {
       // Pagamento pode ser iniciado sem conta: a conta é criada após o pagamento.
