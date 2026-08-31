@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { call, trpc } from "@/lib/trpc";
 import { renderPdfCoverFromFile, renderPdfCoverFromUrl } from "@/lib/pdf-thumbnail";
 import { RECIPE_CATEGORIES } from "@/lib/recipe-categories";
+import { StatusPill } from "@/components/ds";
 
 import {
   Archive,
@@ -73,21 +74,6 @@ const emptyForm = (): RecipeForm => ({
   pdfName: null,
   status: "draft",
 });
-
-const statusMeta: Record<Status, { label: string; className: string }> = {
-  published: { label: "Publicado", className: "bg-[var(--sage-pale)] text-[var(--sage-deep)]" },
-  draft: { label: "Rascunho", className: "bg-[var(--lavender)] text-[#665d81]" },
-  archived: { label: "Arquivado", className: "bg-[#f5e7df] text-[#9c583c]" },
-};
-
-function StatusPill({ status }: { status: Status }) {
-  const meta = statusMeta[status] ?? statusMeta.draft;
-  return (
-    <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] ${meta.className}`}>
-      {meta.label}
-    </span>
-  );
-}
 
 async function readAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
