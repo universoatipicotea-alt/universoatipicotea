@@ -113,7 +113,8 @@ async function ensureUaUser(nameHint?: string | null): Promise<UaUser | null> {
       email: authUser.email,
       role: (count ?? 0) === 0 ? "master" : "user",
       account_status: "active",
-      membership_status: "member",
+      // Acesso pago: quem não pagou entra como visitante.
+      membership_status: (count ?? 0) === 0 ? "member" : "visitor",
       last_signed_in: new Date().toISOString(),
     })
     .select("*")
@@ -152,7 +153,7 @@ async function assertMemberContent(user: UaUser) {
     .eq("status", "active")
     .maybeSingle();
   if (sub) return;
-  fail("Este conteúdo é exclusivo para membros.");
+  fail("ACESSO_RESTRITO: este conteúdo é exclusivo para assinantes ativos.");
 }
 
 /* ------------------------------- consultas ------------------------------- */
@@ -466,10 +467,13 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     case "community.publicGuides":
       return listPublishedGuides();
     case "community.publicAcademiaGuides":
+      await assertMemberContent(await requireUser());
       return listTestGuides(false);
     case "community.forum.list":
+      await assertMemberContent(await requireUser());
       return listTopics(false);
     case "community.forum.detail":
+      await assertMemberContent(await requireUser());
       return getTopicDetail(Number(input.topicId), false);
     case "community.products.resolve": {
       const { data: product } = await db()
@@ -506,6 +510,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     /* -------------------------------- membro --------------------------------- */
     case "community.memberDashboard": {
       const user = await requireUser();
+      await assertMemberContent(user);
       const { profile, preferences } = await ensureMemberProfile(user);
       const [guides, facilitators, products, recentTopics, metrics] = await Promise.all([
         listPublishedGuides(),
@@ -534,6 +539,16 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         name: user?.name ?? null,
         origin: requestOrigin(),
       });
+    }
+    case "billing.activate": {
+      // Único caminho de criação de conta: exige pagamento confirmado.
+      const sessionId = String(input?.sessionId ?? "");
+      const name = String(input?.name ?? "").trim();
+      const password = String(input?.password ?? "");
+      if (!sessionId) fail("Sessão de pagamento inválida.");
+      if (name.length < 2) fail("Informe seu nome.");
+      const { activateAccountFromSession } = await import("./billing.server");
+      return activateAccountFromSession({ sessionId, name, password });
     }
     case "billing.session": {
       const sessionId = String(input?.sessionId ?? "");
@@ -614,6 +629,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.forum.createTopic": {
       const user = await requireUser();
+      await assertMemberContent(user);
       const { error } = await db().from("ua_forum_topics").insert({
         title: input.title,
         body: input.body,
@@ -625,6 +641,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.forum.addComment": {
       const user = await requireUser();
+      await assertMemberContent(user);
       const { data: topic } = await db()
         .from("ua_forum_topics")
         .select("id,status,comment_count")
@@ -647,6 +664,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.forum.downloadGuide": {
       const user = await requireUser();
+      await assertMemberContent(user);
       const { data: guide } = await db()
         .from("ua_guides")
         .select("id,status,pdf_key")
@@ -662,7 +680,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     case "community.pdfSource": {
       const user = await requireUser();
       const table = input.sourceType === "testGuide" ? "ua_test_guides" : "ua_guides";
-      if (input.sourceType === "testGuide") await assertMemberContent(user);
+      await assertMemberContent(user);
       const { data } = await db()
         .from(table)
         .select("id,status,pdf_key")
@@ -675,7 +693,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.readingProgress.get": {
       const user = await requireUser();
-      if (input.sourceType === "testGuide") await assertMemberContent(user);
+      await assertMemberContent(user);
       const { data } = await db()
         .from("ua_reading_progress")
         .select("current_page,page_count,updated_at")
@@ -687,7 +705,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.readingProgress.save": {
       const user = await requireUser();
-      if (input.sourceType === "testGuide") await assertMemberContent(user);
+      await assertMemberContent(user);
       const { data: existing } = await db()
         .from("ua_reading_progress")
         .select("id")
@@ -712,7 +730,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.annotations.list": {
       const user = await requireUser();
-      if (input.sourceType === "testGuide") await assertMemberContent(user);
+      await assertMemberContent(user);
       const { data } = await db()
         .from("ua_pdf_annotations")
         .select("*")
@@ -725,7 +743,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.annotations.create": {
       const user = await requireUser();
-      if (input.sourceType === "testGuide") await assertMemberContent(user);
+      await assertMemberContent(user);
       const { data, error } = await db()
         .from("ua_pdf_annotations")
         .insert({
