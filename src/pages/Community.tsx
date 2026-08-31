@@ -18,7 +18,7 @@ export default function Community() {
   const firstGuide = data?.guides.find(guide => guide.hasPdf);
   const readingProgress = trpc.community.readingProgress.get.useQuery({ sourceType: "guide", documentId: Math.max(1, firstGuide?.id ?? 0) }, { enabled: Boolean(firstGuide) });
   const progressPercent = readingProgress.data?.pageCount ? Math.min(100, Math.round((readingProgress.data.currentPage / readingProgress.data.pageCount) * 100)) : 0;
-  const recipesForYou = (recipeShelf.data || []).filter(guide => guide.category.toLocaleLowerCase("pt-BR").includes("aliment")).slice(0, 3);
+  const recipesForYou = (recipeShelf.data || []).slice(0, 3);
 
   if (dashboard.isLoading) {
     return <MemberShell eyebrow="Minha área" title="Seu espaço na comunidade" description="Estamos reunindo seus conteúdos e conversas."><div className="space-y-8"><div className="grid gap-4 md:grid-cols-3"><div className="h-52 animate-pulse rounded-3xl bg-[var(--linen)] md:col-span-2" /><div className="h-52 animate-pulse rounded-3xl bg-[var(--linen)]" /></div><div className="h-8 w-48 animate-pulse rounded-full bg-[var(--linen)]" /><div className="grid gap-4 md:grid-cols-2"><div className="h-60 animate-pulse rounded-3xl bg-[var(--linen)]" /><div className="h-60 animate-pulse rounded-3xl bg-[var(--linen)]" /></div></div></MemberShell>;

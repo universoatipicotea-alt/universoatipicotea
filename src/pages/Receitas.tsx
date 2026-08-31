@@ -4,31 +4,22 @@ import PdfReader from "@/components/PdfReaderClient";
 import { RecipeCover } from "@/components/RecipeCover";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { RECIPE_CATEGORIES } from "@/lib/recipe-categories";
 import { ArrowRight, ChefHat, Clock3, Heart, LockKeyhole, Maximize2, Search, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
 
-const categories = ["Todas", "Café da manhã", "Almoço", "Lanche", "Jantar", "Doces", "Bebidas", "Rápidas"];
+const categories = ["Todas", ...RECIPE_CATEGORIES];
 
 function readingTime(summary: string, content?: string | null) {
   const words = `${summary || ""} ${content || ""}`.trim().split(/\s+/).filter(Boolean).length;
   return `${Math.max(3, Math.ceil(words / 160))} min`;
 }
 
-function matchesCategory(title: string, summary: string, category: string, selected: string) {
+function matchesCategory(category: string, selected: string) {
   if (selected === "Todas") return true;
-  const text = `${title} ${summary} ${category}`.toLocaleLowerCase("pt-BR");
-  const terms: Record<string, string[]> = {
-    "Café da manhã": ["café", "manhã", "desjejum"],
-    Almoço: ["almoço", "refeição", "principal"],
-    Lanche: ["lanche", "snack"],
-    Jantar: ["jantar", "noite"],
-    Doces: ["doce", "sobremesa"],
-    Bebidas: ["bebida", "suco", "vitamina"],
-    Rápidas: ["rápida", "rápido", "prátic", "fácil"],
-  };
-  return (terms[selected] || [selected]).some(term => text.includes(term));
+  return (category || "").toLocaleLowerCase("pt-BR").trim() === selected.toLocaleLowerCase("pt-BR");
 }
 
 export default function Receitas() {
@@ -72,8 +63,8 @@ export default function Receitas() {
   }, [selectedRecipeId]);
 
 
-  const recipes = useMemo(() => (guides.data || []).filter(guide => guide.category.toLocaleLowerCase("pt-BR").includes("aliment")), [guides.data]);
-  const filteredRecipes = useMemo(() => recipes.filter(recipe => matchesCategory(recipe.title, recipe.summary, recipe.category, category) && `${recipe.title} ${recipe.summary}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))), [recipes, category, query]);
+  const recipes = useMemo(() => guides.data || [], [guides.data]);
+  const filteredRecipes = useMemo(() => recipes.filter(recipe => matchesCategory(recipe.category, category) && `${recipe.title} ${recipe.summary}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))), [recipes, category, query]);
 
   const toggleFavorite = (id: number) => {
     setFavorites(current => {

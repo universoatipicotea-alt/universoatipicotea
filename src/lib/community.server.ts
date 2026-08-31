@@ -1015,6 +1015,26 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       else await db().from("ua_test_guides").insert({ ...values, created_by: user.id });
       return { success: true };
     }
+    case "community.admin.setContentStatus": {
+      await requireAdmin();
+      const table = input.kind === "recipe" ? "ua_test_guides" : "ua_guides";
+      const status = ["draft", "published", "archived"].includes(input.status)
+        ? input.status
+        : fail("Situação inválida.");
+      const values: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
+      if (table === "ua_guides")
+        values.published_at = status === "published" ? new Date().toISOString() : null;
+      const { error } = await db().from(table).update(values).eq("id", Number(input.id));
+      if (error) fail(error.message);
+      return { success: true };
+    }
+    case "community.admin.deleteContent": {
+      await requireAdmin();
+      const table = input.kind === "recipe" ? "ua_test_guides" : "ua_guides";
+      const { error } = await db().from(table).delete().eq("id", Number(input.id));
+      if (error) fail(error.message);
+      return { success: true };
+    }
     case "community.admin.saveFacilitator": {
       const user = await requireAdmin();
       const values = {
