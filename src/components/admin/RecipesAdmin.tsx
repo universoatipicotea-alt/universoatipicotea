@@ -4,7 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
+import { renderPdfCoverFromFile, renderPdfCoverFromUrl } from "@/lib/pdf-thumbnail";
 import { RECIPE_CATEGORIES } from "@/lib/recipe-categories";
+
 import {
   Archive,
   ChefHat,
