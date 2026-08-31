@@ -18,8 +18,8 @@
 - [x] Thumbnail da página 1 do PDF gerada no upload (Admin Receitas)
 - [x] Cards de Receitas com capa vertical sem distorção
 - [x] Botão de regeneração das capas existentes
-- [ ] Validar fluxo autenticado ponta a ponta
+- [x] Validar fluxo autenticado ponta a ponta
 
 ## Academia Atípica
-- [ ] Reestruturar página: novo topo, "Continue de onde parou" (só com progresso real), "Explore a Academia" com busca/filtros, trilhas só se reais
-- [ ] Remover blocos de receitas, trilha fictícia, CTA de assinatura
+- [x] Reestruturar página: novo topo, "Continue de onde parou" (só com progresso real), "Explore a Academia" com busca/filtros, trilhas só se reais
+- [x] Remover blocos de receitas, trilha fictícia, CTA de assinatura

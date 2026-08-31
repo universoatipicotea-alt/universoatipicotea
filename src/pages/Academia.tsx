@@ -208,7 +208,7 @@ export default function Academia() {
                 className="soft-card flex flex-col overflow-hidden rounded-3xl bg-white"
               >
                 <PdfCover src={guide.coverImageUrl} title={guide.title} />
-                <div className="flex flex-1 flex-col p-5">
+                <div className="flex flex-1 flex-col gap-0 p-5 [&>button]:mt-6">
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--sage)]">
                     {guide.category}
                   </p>
@@ -221,8 +221,7 @@ export default function Academia() {
                   <Button
                     type="button"
                     onClick={() => openGuide(guide.id)}
-                    className="pressable mt-auto w-full rounded-xl bg-[var(--sage-deep)] px-3 py-2 pt-2 text-xs font-extrabold text-white hover:bg-[var(--ink)] sm:w-fit"
-                    style={{ marginTop: "1.5rem" }}
+                    className="pressable mt-auto w-full rounded-xl bg-[var(--sage-deep)] px-3 py-2 text-xs font-extrabold text-white hover:bg-[var(--ink)] sm:w-fit"
                   >
                     {ctaLabel(guide.id)} <ArrowRight size={14} className="ml-1.5" />
                   </Button>
