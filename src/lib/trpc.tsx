@@ -22,21 +22,21 @@ async function localAuthCall(path: string, input: any) {
     return rpc({ data: { path: "auth.ensure", input: {} } });
   }
   if (path === "auth.register") {
-    const { error } = await supabase.auth.signUp({
-      email: input.email,
-      password: input.password,
-      options: {
-        data: { name: input.name },
-        emailRedirectTo: `${window.location.origin}/comunidade`,
-      },
+    // Não existe cadastro público: a conta só é criada/ativada após o pagamento
+    // confirmado (billing.activate valida a sessão do Stripe no servidor).
+    throw new Error("A criação de conta acontece somente após a confirmação do pagamento.");
+  }
+  if (path === "auth.resetPassword") {
+    const { error } = await supabase.auth.resetPasswordForEmail(input.email, {
+      redirectTo: `${window.location.origin}/nova-senha`,
     });
     if (error) throw new Error(traduzErro(error.message));
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: input.email,
-      password: input.password,
-    });
-    if (signInError) throw new Error(traduzErro(signInError.message));
-    return rpc({ data: { path: "auth.ensure", input: { name: input.name } } });
+    return { success: true };
+  }
+  if (path === "auth.updatePassword") {
+    const { error } = await supabase.auth.updateUser({ password: input.password });
+    if (error) throw new Error(traduzErro(error.message));
+    return { success: true };
   }
   if (path === "auth.logout") {
     await supabase.auth.signOut();
