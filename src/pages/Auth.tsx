@@ -44,8 +44,9 @@ export default function Auth() {
   };
 
   return (
-    <main className="page-texture min-h-screen bg-[var(--paper)] px-5 py-8 sm:px-8 sm:py-12">
+    <main className="page-texture flex min-h-screen items-center bg-[var(--paper)] px-5 py-8 sm:px-8 sm:py-12">
       <div className="mx-auto grid w-full max-w-5xl overflow-hidden rounded-3xl border border-[var(--line)] bg-white shadow-[0_24px_60px_rgba(8,31,77,.08)] lg:grid-cols-[1.05fr_.95fr]">
+
         {/* Formulário primeiro no mobile */}
         <section className="order-1 p-6 sm:p-10 lg:order-2 lg:p-14">
           <div className="mb-8 flex items-center justify-between">
