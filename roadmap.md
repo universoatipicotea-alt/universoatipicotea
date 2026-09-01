@@ -17,6 +17,11 @@
 - [ ] Mobile: drawer, alvos de 44px, sem overflow
 - [ ] Limpeza de legado visual e componentes duplicados
 
+### Facilitadores como loja
+- [ ] Produtos reais de Facilitadores com preço e checkout Stripe (produto → Comprar → Stripe → confirmação)
+- [ ] Admin → Vendas de Facilitadores: compras confirmadas, valor total e histórico por produto
+- [ ] Publicar produtos reais e testar o fluxo completo de compra
+
 ## Próximas
 - [ ] Facilitadores como catálogo de produtos + Admin de produtos
 - [ ] Melhorar Comunidade (respostas, reações)
