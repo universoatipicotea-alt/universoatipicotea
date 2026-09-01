@@ -27,6 +27,7 @@ import { Route as InicioRouteImport } from './routes/inicio'
 import { Route as MasterRouteImport } from './routes/master'
 import { Route as MinhaAssinaturaRouteImport } from './routes/minha-assinatura'
 import { Route as NovaSenhaRouteImport } from './routes/nova-senha'
+import { Route as ObrigadoRouteImport } from './routes/obrigado'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ReceitasRouteImport } from './routes/receitas'
@@ -127,6 +128,11 @@ const NovaSenhaRoute = NovaSenhaRouteImport.update({
   path: '/nova-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ObrigadoRoute = ObrigadoRouteImport.update({
+  id: '/obrigado',
+  path: '/obrigado',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PerfilRoute = PerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
@@ -192,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/master': typeof MasterRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/nova-senha': typeof NovaSenhaRoute
+  '/obrigado': typeof ObrigadoRoute
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
   '/receitas': typeof ReceitasRoute
@@ -221,6 +228,7 @@ export interface FileRoutesByTo {
   '/master': typeof MasterRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/nova-senha': typeof NovaSenhaRoute
+  '/obrigado': typeof ObrigadoRoute
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
   '/receitas': typeof ReceitasRoute
@@ -251,6 +259,7 @@ export interface FileRoutesById {
   '/master': typeof MasterRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/nova-senha': typeof NovaSenhaRoute
+  '/obrigado': typeof ObrigadoRoute
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
   '/receitas': typeof ReceitasRoute
@@ -282,6 +291,7 @@ export interface FileRouteTypes {
     | '/master'
     | '/minha-assinatura'
     | '/nova-senha'
+    | '/obrigado'
     | '/perfil'
     | '/privacidade'
     | '/receitas'
@@ -311,6 +321,7 @@ export interface FileRouteTypes {
     | '/master'
     | '/minha-assinatura'
     | '/nova-senha'
+    | '/obrigado'
     | '/perfil'
     | '/privacidade'
     | '/receitas'
@@ -340,6 +351,7 @@ export interface FileRouteTypes {
     | '/master'
     | '/minha-assinatura'
     | '/nova-senha'
+    | '/obrigado'
     | '/perfil'
     | '/privacidade'
     | '/receitas'
@@ -370,6 +382,7 @@ export interface RootRouteChildren {
   MasterRoute: typeof MasterRoute
   MinhaAssinaturaRoute: typeof MinhaAssinaturaRoute
   NovaSenhaRoute: typeof NovaSenhaRoute
+  ObrigadoRoute: typeof ObrigadoRoute
   PerfilRoute: typeof PerfilRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   ReceitasRoute: typeof ReceitasRoute
@@ -509,6 +522,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NovaSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/obrigado': {
+      id: '/obrigado'
+      path: '/obrigado'
+      fullPath: '/obrigado'
+      preLoaderRoute: typeof ObrigadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/perfil': {
       id: '/perfil'
       path: '/perfil'
@@ -594,6 +614,7 @@ const rootRouteChildren: RootRouteChildren = {
   MasterRoute: MasterRoute,
   MinhaAssinaturaRoute: MinhaAssinaturaRoute,
   NovaSenhaRoute: NovaSenhaRoute,
+  ObrigadoRoute: ObrigadoRoute,
   PerfilRoute: PerfilRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   ReceitasRoute: ReceitasRoute,
