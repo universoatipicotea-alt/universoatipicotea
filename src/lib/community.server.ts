@@ -174,10 +174,31 @@ async function getCommunityMetrics() {
   return { members, topics, guides };
 }
 
+export function slugifyPt(value: string) {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "outros";
+}
+
+async function listTaxonomy(kind: "recipe" | "module", includeDrafts = false) {
+  const table = kind === "recipe" ? "ua_recipe_categories" : "ua_academy_modules";
+  let query = db().from(table).select("*");
+  if (!includeDrafts) query = query.eq("status", "published");
+  const { data } = await query
+    .order("position", { ascending: true })
+    .order("name", { ascending: true });
+  return camel(data ?? []);
+}
+
 async function listPublishedGuides() {
   const { data } = await db()
     .from("ua_guides")
-    .select("id,title,summary,content,category,pdf_key,cover_image_url,published_at,created_at")
+    .select(
+      "id,title,summary,content,category,pdf_key,cover_image_url,content_type,video_url,published_at,created_at",
+    )
     .eq("status", "published")
     .order("position", { ascending: true })
     .order("published_at", { ascending: false });
@@ -186,6 +207,7 @@ async function listPublishedGuides() {
     return { ...camel(rest), hasPdf: Boolean(pdf_key) };
   });
 }
+
 
 async function listPublishedFacilitators() {
   const { data } = await db()
