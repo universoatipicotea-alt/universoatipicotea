@@ -213,6 +213,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ua_academy_modules: {
+        Row: {
+          cover_image_key: string | null
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          id: number
+          name: string
+          position: number
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_key?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: never
+          name: string
+          position?: number
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_key?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: never
+          name?: string
+          position?: number
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ua_access_levels: {
         Row: {
           created_at: string
@@ -566,6 +605,7 @@ export type Database = {
         Row: {
           category: string
           content: string | null
+          content_type: string
           cover_image_key: string | null
           cover_image_url: string | null
           created_at: string
@@ -579,10 +619,12 @@ export type Database = {
           summary: string
           title: string
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           category?: string
           content?: string | null
+          content_type?: string
           cover_image_key?: string | null
           cover_image_url?: string | null
           created_at?: string
@@ -596,10 +638,12 @@ export type Database = {
           summary: string
           title: string
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           category?: string
           content?: string | null
+          content_type?: string
           cover_image_key?: string | null
           cover_image_url?: string | null
           created_at?: string
@@ -613,6 +657,7 @@ export type Database = {
           summary?: string
           title?: string
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -921,6 +966,45 @@ export type Database = {
           },
         ]
       }
+      ua_recipe_categories: {
+        Row: {
+          cover_image_key: string | null
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          id: number
+          name: string
+          position: number
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_key?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: never
+          name: string
+          position?: number
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_key?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: never
+          name?: string
+          position?: number
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ua_test_guides: {
         Row: {
           accent_color: string
@@ -1113,12 +1197,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1142,11 +1226,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1167,11 +1251,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1192,11 +1276,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1209,11 +1293,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

@@ -174,10 +174,31 @@ async function getCommunityMetrics() {
   return { members, topics, guides };
 }
 
+export function slugifyPt(value: string) {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "outros";
+}
+
+async function listTaxonomy(kind: "recipe" | "module", includeDrafts = false) {
+  const table = kind === "recipe" ? "ua_recipe_categories" : "ua_academy_modules";
+  let query = db().from(table).select("*");
+  if (!includeDrafts) query = query.eq("status", "published");
+  const { data } = await query
+    .order("position", { ascending: true })
+    .order("name", { ascending: true });
+  return camel(data ?? []);
+}
+
 async function listPublishedGuides() {
   const { data } = await db()
     .from("ua_guides")
-    .select("id,title,summary,content,category,pdf_key,cover_image_url,published_at,created_at")
+    .select(
+      "id,title,summary,content,category,pdf_key,cover_image_url,content_type,video_url,published_at,created_at",
+    )
     .eq("status", "published")
     .order("position", { ascending: true })
     .order("published_at", { ascending: false });
@@ -186,6 +207,7 @@ async function listPublishedGuides() {
     return { ...camel(rest), hasPdf: Boolean(pdf_key) };
   });
 }
+
 
 async function listPublishedFacilitators() {
   const { data } = await db()
@@ -572,6 +594,11 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       return getFunnelSettings();
     case "community.funnel.update":
       return updateFunnelSettings(input);
+    case "community.taxonomy":
+      return {
+        recipeCategories: await listTaxonomy("recipe", false),
+        academyModules: await listTaxonomy("module", false),
+      };
     case "community.publicGuides":
       return listPublishedGuides();
     case "community.publicAcademiaGuides":
@@ -966,13 +993,55 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     case "community.admin.topicDetail":
       await requireAdmin();
       return getTopicDetail(Number(input.topicId), true);
+    case "community.admin.taxonomy": {
+      await requireAdmin();
+      return {
+        recipeCategories: await listTaxonomy("recipe", true),
+        academyModules: await listTaxonomy("module", true),
+      };
+    }
+    case "community.admin.saveTaxonomy": {
+      await requireAdmin();
+      const table =
+        input.kind === "recipe" ? "ua_recipe_categories" : "ua_academy_modules";
+      const name = String(input.name ?? "").trim();
+      if (name.length < 2) fail("Informe um nome válido.");
+      const values = {
+        name,
+        slug: slugifyPt(input.slug || name),
+        description: input.description ?? null,
+        cover_image_key: input.coverImageKey ?? null,
+        cover_image_url: input.coverImageUrl ?? null,
+        status: ["draft", "published", "archived"].includes(input.status)
+          ? input.status
+          : "draft",
+        position: Number(input.position ?? 0),
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = input.id
+        ? await db().from(table).update(values).eq("id", Number(input.id))
+        : await db().from(table).insert(values);
+      if (error) fail(error.message);
+      return { success: true };
+    }
+    case "community.admin.deleteTaxonomy": {
+      await requireAdmin();
+      const table =
+        input.kind === "recipe" ? "ua_recipe_categories" : "ua_academy_modules";
+      const { error } = await db().from(table).delete().eq("id", Number(input.id));
+      if (error) fail(error.message);
+      return { success: true };
+    }
     case "community.admin.saveGuide": {
       const user = await requireAdmin();
+      const contentType = input.contentType === "video" ? "video" : "pdf";
       const values = {
         title: input.title,
         summary: input.summary,
         content: input.content ?? null,
         category: input.category,
+        content_type: contentType,
+        video_url: contentType === "video" ? (input.videoUrl ?? null) : null,
         pdf_key: input.pdfKey ?? null,
         pdf_url: input.pdfUrl ?? null,
         cover_image_key: input.coverImageKey ?? null,
@@ -986,6 +1055,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       else await db().from("ua_guides").insert({ ...values, created_by: user.id });
       return { success: true };
     }
+
     case "community.admin.testGuides": {
       await requireAdmin();
       const { data } = await db()
