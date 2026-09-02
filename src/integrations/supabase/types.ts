@@ -213,6 +213,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ua_academy_modules: {
+        Row: {
+          cover_image_key: string | null
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          id: number
+          name: string
+          position: number
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_key?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: never
+          name: string
+          position?: number
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_key?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: never
+          name?: string
+          position?: number
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ua_access_levels: {
         Row: {
           created_at: string
@@ -566,6 +605,7 @@ export type Database = {
         Row: {
           category: string
           content: string | null
+          content_type: string
           cover_image_key: string | null
           cover_image_url: string | null
           created_at: string
@@ -579,10 +619,12 @@ export type Database = {
           summary: string
           title: string
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           category?: string
           content?: string | null
+          content_type?: string
           cover_image_key?: string | null
           cover_image_url?: string | null
           created_at?: string
@@ -596,10 +638,12 @@ export type Database = {
           summary: string
           title: string
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           category?: string
           content?: string | null
+          content_type?: string
           cover_image_key?: string | null
           cover_image_url?: string | null
           created_at?: string
@@ -613,6 +657,7 @@ export type Database = {
           summary?: string
           title?: string
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -920,6 +965,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ua_recipe_categories: {
+        Row: {
+          cover_image_key: string | null
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          id: number
+          name: string
+          position: number
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_key?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: never
+          name: string
+          position?: number
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_key?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: never
+          name?: string
+          position?: number
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       ua_test_guides: {
         Row: {
