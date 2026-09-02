@@ -993,13 +993,55 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     case "community.admin.topicDetail":
       await requireAdmin();
       return getTopicDetail(Number(input.topicId), true);
+    case "community.admin.taxonomy": {
+      await requireAdmin();
+      return {
+        recipeCategories: await listTaxonomy("recipe", true),
+        academyModules: await listTaxonomy("module", true),
+      };
+    }
+    case "community.admin.saveTaxonomy": {
+      await requireAdmin();
+      const table =
+        input.kind === "recipe" ? "ua_recipe_categories" : "ua_academy_modules";
+      const name = String(input.name ?? "").trim();
+      if (name.length < 2) fail("Informe um nome válido.");
+      const values = {
+        name,
+        slug: slugifyPt(input.slug || name),
+        description: input.description ?? null,
+        cover_image_key: input.coverImageKey ?? null,
+        cover_image_url: input.coverImageUrl ?? null,
+        status: ["draft", "published", "archived"].includes(input.status)
+          ? input.status
+          : "draft",
+        position: Number(input.position ?? 0),
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = input.id
+        ? await db().from(table).update(values).eq("id", Number(input.id))
+        : await db().from(table).insert(values);
+      if (error) fail(error.message);
+      return { success: true };
+    }
+    case "community.admin.deleteTaxonomy": {
+      await requireAdmin();
+      const table =
+        input.kind === "recipe" ? "ua_recipe_categories" : "ua_academy_modules";
+      const { error } = await db().from(table).delete().eq("id", Number(input.id));
+      if (error) fail(error.message);
+      return { success: true };
+    }
     case "community.admin.saveGuide": {
       const user = await requireAdmin();
+      const contentType = input.contentType === "video" ? "video" : "pdf";
       const values = {
         title: input.title,
         summary: input.summary,
         content: input.content ?? null,
         category: input.category,
+        content_type: contentType,
+        video_url: contentType === "video" ? (input.videoUrl ?? null) : null,
         pdf_key: input.pdfKey ?? null,
         pdf_url: input.pdfUrl ?? null,
         cover_image_key: input.coverImageKey ?? null,
@@ -1013,6 +1055,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       else await db().from("ua_guides").insert({ ...values, created_by: user.id });
       return { success: true };
     }
+
     case "community.admin.testGuides": {
       await requireAdmin();
       const { data } = await db()
