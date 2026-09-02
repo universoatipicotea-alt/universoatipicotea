@@ -1,18 +1,17 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ContentEmpty, MemberShell } from "@/components/MemberShell";
+import { CategoryHub } from "@/components/CategoryHub";
 import { SearchField, SectionTitle, SelectField, Toolbar } from "@/components/ds";
 import PdfReader from "@/components/PdfReaderClient";
 import PdfCover from "@/components/PdfCover";
 import { RecipeCover } from "@/components/RecipeCover";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { RECIPE_CATEGORIES } from "@/lib/recipe-categories";
+import { slugifyPt } from "@/lib/slug";
 import { ArrowRight, ChefHat, Clock3, Heart, LockKeyhole, Maximize2, Search, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
-
-const categories = ["Todas", ...RECIPE_CATEGORIES];
 
 function readingTime(summary: string, content?: string | null) {
   const words = `${summary || ""} ${content || ""}`.trim().split(/\s+/).filter(Boolean).length;
@@ -24,13 +23,15 @@ function matchesCategory(category: string, selected: string) {
   return (category || "").toLocaleLowerCase("pt-BR").trim() === selected.toLocaleLowerCase("pt-BR");
 }
 
-export default function Receitas() {
+export default function Receitas({ categorySlug }: { categorySlug?: string }) {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const guides = trpc.community.publicAcademiaGuides.useQuery();
+  const taxonomy = trpc.community.taxonomy.useQuery();
   const isMember = Boolean(user && (["admin", "master"].includes(user.role) || user.membershipStatus === "member"));
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Todas");
+
   const readerRef = useRef<HTMLElement>(null);
   const [selectedRecipeId, setSelectedRecipeId] = useState<number | null>(() => {
     if (typeof window === "undefined") return null;
