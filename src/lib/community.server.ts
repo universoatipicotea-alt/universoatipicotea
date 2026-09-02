@@ -594,6 +594,11 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       return getFunnelSettings();
     case "community.funnel.update":
       return updateFunnelSettings(input);
+    case "community.taxonomy":
+      return {
+        recipeCategories: await listTaxonomy("recipe", false),
+        academyModules: await listTaxonomy("module", false),
+      };
     case "community.publicGuides":
       return listPublishedGuides();
     case "community.publicAcademiaGuides":
