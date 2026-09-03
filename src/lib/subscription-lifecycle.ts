@@ -23,6 +23,11 @@ export function subscriptionAccessIsActive(subscription: Stripe.Subscription, no
   return !periodEnd || new Date(periodEnd).getTime() > now.getTime();
 }
 
+export function stripeEventIsOlder(lastEventCreatedAt: string | null, eventCreated: number) {
+  if (!lastEventCreatedAt) return false;
+  return new Date(lastEventCreatedAt).getTime() > eventCreated * 1000;
+}
+
 export async function setStripePeriodEndCancellation(
   gateway: StripeSubscriptionGateway,
   subscriptionId: string,

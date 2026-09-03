@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import type Stripe from "stripe";
 import {
   setStripePeriodEndCancellation,
+  stripeEventIsOlder,
   subscriptionAccessIsActive,
   subscriptionPeriodEnd,
   type StripeSubscriptionGateway,
@@ -94,4 +96,32 @@ test("acesso respeita status e fim do período", () => {
   assert.equal(subscriptionAccessIsActive(active, new Date("2026-09-03T12:00:00Z")), true);
   assert.equal(subscriptionAccessIsActive(active, new Date("2028-01-01T00:00:00Z")), false);
   assert.equal(subscriptionAccessIsActive(subscription({ status: "canceled" })), false);
+});
+
+test("ignora webhook estritamente mais antigo que o último aplicado", () => {
+  assert.equal(stripeEventIsOlder("2026-09-03T12:00:01.000Z", 1_788_436_800), true);
+  assert.equal(stripeEventIsOlder("2026-09-03T12:00:00.000Z", 1_788_436_800), false);
+  assert.equal(stripeEventIsOlder(null, 1_788_436_800), false);
+});
+
+test("ledger de webhook é idempotente, protegido por RLS e reversível", () => {
+  const migration = readFileSync(
+    new URL(
+      "../supabase/migrations/20260903200000_add_stripe_webhook_idempotency.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  assert.match(migration, /event_id text PRIMARY KEY/);
+  assert.match(migration, /claim_ua_stripe_webhook_event/);
+  assert.match(migration, /ON CONFLICT \(event_id\) DO NOTHING/);
+  assert.match(migration, /ENABLE ROW LEVEL SECURITY/);
+  assert.match(migration, /last_stripe_event_created_at/);
+  assert.doesNotMatch(migration, /^(DELETE\s+FROM|TRUNCATE|DROP\s+TABLE)/im);
+});
+
+test("configuração Stripe declara IDs sem valores no exemplo", () => {
+  const envExample = readFileSync(new URL("../.env.example", import.meta.url), "utf8");
+  assert.match(envExample, /^STRIPE_PRICE_ID=$/m);
+  assert.match(envExample, /^STRIPE_PRODUCT_ID=$/m);
 });
