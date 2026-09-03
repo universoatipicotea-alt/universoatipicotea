@@ -297,9 +297,13 @@ async function getSubscriptionStatus(user: UaUser) {
     .from("subscriptions")
     .select("*")
     .eq("user_id", user.authId)
-    .eq("status", "active")
+    .eq("provider", "stripe")
+    .order("updated_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
-  const hasActive = Boolean(sub);
+  const currentPeriodEnd = sub?.current_period_end ?? null;
+  const periodIsOpen = !currentPeriodEnd || new Date(currentPeriodEnd).getTime() > Date.now();
+  const hasActive = Boolean(sub && ["active", "trialing"].includes(sub.status) && periodIsOpen);
   return {
     status: hasActive ? "member" : user.membershipStatus,
     planName: "Plano Universo",
@@ -307,6 +311,9 @@ async function getSubscriptionStatus(user: UaUser) {
     currency: "BRL" as const,
     canAccessPremium: privileged || hasActive || user.membershipStatus === "member",
     canCancel: !privileged && hasActive,
+    cancelAtPeriodEnd: Boolean(sub?.cancel_at_period_end),
+    currentPeriodEnd,
+    stripeStatus: sub?.status ?? "none",
     managedBy: "Stripe",
   };
 }
@@ -761,11 +768,25 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       return getSubscriptionStatus(await requireUser());
     case "community.subscription.cancel": {
       const user = await requireUser();
-      if (user.role === "user" && user.membershipStatus === "member") {
-        await db().from("ua_users").update({ membership_status: "canceled" }).eq("id", user.id);
-        return getSubscriptionStatus({ ...user, membershipStatus: "canceled" });
-      }
-      return getSubscriptionStatus(user);
+      if (user.role !== "user")
+        fail("Contas administrativas não gerenciam cobrança por esta tela.");
+      const { changeSubscriptionRenewal } = await import("./billing.server");
+      return changeSubscriptionRenewal({
+        authId: user.authId,
+        userId: user.id,
+        cancelAtPeriodEnd: true,
+      });
+    }
+    case "community.subscription.resume": {
+      const user = await requireUser();
+      if (user.role !== "user")
+        fail("Contas administrativas não gerenciam cobrança por esta tela.");
+      const { changeSubscriptionRenewal } = await import("./billing.server");
+      return changeSubscriptionRenewal({
+        authId: user.authId,
+        userId: user.id,
+        cancelAtPeriodEnd: false,
+      });
     }
     case "community.profile.me":
       return ensureMemberProfile(await requireUser());

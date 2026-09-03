@@ -179,6 +179,8 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          cancel_at_period_end: boolean
+          cancel_requested_at: string | null
           created_at: string
           current_period_end: string | null
           id: string
@@ -190,6 +192,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cancel_at_period_end?: boolean
+          cancel_requested_at?: string | null
           created_at?: string
           current_period_end?: string | null
           id?: string
@@ -201,6 +205,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cancel_at_period_end?: boolean
+          cancel_requested_at?: string | null
           created_at?: string
           current_period_end?: string | null
           id?: string
@@ -212,6 +218,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      ua_audit_events: {
+        Row: {
+          action: string
+          actor_auth_id: string | null
+          actor_user_id: number | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: number
+          metadata: Json
+          outcome: string
+        }
+        Insert: {
+          action: string
+          actor_auth_id?: string | null
+          actor_user_id?: number | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: never
+          metadata?: Json
+          outcome: string
+        }
+        Update: {
+          action?: string
+          actor_auth_id?: string | null
+          actor_user_id?: number | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: never
+          metadata?: Json
+          outcome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ua_audit_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "ua_users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ua_academy_modules: {
         Row: {
@@ -1265,8 +1315,7 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -1290,8 +1339,7 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -1315,8 +1363,7 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }

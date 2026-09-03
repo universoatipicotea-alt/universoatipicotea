@@ -4,6 +4,13 @@
  */
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { Json } from "@/integrations/supabase/types";
+import {
+  setStripePeriodEndCancellation,
+  subscriptionAccessIsActive,
+  subscriptionPeriodEnd,
+  type StripeSubscriptionGateway,
+} from "./subscription-lifecycle";
 
 export const STRIPE_PRICE_ID = "price_1U9XZnAk4sFyKMbpUTqwkwoZ";
 export const STRIPE_PRODUCT_ID = "prod_V9rIuXcogHQYY6";
@@ -14,7 +21,29 @@ function stripeClient() {
   return new Stripe(key, { apiVersion: "2025-08-27.basil" as Stripe.LatestApiVersion });
 }
 
-const db = () => supabaseAdmin as any;
+const db = () => supabaseAdmin;
+
+async function writeAuditEvent(params: {
+  actorAuthId: string;
+  actorUserId: number;
+  action: string;
+  entityId: string;
+  outcome: "success" | "failure" | "noop";
+  metadata?: Json;
+}) {
+  const { error } = await db()
+    .from("ua_audit_events")
+    .insert({
+      actor_auth_id: params.actorAuthId,
+      actor_user_id: params.actorUserId,
+      action: params.action,
+      entity_type: "stripe_subscription",
+      entity_id: params.entityId,
+      outcome: params.outcome,
+      metadata: params.metadata ?? {},
+    });
+  if (error) throw new Error("Não foi possível registrar a ação na auditoria.");
+}
 
 async function findCustomerId(stripe: Stripe, email: string) {
   const customers = await stripe.customers.list({ email, limit: 1 });
@@ -115,7 +144,7 @@ export async function activateAccountFromSession(params: {
     user_metadata: { name: params.name },
   });
 
-  let authId = created.data.user?.id ?? null;
+  const authId = created.data.user?.id ?? null;
   if (created.error) {
     const already = /already|registered|exists/i.test(created.error.message);
     if (!already) throw new Error(created.error.message);
@@ -135,23 +164,22 @@ export async function activateAccountFromSession(params: {
       .eq("id", existing.id);
   } else {
     const { count } = await db().from("ua_users").select("id", { count: "exact", head: true });
-    await db().from("ua_users").insert({
-      auth_id: authId,
-      name: params.name,
-      email,
-      role: (count ?? 0) === 0 ? "master" : "user",
-      account_status: "active",
-      membership_status: "member",
-      last_signed_in: new Date().toISOString(),
-    });
+    await db()
+      .from("ua_users")
+      .insert({
+        auth_id: authId,
+        name: params.name,
+        email,
+        role: (count ?? 0) === 0 ? "master" : "user",
+        account_status: "active",
+        membership_status: "member",
+        last_signed_in: new Date().toISOString(),
+      });
   }
 
   await syncSubscription({ authId, email, sessionId: params.sessionId });
   return { email, success: true as const };
 }
-
-
-
 
 /**
  * Lê o estado real no Stripe e sincroniza a tabela `subscriptions`.
@@ -164,7 +192,7 @@ export async function syncSubscription(params: {
   const stripe = stripeClient();
 
   let subscription: Stripe.Subscription | null = null;
-  let checkoutSessionId: string | null = params.sessionId ?? null;
+  const checkoutSessionId: string | null = params.sessionId ?? null;
 
   if (params.sessionId) {
     try {
@@ -182,7 +210,11 @@ export async function syncSubscription(params: {
   if (!subscription && params.email) {
     const customerId = await findCustomerId(stripe, params.email);
     if (customerId) {
-      const subs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 5 });
+      const subs = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "all",
+        limit: 5,
+      });
       subscription =
         subs.data.find((s) => s.status === "active" || s.status === "trialing") ??
         subs.data[0] ??
@@ -192,12 +224,8 @@ export async function syncSubscription(params: {
 
   if (!subscription) return { active: false as const, status: "none" };
 
-  const active = subscription.status === "active" || subscription.status === "trialing";
-  const periodEndSeconds =
-    (subscription as unknown as { current_period_end?: number }).current_period_end ??
-    subscription.items.data[0]?.current_period_end ??
-    null;
-  const currentPeriodEnd = periodEndSeconds ? new Date(periodEndSeconds * 1000).toISOString() : null;
+  const active = subscriptionAccessIsActive(subscription);
+  const currentPeriodEnd = subscriptionPeriodEnd(subscription);
 
   const { data: existing } = await db()
     .from("subscriptions")
@@ -213,6 +241,8 @@ export async function syncSubscription(params: {
     provider_checkout_session_id: checkoutSessionId,
     status: active ? "active" : subscription.status,
     current_period_end: currentPeriodEnd,
+    cancel_at_period_end: subscription.cancel_at_period_end,
+    cancel_requested_at: subscription.cancel_at_period_end ? new Date().toISOString() : null,
     updated_at: new Date().toISOString(),
   };
 
@@ -220,10 +250,90 @@ export async function syncSubscription(params: {
   else await db().from("subscriptions").insert(values);
 
   if (active) {
-    await db().from("ua_users").update({ membership_status: "member" }).eq("auth_id", params.authId);
+    await db()
+      .from("ua_users")
+      .update({ membership_status: "member" })
+      .eq("auth_id", params.authId);
   }
 
-  return { active, status: subscription.status, currentPeriodEnd };
+  return {
+    active,
+    status: subscription.status,
+    currentPeriodEnd,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
+  };
+}
+
+export async function changeSubscriptionRenewal(params: {
+  authId: string;
+  userId: number;
+  cancelAtPeriodEnd: boolean;
+  gateway?: StripeSubscriptionGateway;
+}) {
+  const { data: localSubscription } = await db()
+    .from("subscriptions")
+    .select("provider_subscription_id,status,current_period_end,cancel_at_period_end")
+    .eq("user_id", params.authId)
+    .eq("provider", "stripe")
+    .not("provider_subscription_id", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const subscriptionId = localSubscription?.provider_subscription_id as string | null;
+  if (!subscriptionId) throw new Error("Nenhuma assinatura Stripe foi encontrada para esta conta.");
+
+  const gateway = params.gateway ?? stripeClient().subscriptions;
+  const action = params.cancelAtPeriodEnd
+    ? "subscription.cancel_at_period_end"
+    : "subscription.resume";
+
+  try {
+    const result = await setStripePeriodEndCancellation(
+      gateway,
+      subscriptionId,
+      params.cancelAtPeriodEnd,
+      params.authId,
+    );
+    const subscription = result.subscription;
+
+    const currentPeriodEnd = subscriptionPeriodEnd(subscription);
+    await writeAuditEvent({
+      actorAuthId: params.authId,
+      actorUserId: params.userId,
+      action,
+      entityId: subscriptionId,
+      outcome: result.changed ? "success" : "noop",
+      metadata: {
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        currentPeriodEnd,
+        stripeStatus: subscription.status,
+      },
+    });
+
+    return {
+      status: subscription.status,
+      cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      currentPeriodEnd,
+      changed: result.changed,
+      awaitingWebhook: true,
+    };
+  } catch (error) {
+    try {
+      await writeAuditEvent({
+        actorAuthId: params.authId,
+        actorUserId: params.userId,
+        action,
+        entityId: subscriptionId,
+        outcome: "failure",
+      });
+    } catch {
+      // A falha original continua sendo a resposta principal.
+    }
+    throw error instanceof Error
+      ? error
+      : new Error("Não foi possível atualizar a renovação da assinatura.");
+  }
 }
 
 export async function createPortalSession(params: { email: string | null; origin: string }) {
@@ -264,7 +374,10 @@ async function resolveAuthId(params: { authId?: string | null; email?: string | 
 export async function handleStripeEvent(event: Stripe.Event) {
   const stripe = stripeClient();
 
-  const applySubscription = async (subscription: Stripe.Subscription, sessionId?: string | null) => {
+  const applySubscription = async (
+    subscription: Stripe.Subscription,
+    sessionId?: string | null,
+  ) => {
     let email: string | null = null;
     const customer = subscription.customer;
     const customerId = typeof customer === "string" ? customer : customer?.id;
@@ -283,11 +396,8 @@ export async function handleStripeEvent(event: Stripe.Event) {
     });
     if (!authId) return { handled: false as const, reason: "usuário ainda não cadastrado" };
 
-    const active = subscription.status === "active" || subscription.status === "trialing";
-    const periodEndSeconds =
-      (subscription as unknown as { current_period_end?: number }).current_period_end ??
-      subscription.items.data[0]?.current_period_end ??
-      null;
+    const active = subscriptionAccessIsActive(subscription);
+    const currentPeriodEnd = subscriptionPeriodEnd(subscription);
 
     const values = {
       user_id: authId,
@@ -295,9 +405,9 @@ export async function handleStripeEvent(event: Stripe.Event) {
       provider_subscription_id: subscription.id,
       provider_checkout_session_id: sessionId ?? null,
       status: active ? "active" : subscription.status,
-      current_period_end: periodEndSeconds
-        ? new Date(periodEndSeconds * 1000).toISOString()
-        : null,
+      current_period_end: currentPeriodEnd,
+      cancel_at_period_end: subscription.cancel_at_period_end,
+      cancel_requested_at: subscription.cancel_at_period_end ? new Date().toISOString() : null,
       updated_at: new Date().toISOString(),
     };
 
@@ -322,9 +432,7 @@ export async function handleStripeEvent(event: Stripe.Event) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
       const subId =
-        typeof session.subscription === "string"
-          ? session.subscription
-          : session.subscription?.id;
+        typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
       if (!subId) return { handled: false as const, reason: "sessão sem assinatura" };
       const subscription = await stripe.subscriptions.retrieve(subId);
       return applySubscription(subscription, session.id);
