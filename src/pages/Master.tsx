@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import type { AccessRole } from "@shared/access";
 import {
   BarChart3,
   BookOpen,
@@ -126,7 +127,7 @@ function Metric({
 export default function Master() {
   const { user, loading } = useAuth();
   const master = trpc.community.master.dashboard.useQuery(undefined, {
-    enabled: user?.role === "master",
+    enabled: user?.accessRole === "admin_master",
   });
   const utils = trpc.useUtils();
   const [view, setView] = useState<ProducerView>("overview");
@@ -277,7 +278,7 @@ export default function Master() {
   };
 
   if (loading) return <div className="min-h-screen bg-[var(--paper)]" />;
-  if (user?.role !== "master")
+  if (user?.accessRole !== "admin_master")
     return (
       <MemberShell
         eyebrow="Admin Master"
@@ -1370,7 +1371,7 @@ export default function Master() {
                   .map((member) => (
                     <article
                       key={member.id}
-                      className="grid gap-4 border-b border-[var(--line)] p-5 last:border-0 lg:grid-cols-[1.2fr_.7fr_.7fr_.7fr_auto] lg:items-center"
+                      className="grid gap-4 border-b border-[var(--line)] p-5 last:border-0 lg:grid-cols-[1.2fr_.8fr_.8fr_auto] lg:items-center"
                     >
                       <div>
                         <p className="text-sm font-extrabold">
@@ -1383,21 +1384,21 @@ export default function Master() {
                       <label className="text-xs font-bold text-[var(--ink-soft)]">
                         Papel
                         <select
-                          value={member.role}
+                          value={member.accessRole}
                           disabled={member.id === user.id || updateAccount.isPending}
                           onChange={(event) =>
                             updateAccount.mutate({
                               userId: member.id,
-                              role: event.target.value as "user" | "admin" | "master",
+                              accessRole: event.target.value as AccessRole,
                               accountStatus: member.accountStatus,
-                              membershipStatus: member.membershipStatus,
                             })
                           }
                           className="mt-1 block h-10 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm"
                         >
-                          <option value="user">Membro</option>
+                          <option value="visitor">Visitante</option>
+                          <option value="member">Membro</option>
                           <option value="admin">Administrador</option>
-                          <option value="master">Admin Master</option>
+                          <option value="admin_master">Admin Master</option>
                         </select>
                       </label>
                       <label className="text-xs font-bold text-[var(--ink-soft)]">
@@ -1408,9 +1409,8 @@ export default function Master() {
                           onChange={(event) =>
                             updateAccount.mutate({
                               userId: member.id,
-                              role: member.role,
+                              accessRole: member.accessRole,
                               accountStatus: event.target.value as "active" | "suspended",
-                              membershipStatus: member.membershipStatus,
                             })
                           }
                           className="mt-1 block h-10 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm"
@@ -1419,35 +1419,10 @@ export default function Master() {
                           <option value="suspended">Suspensa</option>
                         </select>
                       </label>
-                      <label className="text-xs font-bold text-[var(--ink-soft)]">
-                        Acesso
-                        <select
-                          value={member.membershipStatus}
-                          disabled={member.id === user.id || updateAccount.isPending}
-                          onChange={(event) =>
-                            updateAccount.mutate({
-                              userId: member.id,
-                              role: member.role,
-                              accountStatus: member.accountStatus,
-                              membershipStatus: event.target.value as
-                                "member" | "free" | "canceled",
-                            })
-                          }
-                          className="mt-1 block h-10 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm"
-                        >
-                          <option value="member">Membro</option>
-                          <option value="free">Gratuito</option>
-                          <option value="canceled">Cancelado</option>
-                        </select>
-                      </label>
                       <span
-                        className={`justify-self-start rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] ${member.membershipStatus === "member" ? "bg-[var(--sage-pale)] text-[var(--sage-deep)]" : "bg-[#f5e7df] text-[#9c583c]"}`}
+                        className={`justify-self-start rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] ${member.accessRole === "member" || member.accessRole === "admin" || member.accessRole === "admin_master" ? "bg-[var(--sage-pale)] text-[var(--sage-deep)]" : "bg-[#f5e7df] text-[#9c583c]"}`}
                       >
-                        {member.membershipStatus === "member"
-                          ? "Membro"
-                          : member.membershipStatus === "free"
-                            ? "Gratuito"
-                            : "Cancelado"}
+                        {member.accountStatus === "suspended" ? "Suspensa" : "Ativa"}
                       </span>
                     </article>
                   ))}

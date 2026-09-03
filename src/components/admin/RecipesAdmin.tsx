@@ -179,7 +179,7 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
   const signedPdf = trpc.community.files.signedPdfUpload.useMutation();
   const updateCover = trpc.community.admin.updateContentCover.useMutation();
 
-  const rows = (recipes.data ?? []) as RecipeRow[];
+  const rows = useMemo(() => (recipes.data ?? []) as RecipeRow[], [recipes.data]);
   const list = useMemo(() => {
     const term = query.toLocaleLowerCase("pt-BR").trim();
     const filtered = rows.filter((row) => {

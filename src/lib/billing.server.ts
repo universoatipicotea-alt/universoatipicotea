@@ -160,21 +160,24 @@ export async function activateAccountFromSession(params: {
   if (existing?.id) {
     await db()
       .from("ua_users")
-      .update({ auth_id: authId, membership_status: "member", account_status: "active" })
+      .update({
+        auth_id: authId,
+        access_role: "member",
+        membership_status: "member",
+        account_status: "active",
+      })
       .eq("id", existing.id);
   } else {
-    const { count } = await db().from("ua_users").select("id", { count: "exact", head: true });
-    await db()
-      .from("ua_users")
-      .insert({
-        auth_id: authId,
-        name: params.name,
-        email,
-        role: (count ?? 0) === 0 ? "master" : "user",
-        account_status: "active",
-        membership_status: "member",
-        last_signed_in: new Date().toISOString(),
-      });
+    await db().from("ua_users").insert({
+      auth_id: authId,
+      name: params.name,
+      email,
+      access_role: "member",
+      role: "user",
+      account_status: "active",
+      membership_status: "member",
+      last_signed_in: new Date().toISOString(),
+    });
   }
 
   await syncSubscription({ authId, email, sessionId: params.sessionId });
@@ -252,8 +255,9 @@ export async function syncSubscription(params: {
   if (active) {
     await db()
       .from("ua_users")
-      .update({ membership_status: "member" })
-      .eq("auth_id", params.authId);
+      .update({ access_role: "member", membership_status: "member" })
+      .eq("auth_id", params.authId)
+      .in("access_role", ["visitor", "member"]);
   }
 
   return {
@@ -422,8 +426,12 @@ export async function handleStripeEvent(event: Stripe.Event) {
 
     await db()
       .from("ua_users")
-      .update({ membership_status: active ? "member" : "visitor" })
-      .eq("auth_id", authId);
+      .update({
+        access_role: active ? "member" : "visitor",
+        membership_status: active ? "member" : "canceled",
+      })
+      .eq("auth_id", authId)
+      .in("access_role", ["visitor", "member"]);
 
     return { handled: true as const, active };
   };

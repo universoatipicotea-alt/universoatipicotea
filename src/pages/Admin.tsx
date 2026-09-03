@@ -161,7 +161,7 @@ function Stat({
 export default function Admin() {
   const { user, loading } = useAuth();
   const dashboard = trpc.community.admin.dashboard.useQuery(undefined, {
-    enabled: ["admin", "master"].includes(user?.role || ""),
+    enabled: ["admin", "admin_master"].includes(user?.accessRole || ""),
   });
   const utils = trpc.useUtils();
   const [tab, setTab] = useState<
@@ -176,10 +176,10 @@ export default function Admin() {
   const [guideForm, setGuideForm] = useState<GuideForm>(newGuide());
   const [facilitatorForm, setFacilitatorForm] = useState<FacilitatorForm>(newFacilitator());
   const recipes = trpc.community.admin.testGuides.useQuery(undefined, {
-    enabled: ["admin", "master"].includes(user?.role || ""),
+    enabled: ["admin", "admin_master"].includes(user?.accessRole || ""),
   });
   const taxonomy = trpc.community.admin.taxonomy.useQuery(undefined, {
-    enabled: ["admin", "master"].includes(user?.role || ""),
+    enabled: ["admin", "admin_master"].includes(user?.accessRole || ""),
   });
   const [detailTopicId, setDetailTopicId] = useState<number | null>(null);
   const pdfInput = useRef<HTMLInputElement>(null);
@@ -300,7 +300,7 @@ export default function Admin() {
   };
 
   if (loading) return <div className="min-h-screen bg-[var(--paper)]" />;
-  if (!["admin", "master"].includes(user?.role || "")) {
+  if (!["admin", "admin_master"].includes(user?.accessRole || "")) {
     return (
       <MemberShell
         eyebrow="Administração"
@@ -775,7 +775,7 @@ export default function Admin() {
       ) : null}
 
       {tab === "recipes" ? (
-        <RecipesAdmin enabled={["admin", "master"].includes(user?.role || "")} />
+        <RecipesAdmin enabled={["admin", "admin_master"].includes(user?.accessRole || "")} />
       ) : null}
       {tab === "recipeCategories" ? <TaxonomyAdmin kind="recipe" enabled /> : null}
       {tab === "academyModules" ? <TaxonomyAdmin kind="module" enabled /> : null}

@@ -19,7 +19,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
 function readingTime(summary: string, content?: string | null) {
@@ -37,9 +37,7 @@ export default function Receitas({ categorySlug }: { categorySlug?: string }) {
   const { user } = useAuth();
   const guides = trpc.community.publicAcademiaGuides.useQuery();
   const taxonomy = trpc.community.taxonomy.useQuery();
-  const isMember = Boolean(
-    user && (["admin", "master"].includes(user.role) || user.membershipStatus === "member"),
-  );
+  const isMember = Boolean(user && ["member", "admin", "admin_master"].includes(user.accessRole));
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Todas");
 
@@ -58,10 +56,10 @@ export default function Receitas({ categorySlug }: { categorySlug?: string }) {
   });
 
   const selectedRecipe = guides.data?.find((item) => item.id === selectedRecipeId) ?? null;
-  const closeReader = () => {
+  const closeReader = useCallback(() => {
     setSelectedRecipeId(null);
     setLocation("/receitas");
-  };
+  }, [setLocation]);
 
   useEffect(() => {
     if (selectedRecipe && readerRef.current)
@@ -75,7 +73,7 @@ export default function Receitas({ categorySlug }: { categorySlug?: string }) {
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [selectedRecipeId]);
+  }, [selectedRecipeId, closeReader]);
 
   const recipes = useMemo(() => guides.data || [], [guides.data]);
   const allCategories = useMemo(() => taxonomy.data?.recipeCategories ?? [], [taxonomy.data]);

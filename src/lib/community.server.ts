@@ -5,18 +5,25 @@
 import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import {
+  isAccessRole,
+  isAdminRole,
+  isMasterRole,
+  legacyValuesForAccessRole,
+  type AccessRole,
+} from "@shared/access";
 
 const PDF_BUCKET = "guias-pdf";
 const IMAGE_BUCKET = "guias-capas";
 const VIDEO_BUCKET = "funil-video";
 
-type Role = "user" | "admin" | "master";
 type UaUser = {
   id: number;
   authId: string;
   name: string | null;
   email: string | null;
-  role: Role;
+  accessRole: AccessRole;
+  role: "user" | "admin" | "master";
   accountStatus: "active" | "suspended";
   membershipStatus: "member" | "free" | "canceled";
   createdAt: string | null;
@@ -101,7 +108,6 @@ async function ensureUaUser(nameHint?: string | null): Promise<UaUser | null> {
     return camel<UaUser>(existing.data);
   }
 
-  const { count } = await db().from("ua_users").select("id", { count: "exact", head: true });
   const name =
     nameHint ||
     (authUser.user_metadata?.["name"] as string | undefined) ||
@@ -113,10 +119,11 @@ async function ensureUaUser(nameHint?: string | null): Promise<UaUser | null> {
       auth_id: authUser.id,
       name,
       email: authUser.email,
-      role: (count ?? 0) === 0 ? "master" : "user",
+      access_role: "visitor",
+      role: "user",
       account_status: "active",
       // Acesso pago: quem não pagou entra como visitante.
-      membership_status: (count ?? 0) === 0 ? "member" : "visitor",
+      membership_status: "canceled",
       last_signed_in: new Date().toISOString(),
     })
     .select("*")
@@ -134,20 +141,20 @@ async function requireUser(nameHint?: string | null) {
 
 async function requireAdmin() {
   const user = await requireUser();
-  if (user.role !== "admin" && user.role !== "master") fail("Acesso restrito à equipe.");
+  if (!isAdminRole(user.accessRole)) fail("Acesso restrito à equipe.");
   return user;
 }
 
 async function requireMaster() {
   const user = await requireUser();
-  if (user.role !== "master") fail("Acesso restrito ao Master.");
+  if (!isMasterRole(user.accessRole)) fail("Acesso restrito ao Master.");
   return user;
 }
 
 async function assertMemberContent(user: UaUser) {
-  const privileged = user.role === "admin" || user.role === "master";
+  const privileged = isAdminRole(user.accessRole);
   if (privileged) return;
-  if (user.membershipStatus === "member") return;
+  if (user.accessRole === "member") return;
   const { data: sub } = await db()
     .from("subscriptions")
     .select("id")
@@ -292,7 +299,7 @@ async function updateFunnelSettings(input: any) {
 }
 
 async function getSubscriptionStatus(user: UaUser) {
-  const privileged = user.role === "admin" || user.role === "master";
+  const privileged = isAdminRole(user.accessRole);
   const { data: sub } = await db()
     .from("subscriptions")
     .select("*")
@@ -305,11 +312,11 @@ async function getSubscriptionStatus(user: UaUser) {
   const periodIsOpen = !currentPeriodEnd || new Date(currentPeriodEnd).getTime() > Date.now();
   const hasActive = Boolean(sub && ["active", "trialing"].includes(sub.status) && periodIsOpen);
   return {
-    status: hasActive ? "member" : user.membershipStatus,
+    status: hasActive || user.accessRole === "member" ? "member" : "visitor",
     planName: "Plano Universo",
     priceCents: 4990,
     currency: "BRL" as const,
-    canAccessPremium: privileged || hasActive || user.membershipStatus === "member",
+    canAccessPremium: privileged || hasActive || user.accessRole === "member",
     canCancel: !privileged && hasActive,
     cancelAtPeriodEnd: Boolean(sub?.cancel_at_period_end),
     currentPeriodEnd,
@@ -768,7 +775,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       return getSubscriptionStatus(await requireUser());
     case "community.subscription.cancel": {
       const user = await requireUser();
-      if (user.role !== "user")
+      if (user.accessRole !== "member")
         fail("Contas administrativas não gerenciam cobrança por esta tela.");
       const { changeSubscriptionRenewal } = await import("./billing.server");
       return changeSubscriptionRenewal({
@@ -779,7 +786,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.subscription.resume": {
       const user = await requireUser();
-      if (user.role !== "user")
+      if (user.accessRole !== "member")
         fail("Contas administrativas não gerenciam cobrança por esta tela.");
       const { changeSubscriptionRenewal } = await import("./billing.server");
       return changeSubscriptionRenewal({
@@ -877,7 +884,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         .select("id,status,pdf_key")
         .eq("id", Number(input.guideId))
         .maybeSingle();
-      const privileged = user.role === "admin" || user.role === "master";
+      const privileged = isAdminRole(user.accessRole);
       if (!guide?.pdf_key || (guide.status !== "published" && !privileged))
         fail("Guia não encontrado.");
       return { url: `/api/protected-pdf/guide/${guide.id}` };
@@ -893,7 +900,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         .select("id,status,pdf_key")
         .eq("id", Number(input.documentId))
         .maybeSingle();
-      const privileged = user.role === "admin" || user.role === "master";
+      const privileged = isAdminRole(user.accessRole);
       if (!data?.pdf_key || (data.status !== "published" && !privileged))
         fail("Conteúdo indisponível.");
       return { url: await signedPdfUrl(data.pdf_key) };
@@ -906,7 +913,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         .select("id,status,content_type,video_url")
         .eq("id", Number(input.documentId))
         .maybeSingle();
-      const privileged = user.role === "admin" || user.role === "master";
+      const privileged = isAdminRole(user.accessRole);
       if (
         !data?.video_url ||
         data.content_type !== "video" ||
@@ -1356,19 +1363,33 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.master.updateUserAccess": {
       const master = await requireMaster();
+      if (!isAccessRole(input.accessRole)) fail("Papel de acesso inválido.");
       if (
         Number(input.userId) === master.id &&
-        (input.role !== "master" || input.accountStatus !== "active")
+        (input.accessRole !== "admin_master" || input.accountStatus !== "active")
       )
         fail("Você não pode suspender ou remover o próprio acesso Master.");
+      const legacy = legacyValuesForAccessRole(input.accessRole);
       await db()
         .from("ua_users")
         .update({
-          role: input.role,
+          access_role: input.accessRole,
+          role: legacy.role,
           account_status: input.accountStatus,
-          membership_status: input.membershipStatus ?? "member",
+          membership_status: legacy.membershipStatus,
         })
         .eq("id", Number(input.userId));
+      await db()
+        .from("ua_audit_events")
+        .insert({
+          actor_auth_id: master.authId,
+          actor_user_id: master.id,
+          action: "user.access_role.update",
+          entity_type: "ua_user",
+          entity_id: String(input.userId),
+          outcome: "success",
+          metadata: { accessRole: input.accessRole, accountStatus: input.accountStatus },
+        });
       return { success: true };
     }
     case "community.master.saveProduct": {
