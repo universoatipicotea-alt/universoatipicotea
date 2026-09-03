@@ -16,6 +16,11 @@ dist-ssr
 .nitro
 *.local
 
+# Environment files stay local. Commit only the safe inventory template.
+.env
+.env.*
+!.env.example
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars

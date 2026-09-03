@@ -5,17 +5,25 @@
 import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import {
+  isAccessRole,
+  isAdminRole,
+  isMasterRole,
+  legacyValuesForAccessRole,
+  type AccessRole,
+} from "@shared/access";
 
 const PDF_BUCKET = "guias-pdf";
 const IMAGE_BUCKET = "guias-capas";
+const VIDEO_BUCKET = "funil-video";
 
-type Role = "user" | "admin" | "master";
 type UaUser = {
   id: number;
   authId: string;
   name: string | null;
   email: string | null;
-  role: Role;
+  accessRole: AccessRole;
+  role: "user" | "admin" | "master";
   accountStatus: "active" | "suspended";
   membershipStatus: "member" | "free" | "canceled";
   createdAt: string | null;
@@ -54,12 +62,13 @@ function requestOrigin(): string {
   }
   const host = request?.headers.get("x-forwarded-host") ?? request?.headers.get("host");
   if (host) {
-    const proto = request?.headers.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+    const proto =
+      request?.headers.get("x-forwarded-proto") ??
+      (host.startsWith("localhost") ? "http" : "https");
     return `${proto}://${host}`;
   }
   return "http://localhost:8080";
 }
-
 
 async function authUserFromRequest() {
   const request = getRequest();
@@ -99,7 +108,6 @@ async function ensureUaUser(nameHint?: string | null): Promise<UaUser | null> {
     return camel<UaUser>(existing.data);
   }
 
-  const { count } = await db().from("ua_users").select("id", { count: "exact", head: true });
   const name =
     nameHint ||
     (authUser.user_metadata?.["name"] as string | undefined) ||
@@ -111,10 +119,11 @@ async function ensureUaUser(nameHint?: string | null): Promise<UaUser | null> {
       auth_id: authUser.id,
       name,
       email: authUser.email,
-      role: (count ?? 0) === 0 ? "master" : "user",
+      access_role: "visitor",
+      role: "user",
       account_status: "active",
       // Acesso pago: quem não pagou entra como visitante.
-      membership_status: (count ?? 0) === 0 ? "member" : "visitor",
+      membership_status: "canceled",
       last_signed_in: new Date().toISOString(),
     })
     .select("*")
@@ -132,20 +141,20 @@ async function requireUser(nameHint?: string | null) {
 
 async function requireAdmin() {
   const user = await requireUser();
-  if (user.role !== "admin" && user.role !== "master") fail("Acesso restrito à equipe.");
+  if (!isAdminRole(user.accessRole)) fail("Acesso restrito à equipe.");
   return user;
 }
 
 async function requireMaster() {
   const user = await requireUser();
-  if (user.role !== "master") fail("Acesso restrito ao Master.");
+  if (!isMasterRole(user.accessRole)) fail("Acesso restrito ao Master.");
   return user;
 }
 
 async function assertMemberContent(user: UaUser) {
-  const privileged = user.role === "admin" || user.role === "master";
+  const privileged = isAdminRole(user.accessRole);
   if (privileged) return;
-  if (user.membershipStatus === "member") return;
+  if (user.accessRole === "member") return;
   const { data: sub } = await db()
     .from("subscriptions")
     .select("id")
@@ -175,12 +184,14 @@ async function getCommunityMetrics() {
 }
 
 export function slugifyPt(value: string) {
-  return (value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "outros";
+  return (
+    (value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "outros"
+  );
 }
 
 async function listTaxonomy(kind: "recipe" | "module", includeDrafts = false) {
@@ -190,14 +201,23 @@ async function listTaxonomy(kind: "recipe" | "module", includeDrafts = false) {
   const { data } = await query
     .order("position", { ascending: true })
     .order("name", { ascending: true });
-  return camel(data ?? []);
+  const rows = camel<any[]>(data ?? []);
+  if (!includeDrafts) return rows;
+  return Promise.all(
+    rows.map(async (item) => ({
+      ...item,
+      contentCount: await countRows(kind === "recipe" ? "ua_test_guides" : "ua_guides", {
+        [kind === "recipe" ? "category_id" : "module_id"]: String(item.id),
+      }),
+    })),
+  );
 }
 
 async function listPublishedGuides() {
   const { data } = await db()
     .from("ua_guides")
     .select(
-      "id,title,summary,content,category,pdf_key,cover_image_url,content_type,video_url,published_at,created_at",
+      "id,title,summary,content,category,module_id,pdf_key,cover_image_url,content_type,video_url,estimated_duration,technical_review,position,published_at,created_at",
     )
     .eq("status", "published")
     .order("position", { ascending: true })
@@ -207,7 +227,6 @@ async function listPublishedGuides() {
     return { ...camel(rest), hasPdf: Boolean(pdf_key) };
   });
 }
-
 
 async function listPublishedFacilitators() {
   const { data } = await db()
@@ -280,21 +299,28 @@ async function updateFunnelSettings(input: any) {
 }
 
 async function getSubscriptionStatus(user: UaUser) {
-  const privileged = user.role === "admin" || user.role === "master";
+  const privileged = isAdminRole(user.accessRole);
   const { data: sub } = await db()
     .from("subscriptions")
     .select("*")
     .eq("user_id", user.authId)
-    .eq("status", "active")
+    .eq("provider", "stripe")
+    .order("updated_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
-  const hasActive = Boolean(sub);
+  const currentPeriodEnd = sub?.current_period_end ?? null;
+  const periodIsOpen = !currentPeriodEnd || new Date(currentPeriodEnd).getTime() > Date.now();
+  const hasActive = Boolean(sub && ["active", "trialing"].includes(sub.status) && periodIsOpen);
   return {
-    status: hasActive ? "member" : user.membershipStatus,
+    status: hasActive || user.accessRole === "member" ? "member" : "visitor",
     planName: "Plano Universo",
     priceCents: 4990,
     currency: "BRL" as const,
-    canAccessPremium: privileged || hasActive || user.membershipStatus === "member",
+    canAccessPremium: privileged || hasActive || user.accessRole === "member",
     canCancel: !privileged && hasActive,
+    cancelAtPeriodEnd: Boolean(sub?.cancel_at_period_end),
+    currentPeriodEnd,
+    stripeStatus: sub?.status ?? "none",
     managedBy: "Stripe",
   };
 }
@@ -349,11 +375,7 @@ async function getTopicDetail(topicId: number, includeHidden = false) {
 }
 
 async function ensureMemberProfile(user: UaUser) {
-  const existing = await db()
-    .from("ua_profiles")
-    .select("*")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const existing = await db().from("ua_profiles").select("*").eq("user_id", user.id).maybeSingle();
   let profile = existing.data;
   if (!profile) {
     const inserted = await db()
@@ -383,7 +405,9 @@ async function ensureMemberProfile(user: UaUser) {
 async function listTestGuides(includeDrafts = false) {
   let query = db().from("ua_test_guides").select("*");
   if (!includeDrafts) query = query.eq("status", "published");
-  const { data } = await query.order("created_at", { ascending: false });
+  const { data } = await query
+    .order("position", { ascending: true })
+    .order("created_at", { ascending: false });
   return (data ?? []).map((row: any) => {
     const { pdf_key, pdf_url, ...rest } = row;
     return { ...camel(rest), hasPdf: Boolean(pdf_key) };
@@ -431,27 +455,35 @@ async function listPublicPreview() {
 async function listMemberProgress(userId: number) {
   const { data: rows } = await db()
     .from("ua_reading_progress")
-    .select("source_type,document_id,current_page,page_count,updated_at")
+    .select(
+      "source_type,document_id,current_page,page_count,last_second,total_seconds,completed,last_access_at,updated_at",
+    )
     .eq("user_id", userId)
     .order("updated_at", { ascending: false })
     .limit(12);
   const progress = rows ?? [];
   if (!progress.length) return [];
 
-  const guideIds = progress.filter((r: any) => r.source_type !== "testGuide").map((r: any) => r.document_id);
-  const recipeIds = progress.filter((r: any) => r.source_type === "testGuide").map((r: any) => r.document_id);
+  const guideIds = progress
+    .filter((r: any) => r.source_type !== "testGuide")
+    .map((r: any) => r.document_id);
+  const recipeIds = progress
+    .filter((r: any) => r.source_type === "testGuide")
+    .map((r: any) => r.document_id);
 
   const [guides, recipes] = await Promise.all([
     guideIds.length
       ? db()
           .from("ua_guides")
-          .select("id,title,category,cover_image_url,status")
+          .select(
+            "id,title,category,module_id,cover_image_url,content_type,video_url,estimated_duration,status",
+          )
           .in("id", guideIds)
       : Promise.resolve({ data: [] as any[] }),
     recipeIds.length
       ? db()
           .from("ua_test_guides")
-          .select("id,title,category,cover_image_url,accent_color,status")
+          .select("id,title,category,category_id,cover_image_url,accent_color,status")
           .in("id", recipeIds)
       : Promise.resolve({ data: [] as any[] }),
   ]);
@@ -490,11 +522,14 @@ async function listMemberProgress(userId: number) {
  * vídeos de membros sejam cadastrados.
  */
 async function listMemberVideos() {
-  return [] as { id: string; title: string; description: string; url: string; coverImageUrl: string | null }[];
+  return [] as {
+    id: string;
+    title: string;
+    description: string;
+    url: string;
+    coverImageUrl: string | null;
+  }[];
 }
-
-
-
 
 /* -------------------------------- uploads -------------------------------- */
 
@@ -509,12 +544,13 @@ function decodeDataUrl(dataUrl: string) {
 }
 
 function safeName(fileName: string, mimeType: string) {
-  const base = fileName
-    .toLowerCase()
-    .replace(/\.[a-z0-9]+$/, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60) || "arquivo";
+  const base =
+    fileName
+      .toLowerCase()
+      .replace(/\.[a-z0-9]+$/, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "arquivo";
   const extension = mimeType.includes("pdf")
     ? "pdf"
     : mimeType.includes("png")
@@ -539,12 +575,32 @@ async function saveUpload(
   if (bucket === IMAGE_BUCKET) {
     return { key, url: `/api/public/ua-image/${key}`, fileName: input.fileName };
   }
-  return { key, url: `/api/protected-pdf/key/${encodeURIComponent(key)}`, fileName: input.fileName };
+  return {
+    key,
+    url: `/api/protected-pdf/key/${encodeURIComponent(key)}`,
+    fileName: input.fileName,
+  };
 }
 
 async function signedPdfUrl(pdfKey: string) {
-  const { data, error } = await db().storage.from(PDF_BUCKET).createSignedUrl(pdfKey, 60 * 30);
+  const { data, error } = await db()
+    .storage.from(PDF_BUCKET)
+    .createSignedUrl(pdfKey, 60 * 30);
   if (error || !data?.signedUrl) fail("Não foi possível abrir este PDF.");
+  return data.signedUrl as string;
+}
+
+async function protectedVideoUrl(value: string) {
+  if (/^https?:\/\//i.test(value)) return value;
+  const publicPrefix = "/api/public/ua-video/";
+  const key = value.startsWith(publicPrefix)
+    ? decodeURIComponent(value.slice(publicPrefix.length))
+    : value;
+  if (!key || key.includes("..") || key.startsWith("/")) fail("Vídeo indisponível.");
+  const { data, error } = await db()
+    .storage.from(VIDEO_BUCKET)
+    .createSignedUrl(key, 60 * 15);
+  if (error || !data?.signedUrl) fail("Não foi possível abrir este vídeo.");
   return data.signedUrl as string;
 }
 
@@ -629,12 +685,14 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
           .maybeSingle();
         campaign = data;
       }
-      await db().from("ua_product_clicks").insert({
-        product_id: product.id,
-        origin: input.origin,
-        campaign: campaign?.slug ?? null,
-        campaign_id: campaign?.id ?? null,
-      });
+      await db()
+        .from("ua_product_clicks")
+        .insert({
+          product_id: product.id,
+          origin: input.origin,
+          campaign: campaign?.slug ?? null,
+          campaign_id: campaign?.id ?? null,
+        });
       return {
         id: product.id,
         title: product.title,
@@ -670,7 +728,6 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         progress,
         videos,
       };
-
     }
     case "billing.createCheckout": {
       // Pagamento pode ser iniciado sem conta: a conta é criada após o pagamento.
@@ -718,11 +775,25 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       return getSubscriptionStatus(await requireUser());
     case "community.subscription.cancel": {
       const user = await requireUser();
-      if (user.role === "user" && user.membershipStatus === "member") {
-        await db().from("ua_users").update({ membership_status: "canceled" }).eq("id", user.id);
-        return getSubscriptionStatus({ ...user, membershipStatus: "canceled" });
-      }
-      return getSubscriptionStatus(user);
+      if (user.accessRole !== "member")
+        fail("Contas administrativas não gerenciam cobrança por esta tela.");
+      const { changeSubscriptionRenewal } = await import("./billing.server");
+      return changeSubscriptionRenewal({
+        authId: user.authId,
+        userId: user.id,
+        cancelAtPeriodEnd: true,
+      });
+    }
+    case "community.subscription.resume": {
+      const user = await requireUser();
+      if (user.accessRole !== "member")
+        fail("Contas administrativas não gerenciam cobrança por esta tela.");
+      const { changeSubscriptionRenewal } = await import("./billing.server");
+      return changeSubscriptionRenewal({
+        authId: user.authId,
+        userId: user.id,
+        cancelAtPeriodEnd: false,
+      });
     }
     case "community.profile.me":
       return ensureMemberProfile(await requireUser());
@@ -813,7 +884,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         .select("id,status,pdf_key")
         .eq("id", Number(input.guideId))
         .maybeSingle();
-      const privileged = user.role === "admin" || user.role === "master";
+      const privileged = isAdminRole(user.accessRole);
       if (!guide?.pdf_key || (guide.status !== "published" && !privileged))
         fail("Guia não encontrado.");
       return { url: `/api/protected-pdf/guide/${guide.id}` };
@@ -829,10 +900,27 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         .select("id,status,pdf_key")
         .eq("id", Number(input.documentId))
         .maybeSingle();
-      const privileged = user.role === "admin" || user.role === "master";
+      const privileged = isAdminRole(user.accessRole);
       if (!data?.pdf_key || (data.status !== "published" && !privileged))
         fail("Conteúdo indisponível.");
       return { url: await signedPdfUrl(data.pdf_key) };
+    }
+    case "community.videoSource": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      const { data } = await db()
+        .from("ua_guides")
+        .select("id,status,content_type,video_url")
+        .eq("id", Number(input.documentId))
+        .maybeSingle();
+      const privileged = isAdminRole(user.accessRole);
+      if (
+        !data?.video_url ||
+        data.content_type !== "video" ||
+        (data.status !== "published" && !privileged)
+      )
+        fail("Conteúdo indisponível.");
+      return { url: await protectedVideoUrl(data.video_url) };
     }
     case "community.readingProgress.get": {
       const user = await requireUser();
@@ -863,13 +951,51 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       };
       if (existing) await db().from("ua_reading_progress").update(values).eq("id", existing.id);
       else
-        await db().from("ua_reading_progress").insert({
-          user_id: user.id,
-          source_type: input.sourceType,
-          document_id: Number(input.documentId),
-          ...values,
-        });
+        await db()
+          .from("ua_reading_progress")
+          .insert({
+            user_id: user.id,
+            source_type: input.sourceType,
+            document_id: Number(input.documentId),
+            ...values,
+          });
       return { currentPage: input.currentPage, pageCount: input.pageCount };
+    }
+    case "community.videoProgress.save": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      const documentId = Number(input.documentId);
+      const lastSecond = Math.max(0, Math.floor(Number(input.lastSecond) || 0));
+      const totalSeconds = Math.max(lastSecond, Math.floor(Number(input.totalSeconds) || 0));
+      const completed =
+        Boolean(input.completed) || (totalSeconds > 0 && lastSecond / totalSeconds >= 0.95);
+      const { data: existing } = await db()
+        .from("ua_reading_progress")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("source_type", "guide")
+        .eq("document_id", documentId)
+        .maybeSingle();
+      const values = {
+        last_second: lastSecond,
+        total_seconds: totalSeconds,
+        completed,
+        last_access_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      if (existing) await db().from("ua_reading_progress").update(values).eq("id", existing.id);
+      else
+        await db()
+          .from("ua_reading_progress")
+          .insert({
+            user_id: user.id,
+            source_type: "guide",
+            document_id: documentId,
+            current_page: 1,
+            page_count: 1,
+            ...values,
+          });
+      return { lastSecond, totalSeconds, completed };
     }
     case "community.annotations.list": {
       const user = await requireUser();
@@ -953,8 +1079,6 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       };
     }
 
-
-
     /* --------------------------------- admin --------------------------------- */
     case "community.admin.dashboard": {
       await requireAdmin();
@@ -1002,8 +1126,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.admin.saveTaxonomy": {
       await requireAdmin();
-      const table =
-        input.kind === "recipe" ? "ua_recipe_categories" : "ua_academy_modules";
+      const table = input.kind === "recipe" ? "ua_recipe_categories" : "ua_academy_modules";
       const name = String(input.name ?? "").trim();
       if (name.length < 2) fail("Informe um nome válido.");
       const values = {
@@ -1012,9 +1135,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         description: input.description ?? null,
         cover_image_key: input.coverImageKey ?? null,
         cover_image_url: input.coverImageUrl ?? null,
-        status: ["draft", "published", "archived"].includes(input.status)
-          ? input.status
-          : "draft",
+        status: ["draft", "published", "archived"].includes(input.status) ? input.status : "draft",
         position: Number(input.position ?? 0),
         updated_at: new Date().toISOString(),
       };
@@ -1026,8 +1147,12 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.admin.deleteTaxonomy": {
       await requireAdmin();
-      const table =
-        input.kind === "recipe" ? "ua_recipe_categories" : "ua_academy_modules";
+      const table = input.kind === "recipe" ? "ua_recipe_categories" : "ua_academy_modules";
+      const linkedTable = input.kind === "recipe" ? "ua_test_guides" : "ua_guides";
+      const linkedColumn = input.kind === "recipe" ? "category_id" : "module_id";
+      const linked = await countRows(linkedTable, { [linkedColumn]: String(Number(input.id)) });
+      if (linked > 0)
+        fail(`Não é possível excluir: existem ${linked} conteúdos vinculados. Arquive este item.`);
       const { error } = await db().from(table).delete().eq("id", Number(input.id));
       if (error) fail(error.message);
       return { success: true };
@@ -1040,10 +1165,13 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         summary: input.summary,
         content: input.content ?? null,
         category: input.category,
+        module_id: input.moduleId ? Number(input.moduleId) : null,
         content_type: contentType,
         video_url: contentType === "video" ? (input.videoUrl ?? null) : null,
-        pdf_key: input.pdfKey ?? null,
-        pdf_url: input.pdfUrl ?? null,
+        pdf_key: contentType === "pdf" ? (input.pdfKey ?? null) : null,
+        pdf_url: contentType === "pdf" ? (input.pdfUrl ?? null) : null,
+        estimated_duration: input.estimatedDuration ?? null,
+        technical_review: input.technicalReview ?? null,
         cover_image_key: input.coverImageKey ?? null,
         cover_image_url: input.coverImageUrl ?? null,
         status: input.status,
@@ -1052,7 +1180,10 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         updated_at: new Date().toISOString(),
       };
       if (input.id) await db().from("ua_guides").update(values).eq("id", input.id);
-      else await db().from("ua_guides").insert({ ...values, created_by: user.id });
+      else
+        await db()
+          .from("ua_guides")
+          .insert({ ...values, created_by: user.id });
       return { success: true };
     }
 
@@ -1072,6 +1203,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         summary: input.summary,
         content: input.content ?? null,
         category: input.category,
+        category_id: input.categoryId ? Number(input.categoryId) : null,
         callout: input.callout ?? null,
         accent_color: input.accentColor ?? "#0b2b26",
         cover_image_key: input.coverImageKey ?? null,
@@ -1079,10 +1211,14 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         pdf_key: input.pdfKey ?? null,
         pdf_url: input.pdfUrl ?? null,
         status: input.status,
+        position: Number(input.position ?? 0),
         updated_at: new Date().toISOString(),
       };
       if (input.id) await db().from("ua_test_guides").update(values).eq("id", Number(input.id));
-      else await db().from("ua_test_guides").insert({ ...values, created_by: user.id });
+      else
+        await db()
+          .from("ua_test_guides")
+          .insert({ ...values, created_by: user.id });
       return { success: true };
     }
     case "community.admin.setContentStatus": {
@@ -1113,7 +1249,6 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       return { success: true };
     }
     case "community.admin.deleteContent": {
-
       await requireAdmin();
       const table = input.kind === "recipe" ? "ua_test_guides" : "ua_guides";
       const { error } = await db().from(table).delete().eq("id", Number(input.id));
@@ -1135,7 +1270,10 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         updated_at: new Date().toISOString(),
       };
       if (input.id) await db().from("ua_facilitators").update(values).eq("id", input.id);
-      else await db().from("ua_facilitators").insert({ ...values, created_by: user.id });
+      else
+        await db()
+          .from("ua_facilitators")
+          .insert({ ...values, created_by: user.id });
       return { success: true };
     }
     case "community.admin.moderateTopic": {
@@ -1158,16 +1296,23 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     /* --------------------------------- master -------------------------------- */
     case "community.master.dashboard": {
       await requireMaster();
-      const [{ data: userRows }, { data: profiles }, { data: productRows }, { data: clicks }, { data: campaignRows }, { data: conversionRows }, landingSettings] =
-        await Promise.all([
-          db().from("ua_users").select("*").order("created_at", { ascending: false }),
-          db().from("ua_profiles").select("user_id,display_name"),
-          db().from("ua_products").select("*").order("position", { ascending: true }),
-          db().from("ua_product_clicks").select("product_id,campaign_id,origin"),
-          db().from("ua_campaigns").select("*").order("created_at", { ascending: false }),
-          db().from("ua_conversions").select("campaign_id,amount_cents,status"),
-          getLandingSettings(),
-        ]);
+      const [
+        { data: userRows },
+        { data: profiles },
+        { data: productRows },
+        { data: clicks },
+        { data: campaignRows },
+        { data: conversionRows },
+        landingSettings,
+      ] = await Promise.all([
+        db().from("ua_users").select("*").order("created_at", { ascending: false }),
+        db().from("ua_profiles").select("user_id,display_name"),
+        db().from("ua_products").select("*").order("position", { ascending: true }),
+        db().from("ua_product_clicks").select("product_id,campaign_id,origin"),
+        db().from("ua_campaigns").select("*").order("created_at", { ascending: false }),
+        db().from("ua_conversions").select("campaign_id,amount_cents,status"),
+        getLandingSettings(),
+      ]);
       const displayNames = new Map(
         (profiles ?? []).map((profile: any) => [profile.user_id, profile.display_name]),
       );
@@ -1199,7 +1344,8 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         stats: {
           accounts: users.length,
           activeAccounts: users.filter((user: any) => user.accountStatus === "active").length,
-          publishedProducts: products.filter((product: any) => product.status === "published").length,
+          publishedProducts: products.filter((product: any) => product.status === "published")
+            .length,
           clicks: clickList.length,
           confirmedConversions: confirmed.length,
           confirmedRevenueCents: confirmed.reduce(
@@ -1217,19 +1363,33 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.master.updateUserAccess": {
       const master = await requireMaster();
+      if (!isAccessRole(input.accessRole)) fail("Papel de acesso inválido.");
       if (
         Number(input.userId) === master.id &&
-        (input.role !== "master" || input.accountStatus !== "active")
+        (input.accessRole !== "admin_master" || input.accountStatus !== "active")
       )
         fail("Você não pode suspender ou remover o próprio acesso Master.");
+      const legacy = legacyValuesForAccessRole(input.accessRole);
       await db()
         .from("ua_users")
         .update({
-          role: input.role,
+          access_role: input.accessRole,
+          role: legacy.role,
           account_status: input.accountStatus,
-          membership_status: input.membershipStatus ?? "member",
+          membership_status: legacy.membershipStatus,
         })
         .eq("id", Number(input.userId));
+      await db()
+        .from("ua_audit_events")
+        .insert({
+          actor_auth_id: master.authId,
+          actor_user_id: master.id,
+          action: "user.access_role.update",
+          entity_type: "ua_user",
+          entity_id: String(input.userId),
+          outcome: "success",
+          metadata: { accessRole: input.accessRole, accountStatus: input.accountStatus },
+        });
       return { success: true };
     }
     case "community.master.saveProduct": {
@@ -1248,7 +1408,10 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         updated_at: new Date().toISOString(),
       };
       if (input.id) await db().from("ua_products").update(values).eq("id", input.id);
-      else await db().from("ua_products").insert({ ...values, created_by: master.id });
+      else
+        await db()
+          .from("ua_products")
+          .insert({ ...values, created_by: master.id });
       return { success: true };
     }
     case "community.master.saveCampaign": {
@@ -1267,7 +1430,10 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         updated_at: new Date().toISOString(),
       };
       if (input.id) await db().from("ua_campaigns").update(values).eq("id", input.id);
-      else await db().from("ua_campaigns").insert({ ...values, created_by: master.id });
+      else
+        await db()
+          .from("ua_campaigns")
+          .insert({ ...values, created_by: master.id });
       return { success: true };
     }
     case "community.master.saveLandingSettings": {
@@ -1299,17 +1465,19 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         if (!campaign || campaign.product_id !== input.productId)
           fail("A campanha selecionada não pertence a este produto.");
       }
-      await db().from("ua_conversions").insert({
-        product_id: input.productId,
-        campaign_id: input.campaignId ?? null,
-        amount_cents: input.amountCents ?? null,
-        currency: input.currency,
-        note: input.note ?? null,
-        occurred_at: new Date(input.occurredAt).toISOString(),
-        created_by: master.id,
-        source: "manual",
-        status: "confirmed",
-      });
+      await db()
+        .from("ua_conversions")
+        .insert({
+          product_id: input.productId,
+          campaign_id: input.campaignId ?? null,
+          amount_cents: input.amountCents ?? null,
+          currency: input.currency,
+          note: input.note ?? null,
+          occurred_at: new Date(input.occurredAt).toISOString(),
+          created_by: master.id,
+          source: "manual",
+          status: "confirmed",
+        });
       return { success: true };
     }
     case "community.master.accessControl": {
@@ -1336,7 +1504,10 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         updated_at: new Date().toISOString(),
       };
       if (input.id) await db().from("ua_access_levels").update(values).eq("id", input.id);
-      else await db().from("ua_access_levels").insert({ ...values, created_by: master.id });
+      else
+        await db()
+          .from("ua_access_levels")
+          .insert({ ...values, created_by: master.id });
       return { success: true };
     }
     case "community.master.deleteAccessLevel": {
@@ -1380,7 +1551,10 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         updated_at: new Date().toISOString(),
       };
       if (input.id) await db().from("ua_test_guides").update(values).eq("id", input.id);
-      else await db().from("ua_test_guides").insert({ ...values, created_by: master.id });
+      else
+        await db()
+          .from("ua_test_guides")
+          .insert({ ...values, created_by: master.id });
       return { success: true };
     }
     case "community.master.updateTestGuideCover": {
