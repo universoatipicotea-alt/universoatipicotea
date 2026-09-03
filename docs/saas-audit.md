@@ -10,7 +10,7 @@ Esta matriz é incremental. “Precisa de teste” significa que há implementa�
 | 2 | Login e recuperação de senha | precisa de teste | Login, solicitação de redefinição e nova senha existem; testar e-mail, expiração e redirecionamentos reais. |
 | 3 | Fluxo de compra | precisa de teste | Checkout Stripe existe; testar cenários aprovado, pendente, recusado, cancelado e retorno. |
 | 4 | Liberação de conta após pagamento | precisa de teste | `billing.activate` e ativação por sessão existem; validar idempotência e conta preexistente. |
-| 5 | Stripe e webhooks | parcial | Assinatura de webhook é verificada e eventos são processados. Cancelamento local não cancela a assinatura no Stripe; qualquer correção será apresentada antes. |
+| 5 | Stripe e webhooks | precisa de teste | Cancelamento no fim do período, retomada, assinatura do webhook e ledger idempotente estão implementados; falta executar o fluxo real em Stripe Test Mode. |
 | 6 | Área de membros | precisa de teste | Shell, dashboard e bloqueios existem; validar todos os estados de acesso. |
 | 7 | Academia | parcial | Hub, módulos, PDF/vídeo e progresso foram ligados ao novo modelo. Falta QA visual/autenticado e pré-visualização editorial. |
 | 8 | Receitas | parcial | Hub, categorias dinâmicas, capas, favoritos locais e leitor existem. Falta QA autenticado e persistência de favoritos no servidor. |
@@ -31,8 +31,8 @@ Esta matriz é incremental. “Precisa de teste” significa que há implementa�
 
 ## Bloqueios críticos já identificados
 
-- O cancelamento em `community.subscription.cancel` altera apenas o acesso local e não cancela a assinatura no Stripe.
-- O status `visitor` criado para novas contas precisa ser reconciliado com as restrições e tipos do banco.
+- A cadeia versionada de migrations não contém o baseline completo; banco vazio e RLS ainda precisam de validação real antes de qualquer merge.
+- O status `visitor` foi reconciliado no código e em migration aditiva, mas ainda depende do teste real de banco/RLS.
 - O uso de `service-role` torna obrigatória uma revisão completa de autorização em cada endpoint.
 - O arquivo `.env` versionado exige plano de remoção e possível rotação de credenciais; nenhuma credencial deve ser copiada para documentação ou commits.
 
