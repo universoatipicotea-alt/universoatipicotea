@@ -43,14 +43,13 @@ function normalize(value: string) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function videoSource(value: string) {
-  if (/^https?:\/\//i.test(value) || value.startsWith("/api/")) return value;
-  return `/api/public/ua-video/${value.split("/").map(encodeURIComponent).join("/")}`;
-}
-
 function AcademyVideo({ guide, progress }: { guide: AcademiaGuide; progress?: GuideProgress }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const save = trpc.community.videoProgress.save.useMutation();
+  const source = trpc.community.videoSource.useQuery(
+    { documentId: guide.id },
+    { enabled: Boolean(guide.videoUrl), staleTime: 10 * 60 * 1000 },
+  );
   useEffect(() => {
     const video = videoRef.current;
     if (video && progress?.lastSecond && video.currentTime < 1)
@@ -68,17 +67,27 @@ function AcademyVideo({ guide, progress }: { guide: AcademiaGuide; progress?: Gu
   };
   return (
     <div className="mt-5 overflow-hidden rounded-2xl bg-[var(--ink)] p-2">
-      <video
-        ref={videoRef}
-        controls
-        preload="metadata"
-        playsInline
-        onPause={() => persist()}
-        onEnded={() => persist(true)}
-        className="aspect-video w-full rounded-xl bg-black"
-        src={videoSource(guide.videoUrl!)}
-        aria-label={`Vídeo: ${guide.title}`}
-      />
+      {source.isLoading ? (
+        <div className="grid aspect-video place-items-center rounded-xl bg-black text-xs font-bold text-white/75">
+          Preparando vídeo protegido…
+        </div>
+      ) : source.isError || !source.data?.url ? (
+        <div className="grid aspect-video place-items-center rounded-xl bg-black px-5 text-center text-xs font-bold text-white/75">
+          Não foi possível abrir este vídeo agora.
+        </div>
+      ) : (
+        <video
+          ref={videoRef}
+          controls
+          preload="metadata"
+          playsInline
+          onPause={() => persist()}
+          onEnded={() => persist(true)}
+          className="aspect-video w-full rounded-xl bg-black"
+          src={source.data.url}
+          aria-label={`Vídeo: ${guide.title}`}
+        />
+      )}
     </div>
   );
 }

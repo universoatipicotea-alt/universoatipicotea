@@ -8,6 +8,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const PDF_BUCKET = "guias-pdf";
 const IMAGE_BUCKET = "guias-capas";
+const VIDEO_BUCKET = "funil-video";
 
 type Role = "user" | "admin" | "master";
 type UaUser = {
@@ -575,6 +576,20 @@ async function signedPdfUrl(pdfKey: string) {
   return data.signedUrl as string;
 }
 
+async function protectedVideoUrl(value: string) {
+  if (/^https?:\/\//i.test(value)) return value;
+  const publicPrefix = "/api/public/ua-video/";
+  const key = value.startsWith(publicPrefix)
+    ? decodeURIComponent(value.slice(publicPrefix.length))
+    : value;
+  if (!key || key.includes("..") || key.startsWith("/")) fail("Vídeo indisponível.");
+  const { data, error } = await db()
+    .storage.from(VIDEO_BUCKET)
+    .createSignedUrl(key, 60 * 15);
+  if (error || !data?.signedUrl) fail("Não foi possível abrir este vídeo.");
+  return data.signedUrl as string;
+}
+
 /* ------------------------------- dispatcher ------------------------------ */
 
 export async function dispatch(path: string, rawInput: unknown): Promise<unknown> {
@@ -861,6 +876,23 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       if (!data?.pdf_key || (data.status !== "published" && !privileged))
         fail("Conteúdo indisponível.");
       return { url: await signedPdfUrl(data.pdf_key) };
+    }
+    case "community.videoSource": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      const { data } = await db()
+        .from("ua_guides")
+        .select("id,status,content_type,video_url")
+        .eq("id", Number(input.documentId))
+        .maybeSingle();
+      const privileged = user.role === "admin" || user.role === "master";
+      if (
+        !data?.video_url ||
+        data.content_type !== "video" ||
+        (data.status !== "published" && !privileged)
+      )
+        fail("Conteúdo indisponível.");
+      return { url: await protectedVideoUrl(data.video_url) };
     }
     case "community.readingProgress.get": {
       const user = await requireUser();
