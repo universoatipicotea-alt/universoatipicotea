@@ -33,7 +33,9 @@ import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ReceitasRouteImport } from './routes/receitas'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as VslRouteImport } from './routes/vsl'
+import { Route as AcademiaModuloRouteImport } from './routes/academia.$modulo'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
+import { Route as ReceitasCategoriaRouteImport } from './routes/receitas.$categoria'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
 import { Route as ApiPublicUaImageSplatRouteImport } from './routes/api/public/ua-image/$'
 import { Route as ApiPublicUaVideoSplatRouteImport } from './routes/api/public/ua-video/$'
@@ -158,10 +160,20 @@ const VslRoute = VslRouteImport.update({
   path: '/vsl',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AcademiaModuloRoute = AcademiaModuloRouteImport.update({
+  id: '/$modulo',
+  path: '/$modulo',
+  getParentRoute: () => AcademiaRoute,
+} as any)
 const ProdutoSlugRoute = ProdutoSlugRouteImport.update({
   id: '/produto/$slug',
   path: '/produto/$slug',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ReceitasCategoriaRoute = ReceitasCategoriaRouteImport.update({
+  id: '/$categoria',
+  path: '/$categoria',
+  getParentRoute: () => ReceitasRoute,
 } as any)
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   id: '/api/public/stripe-webhook',
@@ -181,7 +193,7 @@ const ApiPublicUaVideoSplatRoute = ApiPublicUaVideoSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/academia': typeof AcademiaRoute
+  '/academia': typeof AcademiaRouteWithChildren
   '/academia-atipica': typeof AcademiaAtipicaRoute
   '/admin': typeof AdminRoute
   '/ajuda': typeof AjudaRoute
@@ -201,17 +213,19 @@ export interface FileRoutesByFullPath {
   '/obrigado': typeof ObrigadoRoute
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
-  '/receitas': typeof ReceitasRoute
+  '/receitas': typeof ReceitasRouteWithChildren
   '/termos': typeof TermosRoute
   '/vsl': typeof VslRoute
+  '/academia/$modulo': typeof AcademiaModuloRoute
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/receitas/$categoria': typeof ReceitasCategoriaRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
   '/api/public/ua-video/$': typeof ApiPublicUaVideoSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/academia': typeof AcademiaRoute
+  '/academia': typeof AcademiaRouteWithChildren
   '/academia-atipica': typeof AcademiaAtipicaRoute
   '/admin': typeof AdminRoute
   '/ajuda': typeof AjudaRoute
@@ -231,10 +245,12 @@ export interface FileRoutesByTo {
   '/obrigado': typeof ObrigadoRoute
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
-  '/receitas': typeof ReceitasRoute
+  '/receitas': typeof ReceitasRouteWithChildren
   '/termos': typeof TermosRoute
   '/vsl': typeof VslRoute
+  '/academia/$modulo': typeof AcademiaModuloRoute
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/receitas/$categoria': typeof ReceitasCategoriaRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
   '/api/public/ua-video/$': typeof ApiPublicUaVideoSplatRoute
@@ -242,7 +258,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/academia': typeof AcademiaRoute
+  '/academia': typeof AcademiaRouteWithChildren
   '/academia-atipica': typeof AcademiaAtipicaRoute
   '/admin': typeof AdminRoute
   '/ajuda': typeof AjudaRoute
@@ -262,10 +278,12 @@ export interface FileRoutesById {
   '/obrigado': typeof ObrigadoRoute
   '/perfil': typeof PerfilRoute
   '/privacidade': typeof PrivacidadeRoute
-  '/receitas': typeof ReceitasRoute
+  '/receitas': typeof ReceitasRouteWithChildren
   '/termos': typeof TermosRoute
   '/vsl': typeof VslRoute
+  '/academia/$modulo': typeof AcademiaModuloRoute
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/receitas/$categoria': typeof ReceitasCategoriaRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
   '/api/public/ua-video/$': typeof ApiPublicUaVideoSplatRoute
@@ -297,7 +315,9 @@ export interface FileRouteTypes {
     | '/receitas'
     | '/termos'
     | '/vsl'
+    | '/academia/$modulo'
     | '/produto/$slug'
+    | '/receitas/$categoria'
     | '/api/public/stripe-webhook'
     | '/api/public/ua-image/$'
     | '/api/public/ua-video/$'
@@ -327,7 +347,9 @@ export interface FileRouteTypes {
     | '/receitas'
     | '/termos'
     | '/vsl'
+    | '/academia/$modulo'
     | '/produto/$slug'
+    | '/receitas/$categoria'
     | '/api/public/stripe-webhook'
     | '/api/public/ua-image/$'
     | '/api/public/ua-video/$'
@@ -357,7 +379,9 @@ export interface FileRouteTypes {
     | '/receitas'
     | '/termos'
     | '/vsl'
+    | '/academia/$modulo'
     | '/produto/$slug'
+    | '/receitas/$categoria'
     | '/api/public/stripe-webhook'
     | '/api/public/ua-image/$'
     | '/api/public/ua-video/$'
@@ -365,7 +389,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AcademiaRoute: typeof AcademiaRoute
+  AcademiaRoute: typeof AcademiaRouteWithChildren
   AcademiaAtipicaRoute: typeof AcademiaAtipicaRoute
   AdminRoute: typeof AdminRoute
   AjudaRoute: typeof AjudaRoute
@@ -385,7 +409,7 @@ export interface RootRouteChildren {
   ObrigadoRoute: typeof ObrigadoRoute
   PerfilRoute: typeof PerfilRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
-  ReceitasRoute: typeof ReceitasRoute
+  ReceitasRoute: typeof ReceitasRouteWithChildren
   TermosRoute: typeof TermosRoute
   VslRoute: typeof VslRoute
   ProdutoSlugRoute: typeof ProdutoSlugRoute
@@ -564,12 +588,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VslRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/academia/$modulo': {
+      id: '/academia/$modulo'
+      path: '/$modulo'
+      fullPath: '/academia/$modulo'
+      preLoaderRoute: typeof AcademiaModuloRouteImport
+      parentRoute: typeof AcademiaRoute
+    }
     '/produto/$slug': {
       id: '/produto/$slug'
       path: '/produto/$slug'
       fullPath: '/produto/$slug'
       preLoaderRoute: typeof ProdutoSlugRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/receitas/$categoria': {
+      id: '/receitas/$categoria'
+      path: '/$categoria'
+      fullPath: '/receitas/$categoria'
+      preLoaderRoute: typeof ReceitasCategoriaRouteImport
+      parentRoute: typeof ReceitasRoute
     }
     '/api/public/stripe-webhook': {
       id: '/api/public/stripe-webhook'
@@ -595,9 +633,33 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AcademiaRouteChildren {
+  AcademiaModuloRoute: typeof AcademiaModuloRoute
+}
+
+const AcademiaRouteChildren: AcademiaRouteChildren = {
+  AcademiaModuloRoute: AcademiaModuloRoute,
+}
+
+const AcademiaRouteWithChildren = AcademiaRoute._addFileChildren(
+  AcademiaRouteChildren,
+)
+
+interface ReceitasRouteChildren {
+  ReceitasCategoriaRoute: typeof ReceitasCategoriaRoute
+}
+
+const ReceitasRouteChildren: ReceitasRouteChildren = {
+  ReceitasCategoriaRoute: ReceitasCategoriaRoute,
+}
+
+const ReceitasRouteWithChildren = ReceitasRoute._addFileChildren(
+  ReceitasRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AcademiaRoute: AcademiaRoute,
+  AcademiaRoute: AcademiaRouteWithChildren,
   AcademiaAtipicaRoute: AcademiaAtipicaRoute,
   AdminRoute: AdminRoute,
   AjudaRoute: AjudaRoute,
@@ -617,7 +679,7 @@ const rootRouteChildren: RootRouteChildren = {
   ObrigadoRoute: ObrigadoRoute,
   PerfilRoute: PerfilRoute,
   PrivacidadeRoute: PrivacidadeRoute,
-  ReceitasRoute: ReceitasRoute,
+  ReceitasRoute: ReceitasRouteWithChildren,
   TermosRoute: TermosRoute,
   VslRoute: VslRoute,
   ProdutoSlugRoute: ProdutoSlugRoute,
