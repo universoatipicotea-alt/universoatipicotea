@@ -610,13 +610,16 @@ export type Database = {
           cover_image_url: string | null
           created_at: string
           created_by: number | null
+          estimated_duration: string | null
           id: number
+          module_id: number | null
           pdf_key: string | null
           pdf_url: string | null
           position: number
           published_at: string | null
           status: string
           summary: string
+          technical_review: string | null
           title: string
           updated_at: string
           video_url: string | null
@@ -629,13 +632,16 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           created_by?: number | null
+          estimated_duration?: string | null
           id?: number
+          module_id?: number | null
           pdf_key?: string | null
           pdf_url?: string | null
           position?: number
           published_at?: string | null
           status?: string
           summary: string
+          technical_review?: string | null
           title: string
           updated_at?: string
           video_url?: string | null
@@ -648,13 +654,16 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           created_by?: number | null
+          estimated_duration?: string | null
           id?: number
+          module_id?: number | null
           pdf_key?: string | null
           pdf_url?: string | null
           position?: number
           published_at?: string | null
           status?: string
           summary?: string
+          technical_review?: string | null
           title?: string
           updated_at?: string
           video_url?: string | null
@@ -665,6 +674,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "ua_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ua_guides_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "ua_academy_modules"
             referencedColumns: ["id"]
           },
         ]
@@ -927,32 +943,44 @@ export type Database = {
       }
       ua_reading_progress: {
         Row: {
+          completed: boolean
           created_at: string
           current_page: number
           document_id: number
           id: number
+          last_access_at: string
+          last_second: number
           page_count: number
           source_type: string
+          total_seconds: number
           updated_at: string
           user_id: number
         }
         Insert: {
+          completed?: boolean
           created_at?: string
           current_page?: number
           document_id: number
           id?: number
+          last_access_at?: string
+          last_second?: number
           page_count?: number
           source_type: string
+          total_seconds?: number
           updated_at?: string
           user_id: number
         }
         Update: {
+          completed?: boolean
           created_at?: string
           current_page?: number
           document_id?: number
           id?: number
+          last_access_at?: string
+          last_second?: number
           page_count?: number
           source_type?: string
+          total_seconds?: number
           updated_at?: string
           user_id?: number
         }
@@ -1010,6 +1038,7 @@ export type Database = {
           accent_color: string
           callout: string | null
           category: string
+          category_id: number | null
           content: string | null
           cover_image_key: string | null
           cover_image_url: string | null
@@ -1018,6 +1047,7 @@ export type Database = {
           id: number
           pdf_key: string | null
           pdf_url: string | null
+          position: number
           status: string
           summary: string
           title: string
@@ -1027,6 +1057,7 @@ export type Database = {
           accent_color?: string
           callout?: string | null
           category?: string
+          category_id?: number | null
           content?: string | null
           cover_image_key?: string | null
           cover_image_url?: string | null
@@ -1035,6 +1066,7 @@ export type Database = {
           id?: number
           pdf_key?: string | null
           pdf_url?: string | null
+          position?: number
           status?: string
           summary: string
           title: string
@@ -1044,6 +1076,7 @@ export type Database = {
           accent_color?: string
           callout?: string | null
           category?: string
+          category_id?: number | null
           content?: string | null
           cover_image_key?: string | null
           cover_image_url?: string | null
@@ -1052,12 +1085,20 @@ export type Database = {
           id?: number
           pdf_key?: string | null
           pdf_url?: string | null
+          position?: number
           status?: string
           summary?: string
           title?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ua_test_guides_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ua_recipe_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ua_test_guides_created_by_fkey"
             columns: ["created_by"]
