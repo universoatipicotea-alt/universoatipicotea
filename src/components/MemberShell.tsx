@@ -32,7 +32,7 @@ const PREFETCH_BY_HREF: Record<string, Array<[string, unknown]>> = {
     ["community.publicGuides", null],
     ["community.memberDashboard", null],
   ],
-  "/forum": [["community.forum.list", null]],
+  "/comunidade": [["community.forum.list", null]],
   "/facilitadores": [["community.memberDashboard", null]],
   "/minha-assinatura": [["community.subscription.me", null]],
   "/perfil": [["community.profile.me", null]],
@@ -48,15 +48,19 @@ const navigation = [
   { href: "/receitas", label: "Receitas", icon: ChefHat },
   { href: "/academia", label: "Academia Atípica", icon: Compass },
   { href: "/biblioteca", label: "Biblioteca", icon: BookOpen },
-  { href: "/forum", label: "Comunidade", icon: MessageCircle },
+  { href: "/comunidade", label: "Comunidade", icon: MessageCircle },
   { href: "/facilitadores", label: "Facilitadores", icon: Lightbulb },
   { href: "/minha-assinatura", label: "Minha assinatura", icon: CreditCard },
   { href: "/ajuda", label: "Ajuda e segurança", icon: CircleHelp },
   { href: "/perfil", label: "Meu perfil", icon: CircleUserRound },
 ];
 const mobileNavigation = navigation.filter((item) =>
-  ["/inicio", "/receitas", "/academia", "/biblioteca", "/perfil"].includes(item.href),
+  ["/inicio", "/receitas", "/academia", "/biblioteca", "/comunidade"].includes(item.href),
 );
+
+function isNavigationActive(location: string, href: string) {
+  return location === href || (href !== "/inicio" && location.startsWith(`${href}/`));
+}
 
 function Initials({ name }: { name?: string | null }) {
   const initials = (name || "UA")
@@ -234,7 +238,7 @@ export function MemberShell({
                     <SideLink
                       key={item.href}
                       {...item}
-                      active={location === item.href}
+                      active={isNavigationActive(location, item.href)}
                       onClick={() => setMenuOpen(false)}
                     />
                   ))}
@@ -244,7 +248,7 @@ export function MemberShell({
                         <SideLink
                           key={item.href}
                           {...item}
-                          active={location === item.href}
+                          active={isNavigationActive(location, item.href)}
                           onClick={() => setMenuOpen(false)}
                         />
                       ))}
@@ -291,7 +295,7 @@ export function MemberShell({
                 <SideLink
                   key={item.href}
                   {...item}
-                  active={location === item.href}
+                  active={isNavigationActive(location, item.href)}
                   collapsed={sidebarCollapsed}
                 />
               ))}
@@ -305,7 +309,7 @@ export function MemberShell({
                 <SideLink
                   key={item.href}
                   {...item}
-                  active={location === item.href}
+                  active={isNavigationActive(location, item.href)}
                   collapsed={sidebarCollapsed}
                 />
               ))}
@@ -321,7 +325,7 @@ export function MemberShell({
                     <SideLink
                       key={item.href}
                       {...item}
-                      active={location === item.href}
+                      active={isNavigationActive(location, item.href)}
                       collapsed={sidebarCollapsed}
                     />
                   ))}
@@ -398,7 +402,7 @@ export function MemberShell({
             <Link
               key={item.href}
               href={item.href}
-              className={`nav-link flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-extrabold ${location === item.href ? "text-[var(--sage-deep)]" : "text-[var(--ink-soft)]"}`}
+              className={`nav-link flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-extrabold ${isNavigationActive(location, item.href) ? "text-[var(--sage-deep)]" : "text-[var(--ink-soft)]"}`}
             >
               <Icon size={18} />
               <span>{item.label}</span>

@@ -363,6 +363,7 @@ async function decorateAuthors(rows: any[]) {
     const { author_id, ...rest } = row;
     return {
       ...camel(rest),
+      authorId: author_id,
       authorName: nameById.get(author_id) ?? null,
       authorDisplayName: profile?.display_name ?? null,
       authorAvatarUrl: profile?.avatar_url ?? null,
@@ -373,11 +374,14 @@ async function decorateAuthors(rows: any[]) {
 async function listTopics(includeHidden = false) {
   let query = db().from("ua_forum_topics").select("*");
   if (!includeHidden) query = query.eq("status", "visible");
-  const { data } = await query.order("updated_at", { ascending: false }).limit(100);
+  const { data } = await query
+    .order("is_pinned", { ascending: false })
+    .order("last_activity_at", { ascending: false })
+    .limit(100);
   return decorateAuthors(data ?? []);
 }
 
-async function getTopicDetail(topicId: number, includeHidden = false) {
+async function getTopicDetail(topicId: number, includeHidden = false, viewerUserId?: number) {
   const { data: topicRow } = await db()
     .from("ua_forum_topics")
     .select("*")
@@ -388,7 +392,24 @@ async function getTopicDetail(topicId: number, includeHidden = false) {
   let commentQuery = db().from("ua_forum_comments").select("*").eq("topic_id", topicId);
   if (!includeHidden) commentQuery = commentQuery.eq("status", "visible");
   const { data: commentRows } = await commentQuery.order("created_at", { ascending: true });
-  const comments = await decorateAuthors(commentRows ?? []);
+  const decoratedComments = await decorateAuthors(commentRows ?? []);
+  const commentIds = decoratedComments.map((comment: any) => comment.id);
+  const { data: reactionRows } = commentIds.length
+    ? await db()
+        .from("ua_forum_reactions")
+        .select("comment_id,user_id,reaction")
+        .in("comment_id", commentIds)
+    : { data: [] as any[] };
+  const comments = decoratedComments.map((comment: any) => {
+    const reactions = (reactionRows ?? []).filter((row: any) => row.comment_id === comment.id);
+    return {
+      ...comment,
+      reactionCount: reactions.length,
+      viewerReactions: reactions
+        .filter((row: any) => row.user_id === viewerUserId)
+        .map((row: any) => row.reaction),
+    };
+  });
   return { topic, comments };
 }
 
@@ -692,9 +713,11 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     case "community.forum.list":
       await assertMemberContent(await requireUser());
       return listTopics(false);
-    case "community.forum.detail":
-      await assertMemberContent(await requireUser());
-      return getTopicDetail(Number(input.topicId), false);
+    case "community.forum.detail": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      return getTopicDetail(Number(input.topicId), false, user.id);
+    }
     case "community.products.resolve": {
       const { data: product } = await db()
         .from("ua_products")
@@ -873,10 +896,18 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     case "community.forum.createTopic": {
       const user = await requireUser();
       await assertMemberContent(user);
+      const title = String(input.title ?? "").trim();
+      const body = String(input.body ?? "").trim();
+      const category = String(input.category ?? "").trim();
+      if (title.length < 5 || title.length > 180)
+        fail("O título deve ter entre 5 e 180 caracteres.");
+      if (body.length < 10 || body.length > 10000)
+        fail("A conversa deve ter entre 10 e 10.000 caracteres.");
+      if (category.length < 2 || category.length > 80) fail("Selecione uma categoria válida.");
       const { error } = await db().from("ua_forum_topics").insert({
-        title: input.title,
-        body: input.body,
-        category: input.category,
+        title,
+        body,
+        category,
         author_id: user.id,
       });
       if (error) fail(error.message);
@@ -885,24 +916,110 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     case "community.forum.addComment": {
       const user = await requireUser();
       await assertMemberContent(user);
+      const body = String(input.body ?? "").trim();
+      if (body.length < 2 || body.length > 5000)
+        fail("A resposta deve ter entre 2 e 5.000 caracteres.");
       const { data: topic } = await db()
         .from("ua_forum_topics")
-        .select("id,status,comment_count")
+        .select("id,status")
         .eq("id", Number(input.topicId))
         .maybeSingle();
       if (!topic || topic.status !== "visible")
         fail("Este tópico não está disponível para comentários.");
-      const { error } = await db()
-        .from("ua_forum_comments")
-        .insert({ topic_id: topic.id, body: input.body, author_id: user.id });
+      const parentCommentId = input.parentCommentId ? Number(input.parentCommentId) : null;
+      if (parentCommentId) {
+        const { data: parent } = await db()
+          .from("ua_forum_comments")
+          .select("id,topic_id,status")
+          .eq("id", parentCommentId)
+          .maybeSingle();
+        if (!parent || parent.topic_id !== topic.id || parent.status !== "visible")
+          fail("A resposta selecionada não está mais disponível.");
+      }
+      const { error } = await db().from("ua_forum_comments").insert({
+        topic_id: topic.id,
+        parent_comment_id: parentCommentId,
+        body,
+        author_id: user.id,
+      });
       if (error) fail(error.message);
+      return { success: true };
+    }
+    case "community.forum.toggleReaction": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      const commentId = Number(input.commentId);
+      const reaction = ["support", "helpful", "heart"].includes(String(input.reaction))
+        ? String(input.reaction)
+        : "support";
+      const { data: comment } = await db()
+        .from("ua_forum_comments")
+        .select("id,status")
+        .eq("id", commentId)
+        .maybeSingle();
+      if (!comment || comment.status !== "visible") fail("Esta resposta não está disponível.");
+      const existing = await db()
+        .from("ua_forum_reactions")
+        .select("id")
+        .eq("comment_id", commentId)
+        .eq("user_id", user.id)
+        .eq("reaction", reaction)
+        .maybeSingle();
+      if (existing.data) await db().from("ua_forum_reactions").delete().eq("id", existing.data.id);
+      else
+        await db()
+          .from("ua_forum_reactions")
+          .insert({ comment_id: commentId, user_id: user.id, reaction });
+      return { active: !existing.data };
+    }
+    case "community.forum.updateComment": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      const body = String(input.body ?? "").trim();
+      if (body.length < 2 || body.length > 5000)
+        fail("A resposta deve ter entre 2 e 5.000 caracteres.");
+      const { data: comment } = await db()
+        .from("ua_forum_comments")
+        .select("id,author_id,status")
+        .eq("id", Number(input.commentId))
+        .maybeSingle();
+      if (!comment || comment.status !== "visible" || comment.author_id !== user.id)
+        fail("Você não pode editar esta resposta.");
       await db()
-        .from("ua_forum_topics")
-        .update({
-          comment_count: Number(topic.comment_count ?? 0) + 1,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", topic.id);
+        .from("ua_forum_comments")
+        .update({ body, edited_at: new Date().toISOString() })
+        .eq("id", comment.id);
+      return { success: true };
+    }
+    case "community.forum.deleteComment": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      const { data: comment } = await db()
+        .from("ua_forum_comments")
+        .select("id,author_id,status")
+        .eq("id", Number(input.commentId))
+        .maybeSingle();
+      if (!comment || comment.status !== "visible" || comment.author_id !== user.id)
+        fail("Você não pode remover esta resposta.");
+      await db().from("ua_forum_comments").update({ status: "hidden" }).eq("id", comment.id);
+      return { success: true };
+    }
+    case "community.forum.report": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      const reason = String(input.reason ?? "").trim();
+      if (reason.length < 3 || reason.length > 1000)
+        fail("Explique brevemente o motivo da denúncia.");
+      const values = {
+        reporter_id: user.id,
+        topic_id: input.topicId ? Number(input.topicId) : null,
+        comment_id: input.commentId ? Number(input.commentId) : null,
+        reason,
+      };
+      if (Boolean(values.topic_id) === Boolean(values.comment_id))
+        fail("Selecione apenas um conteúdo para denunciar.");
+      const { error } = await db().from("ua_forum_reports").insert(values);
+      if (error && error.code !== "23505") fail(error.message);
       return { success: true };
     }
     case "community.forum.downloadGuide": {
@@ -1111,36 +1228,66 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     /* --------------------------------- admin --------------------------------- */
     case "community.admin.dashboard": {
       await requireAdmin();
-      const [members, guideCount, facilitatorCount, topicCount, commentCount] = await Promise.all([
-        countRows("ua_users"),
-        countRows("ua_guides"),
-        countRows("ua_facilitators"),
-        countRows("ua_forum_topics"),
-        countRows("ua_forum_comments"),
-      ]);
-      const [{ data: guides }, { data: facilitators }, topics] = await Promise.all([
-        db()
-          .from("ua_guides")
-          .select("*")
-          .order("status", { ascending: true })
-          .order("position", { ascending: true }),
-        db()
-          .from("ua_facilitators")
-          .select("*")
-          .order("status", { ascending: true })
-          .order("position", { ascending: true }),
-        listTopics(true),
-      ]);
+      const [members, guideCount, facilitatorCount, topicCount, commentCount, reportCount] =
+        await Promise.all([
+          countRows("ua_users"),
+          countRows("ua_guides"),
+          countRows("ua_facilitators"),
+          countRows("ua_forum_topics"),
+          countRows("ua_forum_comments"),
+          countRows("ua_forum_reports", { status: "open" }),
+        ]);
+      const [{ data: guides }, { data: facilitators }, topics, { data: reports }] =
+        await Promise.all([
+          db()
+            .from("ua_guides")
+            .select("*")
+            .order("status", { ascending: true })
+            .order("position", { ascending: true }),
+          db()
+            .from("ua_facilitators")
+            .select("*")
+            .order("status", { ascending: true })
+            .order("position", { ascending: true }),
+          listTopics(true),
+          db()
+            .from("ua_forum_reports")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(100),
+        ]);
+      const commentIds = (reports ?? [])
+        .map((report) => report.comment_id)
+        .filter((id): id is number => Number.isFinite(id));
+      const { data: reportedComments } = commentIds.length
+        ? await db().from("ua_forum_comments").select("id,topic_id,body").in("id", commentIds)
+        : { data: [] };
+      const commentsById = new Map<number, { topicId: number; body: string }>(
+        (reportedComments ?? []).map((comment) => [
+          Number(comment.id),
+          { topicId: Number(comment.topic_id), body: String(comment.body ?? "") },
+        ]),
+      );
+      const moderationReports = (reports ?? []).map((report) => {
+        const comment = report.comment_id ? commentsById.get(Number(report.comment_id)) : null;
+        return camel({
+          ...report,
+          topic_id: report.topic_id ?? comment?.topicId ?? null,
+          reported_body: comment?.body ?? null,
+        });
+      });
       return {
         stats: {
           members,
           guides: guideCount,
           facilitators: facilitatorCount,
           conversations: topicCount + commentCount,
+          reports: reportCount,
         },
         guides: camel(guides ?? []),
         facilitators: camel(facilitators ?? []),
         topics,
+        reports: moderationReports,
       };
     }
     case "community.admin.topicDetail":
@@ -1339,6 +1486,28 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         .from("ua_forum_comments")
         .update({ status: input.status })
         .eq("id", Number(input.commentId));
+      return { success: true };
+    }
+    case "community.admin.reviewReport": {
+      const user = await requireAdmin();
+      const reportId = Number(input.reportId);
+      const status = ["reviewed", "dismissed", "actioned"].includes(String(input.status))
+        ? String(input.status)
+        : "reviewed";
+      await db()
+        .from("ua_forum_reports")
+        .update({ status, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+        .eq("id", reportId);
+      await db()
+        .from("ua_audit_events")
+        .insert({
+          actor_user_id: user.id,
+          action: "community.report.reviewed",
+          entity_type: "forum_report",
+          entity_id: String(reportId),
+          outcome: "success",
+          metadata: { status },
+        });
       return { success: true };
     }
 

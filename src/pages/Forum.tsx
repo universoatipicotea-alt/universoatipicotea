@@ -1,94 +1,670 @@
+import { useAuth } from "@/_core/hooks/useAuth";
 import { ContentEmpty, MemberShell, SectionHeading } from "@/components/MemberShell";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, ChevronRight, MessageCircleMore, Plus, Send, UsersRound } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronRight,
+  Flag,
+  HeartHandshake,
+  MessageCircleMore,
+  Pencil,
+  Pin,
+  Plus,
+  Search,
+  Send,
+  Trash2,
+  UsersRound,
+} from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Link, useLocation, useSearch } from "wouter";
+import { useLocation, useSearch } from "wouter";
 
-const categories = ["Rotina", "Escola", "Comunicação", "Comportamento", "Autocuidado", "Outros"];
+const categories = [
+  "Todos",
+  "Rotina",
+  "Escola",
+  "Comunicação",
+  "Comportamento",
+  "Autocuidado",
+  "Outros",
+];
+
+type ForumComment = {
+  id: number;
+  parentCommentId?: number | null;
+  authorId: number;
+  authorName?: string | null;
+  authorDisplayName?: string | null;
+  body: string;
+  createdAt: string;
+  editedAt?: string | null;
+  reactionCount?: number;
+  viewerReactions?: string[];
+};
 
 function initials(name?: string | null) {
-  return (name || "UA").split(" ").map(value => value[0]).join("").slice(0, 2).toUpperCase();
+  return (name || "UA")
+    .split(" ")
+    .map((value) => value[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 }
 
 function relativeDate(value: Date | string) {
-  const date = new Date(value);
-  const delta = Math.max(0, Date.now() - date.getTime());
-  const hours = Math.floor(delta / 3_600_000);
-  if (hours < 1) return "agora";
+  const delta = Math.max(0, Date.now() - new Date(value).getTime());
+  const minutes = Math.floor(delta / 60_000);
+  if (minutes < 1) return "agora";
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
   return days === 1 ? "ontem" : `${days} dias`;
 }
 
+function Avatar({ name, image }: { name?: string | null; image?: string | null }) {
+  return image ? (
+    <img src={image} alt="" className="h-10 w-10 rounded-full object-cover" />
+  ) : (
+    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--sage-pale)] text-xs font-extrabold text-[var(--sage-deep)]">
+      {initials(name)}
+    </span>
+  );
+}
+
 export default function Forum() {
-  const [location, setLocation] = useLocation();
-  const search = useSearch();
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  const searchParams = useSearch();
   const topicId = useMemo(() => {
-    const value = Number(new URLSearchParams(search).get("topic"));
+    const value = Number(new URLSearchParams(searchParams).get("topic"));
     return Number.isInteger(value) && value > 0 ? value : null;
-  }, [search]);
+  }, [searchParams]);
   const topics = trpc.community.forum.list.useQuery();
-  const detail = trpc.community.forum.detail.useQuery({ topicId: topicId ?? 1 }, { enabled: Boolean(topicId) });
+  const detail = trpc.community.forum.detail.useQuery(
+    { topicId: topicId ?? 1 },
+    { enabled: Boolean(topicId) },
+  );
   const utils = trpc.useUtils();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newTopic, setNewTopic] = useState({ title: "", body: "", category: "Rotina" });
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("Todos");
+  const [sort, setSort] = useState("recentes");
+  const [replyTo, setReplyTo] = useState<number | null>(null);
+  const [replyBody, setReplyBody] = useState("");
+  const [editing, setEditing] = useState<{ id: number; body: string } | null>(null);
+  const [reporting, setReporting] = useState<{ topicId?: number; commentId?: number } | null>(null);
+  const [reportReason, setReportReason] = useState("");
+
+  const refresh = async () => {
+    if (topicId) await utils.community.forum.detail.invalidate({ topicId });
+    await Promise.all([
+      utils.community.forum.list.invalidate(),
+      utils.community.memberDashboard.invalidate(),
+    ]);
+  };
   const createTopic = trpc.community.forum.createTopic.useMutation({
     onSuccess: async () => {
-      await Promise.all([utils.community.forum.list.invalidate(), utils.community.memberDashboard.invalidate()]);
-      toast.success("Sua conversa foi publicada.");
+      await refresh();
+      setDialogOpen(false);
+      setNewTopic({ title: "", body: "", category: "Rotina" });
+      toast.success("Conversa publicada.");
     },
-    onError: error => toast.error(error.message),
+    onError: (error: Error) => toast.error(error.message),
   });
   const addComment = trpc.community.forum.addComment.useMutation({
     onSuccess: async () => {
-      if (topicId) await utils.community.forum.detail.invalidate({ topicId });
-      await Promise.all([utils.community.forum.list.invalidate(), utils.community.memberDashboard.invalidate()]);
-      toast.success("Sua resposta foi enviada.");
+      await refresh();
+      setReplyBody("");
+      setReplyTo(null);
+      toast.success("Resposta publicada.");
     },
-    onError: error => toast.error(error.message),
+    onError: (error: Error) => toast.error(error.message),
   });
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newTopic, setNewTopic] = useState({ title: "", body: "", category: categories[0] });
-  const [comment, setComment] = useState("");
+  const toggleReaction = trpc.community.forum.toggleReaction.useMutation({
+    onSuccess: refresh,
+    onError: (error: Error) => toast.error(error.message),
+  });
+  const updateComment = trpc.community.forum.updateComment.useMutation({
+    onSuccess: async () => {
+      await refresh();
+      setEditing(null);
+      toast.success("Resposta atualizada.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+  const deleteComment = trpc.community.forum.deleteComment.useMutation({
+    onSuccess: refresh,
+    onError: (error: Error) => toast.error(error.message),
+  });
+  const report = trpc.community.forum.report.useMutation({
+    onSuccess: () => {
+      setReporting(null);
+      setReportReason("");
+      toast.success("Denúncia enviada para a moderação.");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const filteredTopics = useMemo(() => {
+    const term = query.trim().toLocaleLowerCase("pt-BR");
+    const rows = (topics.data || []).filter((topic: any) => {
+      const matchesCategory = category === "Todos" || topic.category === category;
+      const matchesTerm =
+        !term || `${topic.title} ${topic.body}`.toLocaleLowerCase("pt-BR").includes(term);
+      return matchesCategory && matchesTerm;
+    });
+    return [...rows].sort((a: any, b: any) => {
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+      if (sort === "respondidas") return Number(b.commentCount || 0) - Number(a.commentCount || 0);
+      if (sort === "sem-resposta") return Number(a.commentCount || 0) - Number(b.commentCount || 0);
+      return (
+        new Date(b.lastActivityAt || b.updatedAt).getTime() -
+        new Date(a.lastActivityAt || a.updatedAt).getTime()
+      );
+    });
+  }, [topics.data, category, query, sort]);
 
   const submitTopic = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     await createTopic.mutateAsync(newTopic);
-    setNewTopic({ title: "", body: "", category: categories[0] });
-    setDialogOpen(false);
   };
-  const submitComment = async (event: FormEvent<HTMLFormElement>) => {
+  const submitReply = async (event: FormEvent<HTMLFormElement>, parentCommentId?: number) => {
     event.preventDefault();
     if (!topicId) return;
-    await addComment.mutateAsync({ topicId, body: comment });
-    setComment("");
+    await addComment.mutateAsync({
+      topicId,
+      parentCommentId: parentCommentId || null,
+      body: replyBody,
+    });
   };
 
-  if (topicId && detail.isLoading) {
-    return <MemberShell eyebrow="Conversas" title="Fórum da comunidade" description="Abrindo a conversa selecionada."><div className="space-y-5"><div className="h-64 animate-pulse rounded-[2rem] bg-[var(--linen)]" /><div className="h-36 animate-pulse rounded-3xl bg-[var(--linen)]" /></div></MemberShell>;
-  }
+  if (topicId && detail.isLoading)
+    return (
+      <MemberShell
+        eyebrow="Comunidade"
+        title="Abrindo conversa…"
+        description="Carregando respostas e participantes."
+      >
+        <div className="space-y-5">
+          <div className="h-64 animate-pulse rounded-3xl bg-[var(--linen)]" />
+          <div className="h-36 animate-pulse rounded-3xl bg-[var(--linen)]" />
+        </div>
+      </MemberShell>
+    );
 
-  if (topicId && (detail.isError || !detail.data)) {
-    return <MemberShell eyebrow="Conversas" title="Fórum da comunidade" description="Perguntas, trocas e experiências compartilhadas com cuidado."><button type="button" onClick={() => setLocation("/forum")} className="mb-7 inline-flex items-center gap-2 text-sm font-extrabold text-[var(--sage-deep)] hover:underline"><ArrowLeft size={16} />Voltar às conversas</button><ContentEmpty icon={MessageCircleMore} title={detail.isError ? "Não foi possível abrir essa conversa" : "Essa conversa não foi encontrada"} text={detail.isError ? "Tente atualizar a página. Se o problema continuar, volte à lista de conversas." : "Ela pode ter sido removida pela moderação ou o endereço pode estar incorreto."} /></MemberShell>;
-  }
+  if (topicId && (detail.isError || !detail.data))
+    return (
+      <MemberShell
+        eyebrow="Comunidade"
+        title="Conversa indisponível"
+        description="Ela pode ter sido removida ou estar temporariamente indisponível."
+      >
+        <Button variant="outline" onClick={() => setLocation("/comunidade")}>
+          <ArrowLeft size={16} className="mr-2" />
+          Voltar à comunidade
+        </Button>
+      </MemberShell>
+    );
 
   if (topicId && detail.data) {
-    const { topic, comments } = detail.data;
-    return <MemberShell eyebrow="Conversas" title="Fórum da comunidade" description="Perguntas, trocas e experiências compartilhadas com cuidado.">
-      <button type="button" onClick={() => setLocation("/forum")} className="mb-7 inline-flex items-center gap-2 text-sm font-extrabold text-[var(--sage-deep)] hover:underline"><ArrowLeft size={16} />Voltar às conversas</button>
-      <article className="rounded-[2rem] border border-[var(--line)] bg-white p-6 sm:p-9"><span className="rounded-full bg-[var(--sage-pale)] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--sage-deep)]">{topic.category}</span><h2 className="display-font mt-5 text-4xl font-semibold leading-[0.95] tracking-[-0.035em]">{topic.title}</h2><div className="mt-6 flex items-center gap-3 text-xs text-[var(--ink-soft)]"><span className="grid h-8 w-8 place-items-center rounded-full bg-[var(--lavender)] font-extrabold text-[var(--sage-deep)]">{initials(topic.authorDisplayName || topic.authorName)}</span><span>Por <strong className="text-[var(--ink)]">{topic.authorDisplayName || topic.authorName || "Membro da comunidade"}</strong> · {relativeDate(topic.createdAt)}</span></div><p className="mt-7 whitespace-pre-wrap text-sm leading-7 text-[var(--ink-soft)]">{topic.body}</p></article>
-      <section className="mt-12"><SectionHeading label={`${comments.length} ${comments.length === 1 ? "resposta" : "respostas"}`} title="A conversa continua" />{comments.length ? <div className="space-y-3">{comments.map(reply => <article key={reply.id} className="soft-card rounded-2xl p-5"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-full bg-[var(--sage-pale)] text-[11px] font-extrabold text-[var(--sage-deep)]">{initials(reply.authorDisplayName || reply.authorName)}</span><div><p className="text-sm font-extrabold">{reply.authorDisplayName || reply.authorName || "Membro da comunidade"}</p><p className="text-xs text-[var(--ink-soft)]">{relativeDate(reply.createdAt)}</p></div></div><p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-[var(--ink-soft)]">{reply.body}</p></article>)}</div> : <ContentEmpty icon={MessageCircleMore} title="Seja a primeira pessoa a responder" text="Uma mensagem cuidadosa pode abrir espaço para uma troca importante." />}
-        <form onSubmit={submitComment} className="mt-6 rounded-3xl border border-[var(--line)] bg-white p-5"><Label htmlFor="comment" className="text-sm font-extrabold">Responder à conversa</Label><Textarea id="comment" value={comment} onChange={event => setComment(event.target.value)} minLength={2} maxLength={5000} placeholder="Escreva com respeito e cuidado..." className="mt-3 min-h-28 rounded-xl border-[var(--line)] bg-[var(--paper)]" required /><div className="mt-4 flex justify-end"><Button disabled={addComment.isPending} className="pressable rounded-xl bg-[var(--sage-deep)] font-extrabold text-white hover:bg-[var(--ink)]"><Send size={16} className="mr-2" />{addComment.isPending ? "Enviando..." : "Publicar resposta"}</Button></div></form>
-      </section>
-    </MemberShell>;
+    const { topic, comments } = detail.data as { topic: any; comments: ForumComment[] };
+    const roots = comments.filter((comment) => !comment.parentCommentId);
+    const children = (parentId: number) =>
+      comments.filter((comment) => comment.parentCommentId === parentId);
+    const replyForm = (parentCommentId?: number) => (
+      <form
+        onSubmit={(event) => submitReply(event, parentCommentId)}
+        className="mt-4 rounded-2xl border border-[var(--line)] bg-[var(--paper)] p-4"
+      >
+        <Label htmlFor={`reply-${parentCommentId || "topic"}`} className="text-xs font-extrabold">
+          {parentCommentId ? "Responder a esta mensagem" : "Responder à conversa"}
+        </Label>
+        <Textarea
+          id={`reply-${parentCommentId || "topic"}`}
+          value={replyBody}
+          onChange={(event) => setReplyBody(event.target.value)}
+          minLength={2}
+          maxLength={5000}
+          placeholder="Escreva com respeito e cuidado…"
+          className="mt-2 min-h-28 rounded-xl border-[var(--line)] bg-white"
+          required
+        />
+        <div className="mt-3 flex justify-end gap-2">
+          {parentCommentId ? (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setReplyTo(null);
+                setReplyBody("");
+              }}
+            >
+              Cancelar
+            </Button>
+          ) : null}
+          <Button disabled={addComment.isPending}>
+            <Send size={15} className="mr-2" />
+            Publicar resposta
+          </Button>
+        </div>
+      </form>
+    );
+    const commentCard = (comment: ForumComment, nested = false) => {
+      const author = comment.authorDisplayName || comment.authorName || "Membro da comunidade";
+      const liked = comment.viewerReactions?.includes("support");
+      return (
+        <article
+          key={comment.id}
+          className={`rounded-2xl border border-[var(--line)] bg-white p-5 ${nested ? "ml-6 border-l-4 border-l-[var(--sage-pale)] sm:ml-14" : ""}`}
+        >
+          <div className="flex items-start gap-3">
+            <Avatar name={author} />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-extrabold">{author}</p>
+                  <p className="text-xs text-[var(--ink-soft)]">
+                    {relativeDate(comment.createdAt)}
+                    {comment.editedAt ? " · editado" : ""}
+                  </p>
+                </div>
+              </div>
+              {editing?.id === comment.id ? (
+                <div className="mt-4">
+                  <Textarea
+                    value={editing.body}
+                    onChange={(event) => setEditing({ id: comment.id, body: event.target.value })}
+                    className="min-h-28"
+                  />
+                  <div className="mt-2 flex justify-end gap-2">
+                    <Button variant="ghost" onClick={() => setEditing(null)}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={() =>
+                        updateComment.mutate({ commentId: comment.id, body: editing.body })
+                      }
+                    >
+                      Salvar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-[var(--ink-soft)]">
+                  {comment.body}
+                </p>
+              )}
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    toggleReaction.mutate({ commentId: comment.id, reaction: "support" })
+                  }
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-extrabold ${liked ? "bg-[var(--sage-deep)] text-white" : "bg-[var(--sage-pale)] text-[var(--sage-deep)]"}`}
+                >
+                  <HeartHandshake size={14} />
+                  Acolher {comment.reactionCount ? `· ${comment.reactionCount}` : ""}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReplyTo(comment.parentCommentId || comment.id);
+                    setReplyBody("");
+                  }}
+                  className="rounded-full px-3 py-1.5 text-xs font-extrabold text-[var(--sage-deep)] hover:bg-[var(--linen)]"
+                >
+                  Responder
+                </button>
+                {comment.authorId === user?.id ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setEditing({ id: comment.id, body: comment.body })}
+                      className="rounded-full p-2 text-[var(--ink-soft)] hover:bg-[var(--linen)]"
+                      aria-label="Editar resposta"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteComment.mutate({ commentId: comment.id })}
+                      className="rounded-full p-2 text-[var(--ink-soft)] hover:bg-red-50 hover:text-red-700"
+                      aria-label="Remover resposta"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setReporting({ commentId: comment.id })}
+                    className="rounded-full p-2 text-[var(--ink-soft)] hover:bg-[var(--linen)]"
+                    aria-label="Denunciar resposta"
+                  >
+                    <Flag size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          {replyTo === (comment.parentCommentId || comment.id) && !nested
+            ? replyForm(comment.id)
+            : null}
+        </article>
+      );
+    };
+
+    return (
+      <MemberShell
+        eyebrow="Comunidade"
+        title="Uma conversa de cada vez."
+        description="Pergunte, responda e compartilhe experiências com cuidado."
+      >
+        <button
+          type="button"
+          onClick={() => setLocation("/comunidade")}
+          className="mb-6 inline-flex items-center gap-2 text-sm font-extrabold text-[var(--sage-deep)]"
+        >
+          <ArrowLeft size={16} />
+          Todas as conversas
+        </button>
+        <article className="overflow-hidden rounded-3xl border border-[var(--line)] bg-white p-6 shadow-[0_18px_50px_rgba(8,31,77,.06)] sm:p-9">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-[var(--sage-pale)] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.15em] text-[var(--sage-deep)]">
+              {topic.category}
+            </span>
+            {topic.isPinned ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#fff4dc] px-3 py-1 text-[10px] font-extrabold text-[#8b631d]">
+                <Pin size={11} />
+                Fixado
+              </span>
+            ) : null}
+          </div>
+          <h2 className="display-font mt-5 max-w-4xl text-4xl font-semibold leading-[1.02] sm:text-5xl">
+            {topic.title}
+          </h2>
+          <div className="mt-6 flex items-center gap-3">
+            <Avatar
+              name={topic.authorDisplayName || topic.authorName}
+              image={topic.authorAvatarUrl}
+            />
+            <div>
+              <p className="text-sm font-extrabold">
+                {topic.authorDisplayName || topic.authorName || "Membro da comunidade"}
+              </p>
+              <p className="text-xs text-[var(--ink-soft)]">{relativeDate(topic.createdAt)}</p>
+            </div>
+          </div>
+          <p className="mt-7 max-w-4xl whitespace-pre-wrap text-base leading-8 text-[var(--ink-soft)]">
+            {topic.body}
+          </p>
+          <button
+            type="button"
+            onClick={() => setReporting({ topicId: topic.id })}
+            className="mt-6 inline-flex items-center gap-2 text-xs font-bold text-[var(--ink-soft)] hover:text-[var(--ink)]"
+          >
+            <Flag size={13} />
+            Denunciar conversa
+          </button>
+        </article>
+        <section className="mt-10">
+          <SectionHeading
+            label={`${comments.length} ${comments.length === 1 ? "resposta" : "respostas"}`}
+            title="A conversa continua"
+          />
+          {roots.length ? (
+            <div className="space-y-4">
+              {roots.map((root) => (
+                <div key={root.id} className="space-y-3">
+                  {commentCard(root)}
+                  {children(root.id).map((child) => commentCard(child, true))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ContentEmpty
+              icon={MessageCircleMore}
+              title="Seja a primeira pessoa a responder"
+              text="Uma resposta cuidadosa pode abrir um caminho importante."
+            />
+          )}
+          {replyTo === null ? replyForm() : null}
+        </section>
+        <Dialog open={Boolean(reporting)} onOpenChange={(open) => !open && setReporting(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Denunciar conteúdo</DialogTitle>
+              <DialogDescription>
+                A moderação analisará a situação sem identificar você publicamente.
+              </DialogDescription>
+            </DialogHeader>
+            <Textarea
+              value={reportReason}
+              onChange={(event) => setReportReason(event.target.value)}
+              placeholder="Conte brevemente o que aconteceu"
+              maxLength={1000}
+            />
+            <Button
+              disabled={report.isPending || reportReason.trim().length < 3}
+              onClick={() => report.mutate({ ...reporting, reason: reportReason })}
+            >
+              Enviar para moderação
+            </Button>
+          </DialogContent>
+        </Dialog>
+      </MemberShell>
+    );
   }
 
-  return <MemberShell eyebrow="Conversas" title="Fórum da comunidade" description="Um espaço para perguntas reais, trocas de experiência e apoio entre famílias.">
-    <div className="mb-9 flex flex-col justify-between gap-4 rounded-3xl bg-[var(--sage-deep)] p-6 text-white sm:flex-row sm:items-center"><div><UsersRound size={20} className="text-[#efd4a2]" /><h2 className="display-font mt-4 text-3xl font-semibold leading-none">Toda pergunta merece cuidado.</h2><p className="mt-2 max-w-xl text-sm leading-6 text-white/75">Compartilhe uma situação, uma dúvida ou uma experiência que possa abrir caminhos.</p></div><Dialog open={dialogOpen} onOpenChange={setDialogOpen}><DialogTrigger asChild><Button className="pressable shrink-0 rounded-xl bg-white font-extrabold text-[var(--sage-deep)] hover:bg-[var(--linen)]"><Plus size={16} className="mr-2" />Abrir conversa</Button></DialogTrigger><DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl border-[var(--line)] bg-[var(--paper)] sm:max-w-xl"><DialogHeader><DialogTitle className="display-font text-3xl font-semibold">Abrir uma conversa</DialogTitle><DialogDescription className="leading-6">Escreva de forma respeitosa e evite expor informações sensíveis de terceiros.</DialogDescription></DialogHeader><form onSubmit={submitTopic} className="mt-2 space-y-5"><div><Label htmlFor="topic-title" className="text-sm font-extrabold">Título</Label><Input id="topic-title" value={newTopic.title} onChange={event => setNewTopic(current => ({ ...current, title: event.target.value }))} minLength={6} maxLength={180} placeholder="Qual é sua pergunta ou assunto?" className="mt-2 h-11 rounded-xl border-[var(--line)] bg-white" required /></div><div><Label htmlFor="topic-category" className="text-sm font-extrabold">Tema</Label><select id="topic-category" value={newTopic.category} onChange={event => setNewTopic(current => ({ ...current, category: event.target.value }))} className="mt-2 h-11 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm">{categories.map(category => <option key={category} value={category}>{category}</option>)}</select></div><div><Label htmlFor="topic-body" className="text-sm font-extrabold">Mensagem</Label><Textarea id="topic-body" value={newTopic.body} onChange={event => setNewTopic(current => ({ ...current, body: event.target.value }))} minLength={20} maxLength={8000} placeholder="Conte um pouco do contexto e o que você gostaria de trocar com a comunidade." className="mt-2 min-h-40 rounded-xl border-[var(--line)] bg-white" required /></div><div className="flex justify-end"><Button disabled={createTopic.isPending} className="pressable rounded-xl bg-[var(--sage-deep)] font-extrabold text-white hover:bg-[var(--ink)]">{createTopic.isPending ? "Publicando..." : "Publicar conversa"}</Button></div></form></DialogContent></Dialog></div>
-    <section>{topics.isLoading ? <div className="space-y-3"><div className="h-24 animate-pulse rounded-2xl bg-[var(--linen)]" /><div className="h-24 animate-pulse rounded-2xl bg-[var(--linen)]" /></div> : topics.data?.length ? <div className="overflow-hidden rounded-3xl border border-[var(--line)] bg-white">{topics.data.map(topic => <Link key={topic.id} href={`/forum?topic=${topic.id}`} className="nav-link group flex items-center gap-4 border-b border-[var(--line)] p-5 last:border-0 hover:bg-[var(--paper)] sm:p-6"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--sage-pale)] text-xs font-extrabold text-[var(--sage-deep)]">{initials(topic.authorDisplayName || topic.authorName)}</span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-x-2 gap-y-1"><span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[var(--sage)]">{topic.category}</span><span className="text-xs text-[var(--ink-soft)]">· {relativeDate(topic.updatedAt)}</span></div><h3 className="mt-1 truncate text-sm font-extrabold">{topic.title}</h3><p className="mt-1 truncate text-xs text-[var(--ink-soft)]">Por {topic.authorDisplayName || topic.authorName || "Membro da comunidade"}</p></div><div className="flex shrink-0 items-center gap-4 text-xs font-extrabold text-[var(--ink-soft)]"><span className="hidden items-center gap-1 sm:flex"><MessageCircleMore size={15} />{topic.commentCount}</span><ChevronRight size={18} className="transition-transform group-hover:translate-x-1" /></div></Link>)}</div> : <ContentEmpty icon={MessageCircleMore} title="As primeiras conversas começam aqui" text="Abra um tópico para compartilhar uma pergunta ou uma experiência com a comunidade." />}</section>
-  </MemberShell>;
+  return (
+    <MemberShell
+      eyebrow="Comunidade"
+      title="Conversas que acolhem e aproximam."
+      description="Um espaço seguro para perguntar, compartilhar experiências e encontrar outras famílias."
+    >
+      <section className="relative mb-8 overflow-hidden rounded-3xl bg-[var(--ink)] p-6 text-white sm:p-8">
+        <div className="absolute -right-20 -top-20 h-60 w-60 rounded-full border border-white/10" />
+        <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+          <div>
+            <UsersRound size={22} className="text-[#efd4a2]" />
+            <h2 className="display-font mt-5 max-w-2xl text-3xl font-semibold sm:text-4xl">
+              Toda experiência pode ajudar alguém.
+            </h2>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-white/70">
+              Abra uma conversa ou participe de uma troca que já começou.
+            </p>
+          </div>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="shrink-0 bg-[#efd4a2] text-[var(--ink)] hover:bg-white">
+                <Plus size={16} className="mr-2" />
+                Nova conversa
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+              <DialogHeader>
+                <DialogTitle className="display-font text-3xl">Abrir uma conversa</DialogTitle>
+                <DialogDescription>
+                  Evite expor dados pessoais de crianças ou de terceiros.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={submitTopic} className="space-y-5">
+                <div>
+                  <Label htmlFor="topic-title">Título</Label>
+                  <Input
+                    id="topic-title"
+                    value={newTopic.title}
+                    onChange={(event) =>
+                      setNewTopic((current) => ({ ...current, title: event.target.value }))
+                    }
+                    minLength={6}
+                    maxLength={180}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="topic-category">Tema</Label>
+                  <select
+                    id="topic-category"
+                    value={newTopic.category}
+                    onChange={(event) =>
+                      setNewTopic((current) => ({ ...current, category: event.target.value }))
+                    }
+                    className="mt-2 h-11 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm"
+                  >
+                    {categories.slice(1).map((item) => (
+                      <option key={item}>{item}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="topic-body">Mensagem</Label>
+                  <Textarea
+                    id="topic-body"
+                    value={newTopic.body}
+                    onChange={(event) =>
+                      setNewTopic((current) => ({ ...current, body: event.target.value }))
+                    }
+                    minLength={20}
+                    maxLength={8000}
+                    className="min-h-40"
+                    required
+                  />
+                </div>
+                <Button className="w-full" disabled={createTopic.isPending}>
+                  {createTopic.isPending ? "Publicando…" : "Publicar conversa"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </section>
+      <ToolbarCommunity
+        query={query}
+        setQuery={setQuery}
+        category={category}
+        setCategory={setCategory}
+        sort={sort}
+        setSort={setSort}
+      />
+      <section className="mt-7">
+        {topics.isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="h-32 animate-pulse rounded-2xl bg-[var(--linen)]" />
+            ))}
+          </div>
+        ) : filteredTopics.length ? (
+          <div className="space-y-3">
+            {filteredTopics.map((topic: any) => (
+              <button
+                key={topic.id}
+                type="button"
+                onClick={() => setLocation(`/comunidade?topic=${topic.id}`)}
+                className="group flex w-full items-center gap-4 rounded-2xl border border-[var(--line)] bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-[var(--sage)] hover:shadow-[0_14px_34px_rgba(8,31,77,.07)] sm:p-6"
+              >
+                <Avatar
+                  name={topic.authorDisplayName || topic.authorName}
+                  image={topic.authorAvatarUrl}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {topic.isPinned ? <Pin size={13} className="text-[#a87522]" /> : null}
+                    <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[var(--sage)]">
+                      {topic.category}
+                    </span>
+                    <span className="text-xs text-[var(--ink-soft)]">
+                      · {relativeDate(topic.lastActivityAt || topic.updatedAt)}
+                    </span>
+                  </div>
+                  <h3 className="mt-2 text-base font-extrabold text-[var(--ink)] sm:text-lg">
+                    {topic.title}
+                  </h3>
+                  <p className="mt-1 line-clamp-1 text-sm text-[var(--ink-soft)]">{topic.body}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-3 text-xs font-extrabold text-[var(--ink-soft)]">
+                  <span className="inline-flex items-center gap-1">
+                    <MessageCircleMore size={16} />
+                    {topic.commentCount}
+                  </span>
+                  <ChevronRight size={18} className="transition group-hover:translate-x-1" />
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <ContentEmpty
+            icon={Search}
+            title="Nenhuma conversa encontrada"
+            text="Tente outro termo ou abra uma nova conversa."
+          />
+        )}
+      </section>
+    </MemberShell>
+  );
+}
+
+function ToolbarCommunity({
+  query,
+  setQuery,
+  category,
+  setCategory,
+  sort,
+  setSort,
+}: {
+  query: string;
+  setQuery: (value: string) => void;
+  category: string;
+  setCategory: (value: string) => void;
+  sort: string;
+  setSort: (value: string) => void;
+}) {
+  return (
+    <div className="grid gap-3 rounded-2xl border border-[var(--line)] bg-white p-3 md:grid-cols-[1fr_auto_auto]">
+      <label className="relative">
+        <Search
+          size={16}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]"
+        />
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Buscar conversas"
+          className="pl-9"
+        />
+      </label>
+      <select
+        value={category}
+        onChange={(event) => setCategory(event.target.value)}
+        className="h-10 rounded-xl border border-[var(--line)] bg-white px-3 text-sm font-bold"
+      >
+        {categories.map((item) => (
+          <option key={item}>{item}</option>
+        ))}
+      </select>
+      <select
+        value={sort}
+        onChange={(event) => setSort(event.target.value)}
+        className="h-10 rounded-xl border border-[var(--line)] bg-white px-3 text-sm font-bold"
+      >
+        <option value="recentes">Mais recentes</option>
+        <option value="respondidas">Mais respondidas</option>
+        <option value="sem-resposta">Sem resposta</option>
+      </select>
+    </div>
+  );
 }
