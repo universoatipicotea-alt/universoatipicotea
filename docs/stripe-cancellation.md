@@ -26,6 +26,12 @@ O frontend nunca decide o acesso. O backend considera o estado persistido da ass
 - `invoice.payment_succeeded`: sincronização após pagamento.
 - `invoice.payment_failed`: sincronização de inadimplência.
 
+Cada evento é reservado por `event.id` em `ua_stripe_webhook_events`. Repetições concluídas
+retornam como duplicadas sem nova escrita; tentativas que falharam podem ser retomadas. A assinatura
+guarda a data e o identificador do último evento aplicado, impedindo que um evento estritamente mais
+antigo reverta o estado local. Para eventos de assinatura e fatura, o backend consulta novamente o
+estado atual no Stripe antes de persistir.
+
 ## Estados possíveis
 
 - `active` ou `trialing`, sem cancelamento: acesso ativo e renovação normal.

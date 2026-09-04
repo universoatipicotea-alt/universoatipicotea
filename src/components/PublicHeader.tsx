@@ -3,13 +3,7 @@ import { Link } from "wouter";
 import { ArrowRight, Menu } from "lucide-react";
 import { Brand } from "./Brand";
 import { Button } from "./ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "./ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 
 const NAV_ITEMS = [
   { label: "Sobre", href: "/#sobre" },
@@ -17,7 +11,6 @@ const NAV_ITEMS = [
   { label: "Comunidade", href: "/#comunidade" },
   { label: "Dúvidas", href: "/#duvidas" },
 ];
-
 
 export function PublicHeader() {
   const [scrolled, setScrolled] = useState(false);
@@ -70,10 +63,7 @@ export function PublicHeader() {
                   <Brand />
                 </SheetTitle>
               </SheetHeader>
-              <nav
-                className="mt-8 flex flex-col gap-1"
-                aria-label="Navegação principal"
-              >
+              <nav className="mt-8 flex flex-col gap-1" aria-label="Navegação principal">
                 {NAV_ITEMS.map((item) => (
                   <Link
                     key={item.href}
@@ -106,7 +96,6 @@ export function PublicHeader() {
             </SheetContent>
           </Sheet>
         </div>
-
 
         {/* Logo */}
         <div className="flex min-w-0 items-center">
@@ -144,10 +133,12 @@ export function PublicHeader() {
           </Link>
           <Button
             asChild
-            className="pressable h-11 rounded-xl bg-[var(--ink)] px-5 text-sm font-extrabold text-white shadow-[0_10px_24px_-14px_rgba(16,38,74,0.6)] transition-colors hover:bg-[var(--sage-deep)]"
+            className="pressable h-11 shrink-0 rounded-xl bg-[var(--ink)] px-3 text-xs font-extrabold text-white shadow-[0_10px_24px_-14px_rgba(16,38,74,0.6)] transition-colors hover:bg-[var(--sage-deep)] sm:px-5 sm:text-sm"
           >
             <Link href="/vsl">
-              Começar agora <ArrowRight size={15} className="ml-2" />
+              <span className="sm:hidden">Começar</span>
+              <span className="hidden sm:inline">Começar agora</span>
+              <ArrowRight size={15} className="ml-1.5 hidden sm:block" />
             </Link>
           </Button>
         </div>

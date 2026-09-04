@@ -14,6 +14,13 @@ export const Route = createFileRoute("/api/public/ua-video/$")({
         if (!key || key.includes("..")) return new Response("Not found", { status: 404 });
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: funnel } = await supabaseAdmin
+          .from("ua_funnel_settings")
+          .select("vsl_video_path")
+          .eq("id", 1)
+          .maybeSingle();
+        if (!funnel?.vsl_video_path || key !== funnel.vsl_video_path)
+          return new Response("Not found", { status: 404 });
         const { data, error } = await supabaseAdmin.storage
           .from("funil-video")
           .createSignedUrl(key, 300);

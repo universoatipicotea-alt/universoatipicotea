@@ -184,6 +184,8 @@ export type Database = {
           created_at: string
           current_period_end: string | null
           id: string
+          last_stripe_event_created_at: string | null
+          last_stripe_event_id: string | null
           provider: string
           provider_checkout_session_id: string | null
           provider_subscription_id: string | null
@@ -197,6 +199,8 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           id?: string
+          last_stripe_event_created_at?: string | null
+          last_stripe_event_id?: string | null
           provider?: string
           provider_checkout_session_id?: string | null
           provider_subscription_id?: string | null
@@ -210,6 +214,8 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           id?: string
+          last_stripe_event_created_at?: string | null
+          last_stripe_event_id?: string | null
           provider?: string
           provider_checkout_session_id?: string | null
           provider_subscription_id?: string | null
@@ -262,6 +268,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ua_stripe_webhook_events: {
+        Row: {
+          created_at: string
+          event_created_at: string
+          event_id: string
+          event_type: string
+          outcome: Json
+          processed_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          event_created_at: string
+          event_id: string
+          event_type: string
+          outcome?: Json
+          processed_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          event_created_at?: string
+          event_id?: string
+          event_type?: string
+          outcome?: Json
+          processed_at?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       ua_academy_modules: {
         Row: {
@@ -1262,6 +1298,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_ua_stripe_webhook_event: {
+        Args: {
+          p_event_created_at: string
+          p_event_id: string
+          p_event_type: string
+        }
+        Returns: string
+      }
       has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {

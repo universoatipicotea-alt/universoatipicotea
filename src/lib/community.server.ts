@@ -220,12 +220,26 @@ async function listPublishedGuides() {
       "id,title,summary,content,category,module_id,pdf_key,cover_image_url,content_type,video_url,estimated_duration,technical_review,position,published_at,created_at",
     )
     .eq("status", "published")
+    .not("module_id", "is", null)
     .order("position", { ascending: true })
     .order("published_at", { ascending: false });
   return (data ?? []).map((row: any) => {
     const { pdf_key, ...rest } = row;
     return { ...camel(rest), hasPdf: Boolean(pdf_key) };
   });
+}
+
+async function listPublicGuideCards() {
+  const { data } = await db()
+    .from("ua_guides")
+    .select(
+      "id,title,summary,category,module_id,cover_image_url,content_type,estimated_duration,technical_review,position,published_at",
+    )
+    .eq("status", "published")
+    .not("module_id", "is", null)
+    .order("position", { ascending: true })
+    .order("published_at", { ascending: false });
+  return camel(data ?? []);
 }
 
 async function listPublishedFacilitators() {
@@ -404,7 +418,7 @@ async function ensureMemberProfile(user: UaUser) {
 
 async function listTestGuides(includeDrafts = false) {
   let query = db().from("ua_test_guides").select("*");
-  if (!includeDrafts) query = query.eq("status", "published");
+  if (!includeDrafts) query = query.eq("status", "published").not("category_id", "is", null);
   const { data } = await query
     .order("position", { ascending: true })
     .order("created_at", { ascending: false });
@@ -628,7 +642,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       const [metrics, guides, facilitators, featuredProducts, landingSettings, topics, preview] =
         await Promise.all([
           getCommunityMetrics(),
-          listPublishedGuides(),
+          listPublicGuideCards(),
           listPublishedFacilitators(),
           listPublishedProducts(true),
           getLandingSettings(),
@@ -656,7 +670,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         academyModules: await listTaxonomy("module", false),
       };
     case "community.publicGuides":
-      return listPublishedGuides();
+      return listPublicGuideCards();
     case "community.publicAcademiaGuides":
       await assertMemberContent(await requireUser());
       return listTestGuides(false);
@@ -1160,12 +1174,15 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     case "community.admin.saveGuide": {
       const user = await requireAdmin();
       const contentType = input.contentType === "video" ? "video" : "pdf";
+      const moduleId = input.moduleId ? Number(input.moduleId) : null;
+      if (input.status === "published" && !moduleId)
+        fail("Selecione um módulo antes de publicar este conteúdo.");
       const values = {
         title: input.title,
         summary: input.summary,
         content: input.content ?? null,
         category: input.category,
-        module_id: input.moduleId ? Number(input.moduleId) : null,
+        module_id: moduleId,
         content_type: contentType,
         video_url: contentType === "video" ? (input.videoUrl ?? null) : null,
         pdf_key: contentType === "pdf" ? (input.pdfKey ?? null) : null,
@@ -1198,12 +1215,15 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.admin.saveTestGuide": {
       const user = await requireAdmin();
+      const categoryId = input.categoryId ? Number(input.categoryId) : null;
+      if (input.status === "published" && !categoryId)
+        fail("Selecione uma categoria antes de publicar esta receita.");
       const values = {
         title: input.title,
         summary: input.summary,
         content: input.content ?? null,
         category: input.category,
-        category_id: input.categoryId ? Number(input.categoryId) : null,
+        category_id: categoryId,
         callout: input.callout ?? null,
         accent_color: input.accentColor ?? "#0b2b26",
         cover_image_key: input.coverImageKey ?? null,
@@ -1228,6 +1248,20 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         ? input.status
         : fail("Situação inválida.");
       const values: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
+      if (status === "published") {
+        const linkedColumn = table === "ua_test_guides" ? "category_id" : "module_id";
+        const { data: content } = await db()
+          .from(table)
+          .select(linkedColumn)
+          .eq("id", Number(input.id))
+          .maybeSingle();
+        if (!content?.[linkedColumn])
+          fail(
+            table === "ua_test_guides"
+              ? "Selecione uma categoria antes de publicar esta receita."
+              : "Selecione um módulo antes de publicar este conteúdo.",
+          );
+      }
       if (table === "ua_guides")
         values.published_at = status === "published" ? new Date().toISOString() : null;
       const { error } = await db().from(table).update(values).eq("id", Number(input.id));

@@ -7,13 +7,23 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
 import {
   setStripePeriodEndCancellation,
+  stripeEventIsOlder,
   subscriptionAccessIsActive,
   subscriptionPeriodEnd,
   type StripeSubscriptionGateway,
 } from "./subscription-lifecycle";
 
-export const STRIPE_PRICE_ID = "price_1U9XZnAk4sFyKMbpUTqwkwoZ";
-export const STRIPE_PRODUCT_ID = "prod_V9rIuXcogHQYY6";
+const legacyStripeIdentifiers = {
+  STRIPE_PRICE_ID: "price_1U9XZnAk4sFyKMbpUTqwkwoZ",
+  STRIPE_PRODUCT_ID: "prod_V9rIuXcogHQYY6",
+} as const;
+
+function stripeEnvironment(name: "STRIPE_PRICE_ID" | "STRIPE_PRODUCT_ID") {
+  const configured = process.env[name]?.trim();
+  if (configured) return configured;
+  console.warn(`[Stripe] ${name} não configurado; fallback legado temporário em uso.`);
+  return legacyStripeIdentifiers[name];
+}
 
 function stripeClient() {
   const key = process.env["STRIPE_SECRET_KEY"];
@@ -57,6 +67,7 @@ export async function createCheckoutSession(params: {
   origin: string;
 }) {
   const stripe = stripeClient();
+  const priceId = stripeEnvironment("STRIPE_PRICE_ID");
   const customerId = params.email ? await findCustomerId(stripe, params.email) : undefined;
 
   const session = await stripe.checkout.sessions.create({
@@ -66,7 +77,7 @@ export async function createCheckoutSession(params: {
       : params.email
         ? { customer_email: params.email }
         : {}),
-    line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
+    line_items: [{ price: priceId, quantity: 1 }],
     ...(params.authId
       ? {
           client_reference_id: params.authId,
@@ -375,8 +386,35 @@ async function resolveAuthId(params: { authId?: string | null; email?: string | 
   return (data?.auth_id as string | null) ?? null;
 }
 
+async function claimStripeWebhookEvent(event: Stripe.Event) {
+  const eventCreatedAt = new Date(event.created * 1000).toISOString();
+  const { data, error } = await db().rpc("claim_ua_stripe_webhook_event", {
+    p_event_id: event.id,
+    p_event_type: event.type,
+    p_event_created_at: eventCreatedAt,
+  });
+  if (error) throw new Error("Não foi possível reservar o evento Stripe para processamento.");
+  return data === "claimed";
+}
+
+async function finishStripeWebhookEvent(
+  eventId: string,
+  status: "applied" | "ignored" | "failed",
+  outcome: Json = {},
+) {
+  const { error } = await db()
+    .from("ua_stripe_webhook_events")
+    .update({ status, outcome, processed_at: new Date().toISOString() })
+    .eq("event_id", eventId);
+  if (error && status !== "failed")
+    throw new Error("Não foi possível concluir o registro do evento Stripe.");
+}
+
 export async function handleStripeEvent(event: Stripe.Event) {
   const stripe = stripeClient();
+  const claimed = await claimStripeWebhookEvent(event);
+  if (!claimed) return { handled: true as const, duplicate: true as const };
+  const eventCreatedAt = new Date(event.created * 1000).toISOString();
 
   const applySubscription = async (
     subscription: Stripe.Subscription,
@@ -403,6 +441,16 @@ export async function handleStripeEvent(event: Stripe.Event) {
     const active = subscriptionAccessIsActive(subscription);
     const currentPeriodEnd = subscriptionPeriodEnd(subscription);
 
+    const { data: existing } = await db()
+      .from("subscriptions")
+      .select("id,last_stripe_event_created_at,cancel_requested_at")
+      .eq("provider_subscription_id", subscription.id)
+      .maybeSingle();
+
+    if (stripeEventIsOlder(existing?.last_stripe_event_created_at ?? null, event.created)) {
+      return { handled: true as const, ignored: true as const, reason: "evento fora de ordem" };
+    }
+
     const values = {
       user_id: authId,
       provider: "stripe",
@@ -411,15 +459,13 @@ export async function handleStripeEvent(event: Stripe.Event) {
       status: active ? "active" : subscription.status,
       current_period_end: currentPeriodEnd,
       cancel_at_period_end: subscription.cancel_at_period_end,
-      cancel_requested_at: subscription.cancel_at_period_end ? new Date().toISOString() : null,
+      cancel_requested_at: subscription.cancel_at_period_end
+        ? (existing?.cancel_requested_at ?? new Date().toISOString())
+        : null,
+      last_stripe_event_created_at: eventCreatedAt,
+      last_stripe_event_id: event.id,
       updated_at: new Date().toISOString(),
     };
-
-    const { data: existing } = await db()
-      .from("subscriptions")
-      .select("id")
-      .eq("provider_subscription_id", subscription.id)
-      .maybeSingle();
 
     if (existing?.id) await db().from("subscriptions").update(values).eq("id", existing.id);
     else await db().from("subscriptions").insert(values);
@@ -436,35 +482,57 @@ export async function handleStripeEvent(event: Stripe.Event) {
     return { handled: true as const, active };
   };
 
-  switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const subId =
-        typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
-      if (!subId) return { handled: false as const, reason: "sessão sem assinatura" };
-      const subscription = await stripe.subscriptions.retrieve(subId);
-      return applySubscription(subscription, session.id);
-    }
-    case "customer.subscription.created":
-    case "customer.subscription.updated":
-    case "customer.subscription.deleted":
-    case "invoice.payment_succeeded":
-    case "invoice.payment_failed": {
-      const object = event.data.object as Stripe.Subscription | Stripe.Invoice;
-      let subscription: Stripe.Subscription | null = null;
-      if ("object" in object && object.object === "subscription") {
-        subscription = object as Stripe.Subscription;
-      } else {
-        const invoice = object as Stripe.Invoice;
-        const subRef = (invoice as unknown as { subscription?: string | Stripe.Subscription })
-          .subscription;
-        const subId = typeof subRef === "string" ? subRef : subRef?.id;
-        if (subId) subscription = await stripe.subscriptions.retrieve(subId);
+  try {
+    let result: Awaited<ReturnType<typeof applySubscription>> | { handled: false; reason: string };
+
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const subId =
+          typeof session.subscription === "string"
+            ? session.subscription
+            : session.subscription?.id;
+        result = subId
+          ? await applySubscription(await stripe.subscriptions.retrieve(subId), session.id)
+          : { handled: false, reason: "sessão sem assinatura" };
+        break;
       }
-      if (!subscription) return { handled: false as const, reason: "evento sem assinatura" };
-      return applySubscription(subscription);
+      case "customer.subscription.created":
+      case "customer.subscription.updated":
+      case "customer.subscription.deleted":
+      case "invoice.payment_succeeded":
+      case "invoice.payment_failed": {
+        const object = event.data.object as Stripe.Subscription | Stripe.Invoice;
+        let subscription: Stripe.Subscription | null = null;
+        if ("object" in object && object.object === "subscription") {
+          const fallback = object as Stripe.Subscription;
+          try {
+            subscription = await stripe.subscriptions.retrieve(fallback.id);
+          } catch (error) {
+            if (event.type !== "customer.subscription.deleted") throw error;
+            subscription = fallback;
+          }
+        } else {
+          const invoice = object as Stripe.Invoice;
+          const subRef = (invoice as unknown as { subscription?: string | Stripe.Subscription })
+            .subscription;
+          const subId = typeof subRef === "string" ? subRef : subRef?.id;
+          if (subId) subscription = await stripe.subscriptions.retrieve(subId);
+        }
+        result = subscription
+          ? await applySubscription(subscription)
+          : { handled: false, reason: "evento sem assinatura" };
+        break;
+      }
+      default:
+        result = { handled: false, reason: "evento ignorado" };
     }
-    default:
-      return { handled: false as const, reason: "evento ignorado" };
+
+    const ignored = !result.handled || ("ignored" in result && result.ignored);
+    await finishStripeWebhookEvent(event.id, ignored ? "ignored" : "applied", result as Json);
+    return result;
+  } catch (error) {
+    await finishStripeWebhookEvent(event.id, "failed");
+    throw error;
   }
 }
