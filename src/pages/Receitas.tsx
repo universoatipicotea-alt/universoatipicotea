@@ -195,6 +195,40 @@ export default function Receitas({ categorySlug }: { categorySlug?: string }) {
         ← Todas as categorias
       </button>
 
+      <section className="mb-9 overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white shadow-[0_18px_48px_rgba(8,31,77,.06)]">
+        <div className="grid min-h-60 md:grid-cols-[1fr_320px]">
+          <div className="flex flex-col justify-center p-7 sm:p-9">
+            <span className="w-fit rounded-full bg-[var(--sage-pale)] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--sage-deep)]">
+              Categoria de receitas
+            </span>
+            <h2 className="display-font mt-4 text-4xl font-semibold leading-tight">
+              {activeCategory?.name || "Receitas"}
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--ink-soft)]">
+              {activeCategory?.description ||
+                "Ideias possíveis para experimentar, adaptar e construir repertório com calma."}
+            </p>
+            <p className="mt-5 text-xs font-extrabold uppercase tracking-[0.13em] text-[var(--clay)]">
+              {scopedRecipes.length}{" "}
+              {scopedRecipes.length === 1 ? "receita disponível" : "receitas disponíveis"}
+            </p>
+          </div>
+          <div className="relative min-h-52 overflow-hidden bg-[var(--linen)]">
+            {activeCategory?.coverImageUrl ? (
+              <img
+                src={activeCategory.coverImageUrl}
+                alt={`Capa da categoria ${activeCategory.name}`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="quiet-grid grid h-full place-items-center">
+                <ChefHat size={48} className="text-[var(--sage-deep)]/35" />
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
       <section>
         <SectionTitle
           label="Receitas do Universo"
@@ -234,12 +268,12 @@ export default function Receitas({ categorySlug }: { categorySlug?: string }) {
                       <PdfCover
                         src={recipe.coverImageUrl}
                         title={recipe.title}
-                        ratio="3 / 4"
+                        ratio="16 / 10"
                         className="rounded-none"
                       />
                     ) : (
                       <div
-                        className="grid aspect-[3/4] w-full place-items-center px-6 py-5"
+                        className="grid aspect-[16/10] w-full place-items-center overflow-hidden px-6 py-5"
                         style={{ backgroundColor: recipe.accentColor }}
                       >
                         <RecipeCover title={recipe.title} accentColor={recipe.accentColor} />

@@ -231,6 +231,13 @@ export default function Admin() {
     },
     onError: (error) => toast.error(error.message),
   });
+  const reviewReport = trpc.community.admin.reviewReport.useMutation({
+    onSuccess: async () => {
+      await refreshContent();
+      toast.success("Denúncia revisada.");
+    },
+    onError: (error) => toast.error(error.message),
+  });
   const uploadPdf = trpc.community.files.uploadGuidePdf.useMutation({
     onSuccess: (result) => {
       setGuideForm((current) => ({ ...current, pdfKey: result.key, pdfUrl: result.url }));
@@ -1014,6 +1021,66 @@ export default function Admin() {
             Oculte conteúdos quando for necessário para preservar uma comunidade respeitosa. O
             histórico permanece disponível somente na administração.
           </p>
+          {data.reports?.some((item) => item.status === "open") ? (
+            <div className="mb-8 rounded-3xl border border-[#e6c987] bg-[#fffaf0] p-5 sm:p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#8b631d]">
+                    Denúncias
+                  </p>
+                  <h3 className="display-font mt-1 text-2xl font-semibold">
+                    {data.reports.filter((item) => item.status === "open").length} aguardando
+                    revisão
+                  </h3>
+                </div>
+                <ShieldAlert className="text-[#8b631d]" />
+              </div>
+              <div className="mt-5 space-y-3">
+                {data.reports
+                  .filter((item) => item.status === "open")
+                  .map((report) => (
+                    <article
+                      key={report.id}
+                      className="flex flex-col gap-4 rounded-2xl border border-[#ead8ae] bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <p className="text-xs font-extrabold text-[var(--ink)]">
+                          {report.topicId
+                            ? `Conversa #${report.topicId}`
+                            : `Resposta #${report.commentId}`}
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
+                          {report.reason}
+                        </p>
+                        {report.reportedBody ? (
+                          <p className="mt-2 line-clamp-2 max-w-2xl rounded-xl bg-[var(--linen)] px-3 py-2 text-xs leading-5 text-[var(--ink-soft)]">
+                            “{report.reportedBody}”
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        {report.topicId ? (
+                          <Button
+                            variant="outline"
+                            onClick={() => setDetailTopicId(report.topicId)}
+                          >
+                            Revisar conteúdo
+                          </Button>
+                        ) : null}
+                        <Button
+                          onClick={() =>
+                            reviewReport.mutate({ reportId: report.id, status: "reviewed" })
+                          }
+                          disabled={reviewReport.isPending}
+                        >
+                          Marcar revisada
+                        </Button>
+                      </div>
+                    </article>
+                  ))}
+              </div>
+            </div>
+          ) : null}
           {data.topics.length ? (
             <div className="overflow-hidden rounded-3xl border border-[var(--line)] bg-white">
               {data.topics.map((topic) => (

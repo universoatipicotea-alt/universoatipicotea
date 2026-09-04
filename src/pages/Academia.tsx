@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, PlayCircle, Search } from "lucide-react";
+import { ArrowRight, BookOpen, CheckCircle2, FileText, PlayCircle, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { ContentEmpty, MemberShell, SectionHeading } from "@/components/MemberShell";
@@ -112,6 +112,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
     slug: string;
     description?: string | null;
     coverImageUrl?: string | null;
+    position?: number;
   }>;
   const activeModule = moduleSlug ? modules.find((item) => item.slug === moduleSlug) : null;
 
@@ -125,10 +126,16 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
 
   const continueReading = useMemo(() => {
     for (const row of (dashboard.data?.progress || []) as GuideProgress[]) {
-      if (row.sourceType === "guide" && row.currentPage > 1 && row.percent > 0) return row;
+      const guide = guides.find((item) => item.id === row.documentId);
+      const belongsToModule =
+        !moduleSlug ||
+        guide?.moduleId === activeModule?.id ||
+        normalize(guide?.category || "") === normalize(activeModule?.name || moduleSlug);
+      if (row.sourceType === "guide" && row.currentPage > 1 && row.percent > 0 && belongsToModule)
+        return row;
     }
     return null;
-  }, [dashboard.data]);
+  }, [dashboard.data, guides, moduleSlug, activeModule?.id, activeModule?.name]);
 
   const categories = useMemo(() => {
     const set = new Map<string, string>();
@@ -154,12 +161,34 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
         )
       )
         return false;
-      const matchesCategory = category === "todos" || normalize(guide.category || "") === category;
+      const matchesCategory = moduleSlug
+        ? category === "todos" ||
+          (category === "pdf" && guide.contentType !== "video") ||
+          (category === "video" && guide.contentType === "video") ||
+          (category === "concluidos" && (progressByGuide.get(guide.id)?.percent ?? 0) >= 100)
+        : category === "todos" || normalize(guide.category || "") === category;
       const matchesTerm =
         !term || normalize(`${guide.title} ${guide.summary} ${guide.category}`).includes(term);
       return matchesCategory && matchesTerm;
     });
-  }, [guides, category, search, moduleSlug, activeModule?.id, activeModule?.name]);
+  }, [guides, category, search, moduleSlug, activeModule?.id, activeModule?.name, progressByGuide]);
+
+  const moduleProgress = useMemo(() => {
+    const rows = guides.filter(
+      (guide) =>
+        !moduleSlug ||
+        guide.moduleId === activeModule?.id ||
+        normalize(guide.category || "") === normalize(activeModule?.name || moduleSlug),
+    );
+    const completed = rows.filter(
+      (guide) => (progressByGuide.get(guide.id)?.percent ?? 0) >= 100,
+    ).length;
+    return {
+      total: rows.length,
+      completed,
+      percent: rows.length ? Math.round((completed / rows.length) * 100) : 0,
+    };
+  }, [guides, moduleSlug, activeModule?.id, activeModule?.name, progressByGuide]);
 
   const modulePath = moduleSlug ? `/academia/${moduleSlug}` : "/academia";
   const openGuide = (id: number, title?: string) => {
@@ -257,6 +286,53 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
       >
         ← Todos os módulos
       </Button>
+      <section className="relative mb-10 overflow-hidden rounded-[2rem] bg-[var(--ink)] text-white shadow-[0_24px_60px_rgba(8,31,77,.12)]">
+        <div className="grid min-h-72 lg:grid-cols-[1fr_360px]">
+          <div className="relative z-10 flex flex-col justify-center p-7 sm:p-10">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-white/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#efd4a2]">
+                Módulo {Math.max(1, modules.findIndex((item) => item.id === activeModule?.id) + 1)}
+              </span>
+              <span className="rounded-full border border-white/15 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-white/75">
+                {moduleProgress.total} conteúdos
+              </span>
+            </div>
+            <h2 className="display-font mt-5 max-w-2xl text-4xl font-semibold leading-[0.98] sm:text-5xl">
+              {activeModule?.name || "Módulo da Academia"}
+            </h2>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-white/70">
+              {activeModule?.description ||
+                "Uma trilha organizada para você aprender, praticar e retomar quando precisar."}
+            </p>
+            <div className="mt-7 max-w-xl">
+              <div className="mb-2 flex justify-between text-[10px] font-extrabold uppercase tracking-[0.14em] text-white/65">
+                <span>Progresso do módulo</span>
+                <span>{moduleProgress.percent}%</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-[#efd4a2]"
+                  style={{ width: `${Math.max(2, moduleProgress.percent)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="relative min-h-56 overflow-hidden bg-[var(--sage-deep)] lg:min-h-full">
+            {activeModule?.coverImageUrl ? (
+              <img
+                src={activeModule.coverImageUrl}
+                alt={`Capa do módulo ${activeModule.name}`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="quiet-grid grid h-full place-items-center">
+                <BookOpen size={52} className="text-white/35" />
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--ink)]/40 to-transparent lg:bg-gradient-to-r" />
+          </div>
+        </div>
+      </section>
       {continueReading ? (
         <section className="mb-10" aria-label="Continue de onde parou">
           <SectionHeading label="Continue de onde parou" title="Retome sua leitura" />
@@ -306,7 +382,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
       ) : null}
 
       <section id="materiais-academia" className="scroll-mt-24">
-        <SectionHeading label="Explore a Academia" title="Escolha um conteúdo para começar" />
+        <SectionHeading label="Conteúdos do módulo" title="Avance no seu ritmo" />
         <p className="-mt-3 mb-6 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
           Escolha um conteúdo para começar ou continue explorando os temas disponíveis.
         </p>
@@ -314,23 +390,39 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
         {guides.length ? (
           <div className="mb-7 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap gap-2">
-              {[
-                { key: "todos", label: "Todos" },
-                ...categories.map((label) => ({ key: normalize(label), label })),
-              ].map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setCategory(item.key)}
-                  className={`rounded-full px-3.5 py-2 text-xs font-extrabold transition ${
-                    category === item.key
-                      ? "bg-[var(--sage-deep)] text-white"
-                      : "bg-[var(--linen)] text-[var(--ink-soft)] hover:bg-[var(--sage-pale)]"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
+              {(moduleSlug
+                ? [
+                    { key: "todos", label: "Todos", icon: BookOpen },
+                    { key: "pdf", label: "PDF", icon: FileText },
+                    { key: "video", label: "Vídeos", icon: PlayCircle },
+                    { key: "concluidos", label: "Concluídos", icon: CheckCircle2 },
+                  ]
+                : [
+                    { key: "todos", label: "Todos", icon: BookOpen },
+                    ...categories.map((label) => ({
+                      key: normalize(label),
+                      label,
+                      icon: BookOpen,
+                    })),
+                  ]
+              ).map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setCategory(item.key)}
+                    className={`rounded-full px-3.5 py-2 text-xs font-extrabold transition ${
+                      category === item.key
+                        ? "bg-[var(--sage-deep)] text-white"
+                        : "bg-[var(--linen)] text-[var(--ink-soft)] hover:bg-[var(--sage-pale)]"
+                    }`}
+                  >
+                    <Icon size={14} className="mr-1.5 inline" />
+                    {item.label}
+                  </button>
+                );
+              })}
             </div>
             <div className="relative w-full lg:w-72">
               <Search
@@ -362,7 +454,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
                 className="soft-card flex flex-col overflow-hidden rounded-3xl bg-white"
               >
                 <div className="relative">
-                  <PdfCover src={guide.coverImageUrl} title={guide.title} />
+                  <PdfCover src={guide.coverImageUrl} title={guide.title} ratio="16 / 10" />
                   {guide.contentType === "video" ? (
                     <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--ink)] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-white">
                       <PlayCircle size={13} /> Vídeo
