@@ -1,5 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
+import {
+  LOVABLE_CLOUD_SUPABASE_PUBLISHABLE_KEY,
+  LOVABLE_CLOUD_SUPABASE_URL,
+} from "@/integrations/supabase/public-config";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -32,8 +36,9 @@ const collectionSchema = z.object({
 export const listPublicGuides = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => collectionSchema.parse(input ?? {}))
   .handler(async ({ data }): Promise<PublicGuide[]> => {
-    const url = process.env["SUPABASE_URL"]!;
-    const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
+    const url = process.env["SUPABASE_URL"] || LOVABLE_CLOUD_SUPABASE_URL;
+    const key =
+      process.env["SUPABASE_PUBLISHABLE_KEY"] || LOVABLE_CLOUD_SUPABASE_PUBLISHABLE_KEY;
     const supabasePublic = createClient<Database>(url, key, {
       auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
       global: {

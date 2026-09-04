@@ -4,6 +4,10 @@
  */
 import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  LOVABLE_CLOUD_SUPABASE_PUBLISHABLE_KEY,
+  LOVABLE_CLOUD_SUPABASE_URL,
+} from "@/integrations/supabase/public-config";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   isAccessRole,
@@ -75,8 +79,9 @@ async function authUserFromRequest() {
   const header = request?.headers.get("authorization") ?? "";
   const token = header.replace(/^Bearer\s+/i, "").trim();
   if (!token) return null;
-  const url = process.env["SUPABASE_URL"];
-  const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
+  const url = process.env["SUPABASE_URL"] || LOVABLE_CLOUD_SUPABASE_URL;
+  const key =
+    process.env["SUPABASE_PUBLISHABLE_KEY"] || LOVABLE_CLOUD_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return null;
   const client = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
