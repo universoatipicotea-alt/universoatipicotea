@@ -1146,6 +1146,7 @@ export type Database = {
       }
       ua_users: {
         Row: {
+          access_role: string
           account_status: string
           auth_id: string | null
           created_at: string
@@ -1158,6 +1159,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_role?: string
           account_status?: string
           auth_id?: string | null
           created_at?: string
@@ -1170,6 +1172,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_role?: string
           account_status?: string
           auth_id?: string | null
           created_at?: string
