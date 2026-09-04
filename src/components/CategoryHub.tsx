@@ -79,7 +79,8 @@ export function CategoryHub({
           <article
             key={item.id}
             aria-label={`${item.name}: em breve`}
-            className="flex flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-white text-left opacity-95 shadow-[0_10px_28px_rgba(8,31,77,.04)]"
+            aria-disabled="true"
+            className="flex cursor-not-allowed flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-white text-left opacity-95 shadow-[0_10px_28px_rgba(8,31,77,.04)]"
           >
             {body}
           </article>

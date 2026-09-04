@@ -16,7 +16,7 @@ import {
   legacyValuesForAccessRole,
   type AccessRole,
 } from "@shared/access";
-import type { DriveFile, DriveImportCandidate } from "./drive-import";
+import { driveRollbackDecision, type DriveFile, type DriveImportCandidate } from "./drive-import";
 
 const PDF_BUCKET = "guias-pdf";
 const IMAGE_BUCKET = "guias-capas";
@@ -1094,7 +1094,7 @@ async function protectedVideoUrl(value: string, guideId: number) {
   if (value.startsWith("drive:")) {
     const driveFileId = value.slice("drive:".length);
     if (!/^[a-zA-Z0-9_-]{10,}$/.test(driveFileId)) fail("Vídeo indisponível.");
-    const { createDriveMediaToken } = await import("./drive-import.server");
+    const { createDriveMediaToken } = await import("./drive-media-token.server");
     const token = createDriveMediaToken(guideId);
     return `/api/protected-drive-video/${guideId}?token=${encodeURIComponent(token)}`;
   }
@@ -2370,13 +2370,21 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
             .eq("id", Number(importResult.targetId))
             .maybeSingle();
           if (current.error || !current.data) fail("O registro importado não existe mais.");
-          if (current.data.updated_at !== importResult.targetUpdatedAt)
+          const rollbackDecision = driveRollbackDecision(
+            { status: current.data.status, updatedAt: current.data.updated_at },
+            {
+              targetKind: importResult.targetKind,
+              targetUpdatedAt: importResult.targetUpdatedAt,
+              created: importResult.created,
+            },
+          );
+          if (rollbackDecision.reason === "edited_after_import")
             fail(
               "O registro foi editado depois da importação; o rollback automático foi bloqueado.",
             );
+          if (rollbackDecision.reason === "no_longer_draft")
+            fail("O conteúdo deixou de ser rascunho; o rollback automático foi bloqueado.");
           if (importResult.targetKind === "academy_guide" && importResult.created) {
-            if (current.data.status !== "draft")
-              fail("O conteúdo deixou de ser rascunho; o rollback automático foi bloqueado.");
             const removed = await db().from("ua_guides").delete().eq("id", importResult.targetId);
             if (removed.error) fail(removed.error.message);
           } else {

@@ -86,6 +86,23 @@ export type DriveAssetRecord = {
   guideId?: number | null;
 };
 
+export type DriveRollbackState = {
+  targetKind: "module_cover" | "academy_guide";
+  targetUpdatedAt: string;
+  created: boolean;
+};
+
+export function driveRollbackDecision(
+  current: { status?: string | null; updatedAt: string },
+  imported: DriveRollbackState,
+) {
+  if (current.updatedAt !== imported.targetUpdatedAt)
+    return { allowed: false, reason: "edited_after_import" as const };
+  if (imported.targetKind === "academy_guide" && imported.created && current.status !== "draft")
+    return { allowed: false, reason: "no_longer_draft" as const };
+  return { allowed: true, reason: "safe" as const };
+}
+
 export type DriveImportCandidate = {
   key: string;
   targetKind: "module_cover" | "academy_guide";

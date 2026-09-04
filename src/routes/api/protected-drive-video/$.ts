@@ -14,10 +14,11 @@ export const Route = createFileRoute("/api/protected-drive-video/$")({
         if (!Number.isInteger(guideId) || guideId < 1 || !token)
           return new Response("Not found", { status: 404 });
 
-        const [{ supabaseAdmin }, { GoogleDriveReadClient, verifyDriveMediaToken }] =
+        const [{ supabaseAdmin }, { GoogleDriveReadClient }, { verifyDriveMediaToken }] =
           await Promise.all([
             import("@/integrations/supabase/client.server"),
             import("@/lib/drive-import.server"),
+            import("@/lib/drive-media-token.server"),
           ]);
         if (!verifyDriveMediaToken(token, guideId))
           return new Response("Not found", { status: 404 });
