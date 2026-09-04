@@ -179,13 +179,9 @@ export type Database = {
       }
       subscriptions: {
         Row: {
-          cancel_at_period_end: boolean
-          cancel_requested_at: string | null
           created_at: string
           current_period_end: string | null
           id: string
-          last_stripe_event_created_at: string | null
-          last_stripe_event_id: string | null
           provider: string
           provider_checkout_session_id: string | null
           provider_subscription_id: string | null
@@ -194,13 +190,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          cancel_at_period_end?: boolean
-          cancel_requested_at?: string | null
           created_at?: string
           current_period_end?: string | null
           id?: string
-          last_stripe_event_created_at?: string | null
-          last_stripe_event_id?: string | null
           provider?: string
           provider_checkout_session_id?: string | null
           provider_subscription_id?: string | null
@@ -209,93 +201,15 @@ export type Database = {
           user_id: string
         }
         Update: {
-          cancel_at_period_end?: boolean
-          cancel_requested_at?: string | null
           created_at?: string
           current_period_end?: string | null
           id?: string
-          last_stripe_event_created_at?: string | null
-          last_stripe_event_id?: string | null
           provider?: string
           provider_checkout_session_id?: string | null
           provider_subscription_id?: string | null
           status?: string
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      ua_audit_events: {
-        Row: {
-          action: string
-          actor_auth_id: string | null
-          actor_user_id: number | null
-          created_at: string
-          entity_id: string | null
-          entity_type: string
-          id: number
-          metadata: Json
-          outcome: string
-        }
-        Insert: {
-          action: string
-          actor_auth_id?: string | null
-          actor_user_id?: number | null
-          created_at?: string
-          entity_id?: string | null
-          entity_type: string
-          id?: never
-          metadata?: Json
-          outcome: string
-        }
-        Update: {
-          action?: string
-          actor_auth_id?: string | null
-          actor_user_id?: number | null
-          created_at?: string
-          entity_id?: string | null
-          entity_type?: string
-          id?: never
-          metadata?: Json
-          outcome?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ua_audit_events_actor_user_id_fkey"
-            columns: ["actor_user_id"]
-            isOneToOne: false
-            referencedRelation: "ua_users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ua_stripe_webhook_events: {
-        Row: {
-          created_at: string
-          event_created_at: string
-          event_id: string
-          event_type: string
-          outcome: Json
-          processed_at: string | null
-          status: string
-        }
-        Insert: {
-          created_at?: string
-          event_created_at: string
-          event_id: string
-          event_type: string
-          outcome?: Json
-          processed_at?: string | null
-          status?: string
-        }
-        Update: {
-          created_at?: string
-          event_created_at?: string
-          event_id?: string
-          event_type?: string
-          outcome?: Json
-          processed_at?: string | null
-          status?: string
         }
         Relationships: []
       }
@@ -1232,7 +1146,6 @@ export type Database = {
       }
       ua_users: {
         Row: {
-          access_role: string
           account_status: string
           auth_id: string | null
           created_at: string
@@ -1245,7 +1158,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          access_role?: string
           account_status?: string
           auth_id?: string | null
           created_at?: string
@@ -1258,7 +1170,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          access_role?: string
           account_status?: string
           auth_id?: string | null
           created_at?: string
@@ -1298,14 +1209,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      claim_ua_stripe_webhook_event: {
-        Args: {
-          p_event_created_at: string
-          p_event_id: string
-          p_event_type: string
-        }
-        Returns: string
-      }
       has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -1362,7 +1265,8 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -1386,7 +1290,8 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -1410,7 +1315,8 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
