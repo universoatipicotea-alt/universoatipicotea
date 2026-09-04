@@ -12,7 +12,7 @@ Este diagnóstico foi executado sem conexão com produção, sem merge, deploy, 
 - Lint direcionado dos arquivos alterados: aprovado, com a regra de `any` legado desativada conforme o checkpoint anterior.
 - Testes Node: 17 aprovados, cobrindo os quatro papéis, novo usuário, compatibilidade de usuários existentes, elevação/redução lógica, cancelamento, retomada, propriedade da assinatura, expiração, evento antigo, contrato do ledger, catálogo público e associação editorial obrigatória.
 - Aplicação: iniciou em `127.0.0.1` com variáveis locais fictícias, sem usar o `.env` remoto; `/`, `/receitas`, `/academia`, `/admin` e `/master` responderam HTTP 200.
-- Capturas: página pública e barreira de login do Master foram registradas. Conteúdo autenticado e dados editoriais não puderam ser validados visualmente sem banco de teste.
+- Capturas: página pública, Academia vazia em desktop/mobile, erro seguro de Receitas e barreira de login do Master foram registradas. O breakpoint mobile foi validado em 500 px; o Chrome headless desta máquina recorta artificialmente bitmaps configurados abaixo dessa largura. Conteúdo autenticado e dados editoriais não puderam ser validados visualmente sem banco de teste.
 
 ## Bloqueio do Supabase local
 
@@ -66,6 +66,7 @@ Os IDs agora vêm do ambiente. Há fallback legado temporário para compatibilid
 - Rota pública de vídeo ficou restrita ao VSL configurado; vídeo de membro continua dependendo da autorização do backend.
 - Conteúdos sem categoria/módulo podem permanecer como rascunho para correção, mas não podem ser publicados e não aparecem nas consultas publicadas.
 - Arquivo legado e não utilizado com categorias fixas foi removido.
+- Cabeçalho público reduz o CTA em telas estreitas para preservar espaço de navegação.
 
 ## Integração editorial
 
