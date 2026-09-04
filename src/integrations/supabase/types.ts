@@ -227,6 +227,7 @@ export type Database = {
       }
       ua_academy_modules: {
         Row: {
+          coming_soon_message: string
           cover_image_key: string | null
           cover_image_url: string | null
           created_at: string
@@ -239,6 +240,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          coming_soon_message?: string
           cover_image_key?: string | null
           cover_image_url?: string | null
           created_at?: string
@@ -251,6 +253,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          coming_soon_message?: string
           cover_image_key?: string | null
           cover_image_url?: string | null
           created_at?: string

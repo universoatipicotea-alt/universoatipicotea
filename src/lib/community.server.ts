@@ -201,7 +201,11 @@ export function slugifyPt(value: string) {
 async function listTaxonomy(kind: "recipe" | "module", includeDrafts = false) {
   const table = kind === "recipe" ? "ua_recipe_categories" : "ua_academy_modules";
   let query = db().from(table).select("*");
-  if (!includeDrafts) query = query.eq("status", "published");
+  if (!includeDrafts)
+    query =
+      kind === "module"
+        ? query.in("status", ["published", "coming_soon"])
+        : query.eq("status", "published");
   const { data } = await query
     .order("position", { ascending: true })
     .order("name", { ascending: true });
@@ -1305,16 +1309,24 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       const table = input.kind === "recipe" ? "ua_recipe_categories" : "ua_academy_modules";
       const name = String(input.name ?? "").trim();
       if (name.length < 2) fail("Informe um nome válido.");
-      const values = {
+      const allowedStatuses =
+        input.kind === "module"
+          ? ["draft", "published", "coming_soon", "archived"]
+          : ["draft", "published", "archived"];
+      const values: Record<string, unknown> = {
         name,
         slug: slugifyPt(input.slug || name),
         description: input.description ?? null,
         cover_image_key: input.coverImageKey ?? null,
         cover_image_url: input.coverImageUrl ?? null,
-        status: ["draft", "published", "archived"].includes(input.status) ? input.status : "draft",
+        status: allowedStatuses.includes(input.status) ? input.status : "draft",
         position: Number(input.position ?? 0),
         updated_at: new Date().toISOString(),
       };
+      if (input.kind === "module")
+        values.coming_soon_message =
+          String(input.comingSoonMessage ?? "").trim() ||
+          "Estamos preparando este módulo com cuidado. Em breve, novos conteúdos estarão disponíveis para você.";
       const { error } = input.id
         ? await db().from(table).update(values).eq("id", Number(input.id))
         : await db().from(table).insert(values);
