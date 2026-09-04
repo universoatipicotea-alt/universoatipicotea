@@ -1,4 +1,12 @@
-import { ArrowRight, BookOpen, CheckCircle2, FileText, PlayCircle, Search } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  FileText,
+  LockKeyhole,
+  PlayCircle,
+  Search,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { ContentEmpty, MemberShell, SectionHeading } from "@/components/MemberShell";
@@ -113,6 +121,8 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
     description?: string | null;
     coverImageUrl?: string | null;
     position?: number;
+    status?: "published" | "coming_soon";
+    comingSoonMessage?: string | null;
   }>;
   const activeModule = moduleSlug ? modules.find((item) => item.slug === moduleSlug) : null;
 
@@ -268,6 +278,52 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
             text="Os módulos aparecerão aqui quando forem publicados."
           />
         )}
+      </MemberShell>
+    );
+
+  if (activeModule?.status === "coming_soon")
+    return (
+      <MemberShell
+        allowGuest
+        eyebrow="Academia Atípica"
+        title={activeModule.name}
+        description="Este módulo já faz parte da sua jornada e está sendo preparado."
+      >
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setLocation("/academia")}
+          className="mb-7 rounded-xl border-[var(--line)] bg-white text-xs font-extrabold"
+        >
+          ← Todos os módulos
+        </Button>
+        <section className="grid overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white shadow-[0_24px_60px_rgba(8,31,77,.08)] lg:grid-cols-[1fr_380px]">
+          <div className="flex min-h-80 flex-col justify-center p-8 sm:p-12">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[#fff1d8] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#8b5f16]">
+              <LockKeyhole size={14} /> Em breve
+            </span>
+            <h2 className="display-font mt-6 text-4xl font-semibold leading-tight sm:text-5xl">
+              Em breve
+            </h2>
+            <p className="mt-4 max-w-xl text-sm leading-7 text-[var(--ink-soft)]">
+              {activeModule.comingSoonMessage ||
+                "Estamos preparando este módulo com cuidado. Em breve, novos conteúdos estarão disponíveis para você."}
+            </p>
+          </div>
+          <div className="min-h-72 bg-[var(--linen)]">
+            {activeModule.coverImageUrl ? (
+              <img
+                src={activeModule.coverImageUrl}
+                alt={`Capa do módulo ${activeModule.name}`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="quiet-grid grid h-full min-h-72 place-items-center">
+                <BookOpen size={52} className="text-[var(--sage)]/45" />
+              </div>
+            )}
+          </div>
+        </section>
       </MemberShell>
     );
 

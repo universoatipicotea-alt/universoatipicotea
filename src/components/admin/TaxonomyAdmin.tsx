@@ -26,7 +26,8 @@ type Item = {
   coverImageKey?: string | null;
   coverImageUrl?: string | null;
   position: number;
-  status: "draft" | "published" | "archived";
+  status: "draft" | "published" | "coming_soon" | "archived";
+  comingSoonMessage?: string | null;
   contentCount?: number;
 };
 type Form = Omit<Item, "id" | "contentCount"> & { id?: number };
@@ -38,6 +39,8 @@ const empty = (): Form => ({
   coverImageUrl: null,
   position: 0,
   status: "draft",
+  comingSoonMessage:
+    "Estamos preparando este módulo com cuidado. Em breve, novos conteúdos estarão disponíveis para você.",
 });
 
 async function asDataUrl(file: File) {
@@ -74,7 +77,17 @@ export default function TaxonomyAdmin({ kind, enabled }: { kind: Kind; enabled: 
     ]);
   };
   const edit = (item?: Item) => {
-    setForm(item ? { ...item, description: item.description ?? "" } : empty());
+    setForm(
+      item
+        ? {
+            ...item,
+            description: item.description ?? "",
+            comingSoonMessage:
+              item.comingSoonMessage ||
+              "Estamos preparando este módulo com cuidado. Em breve, novos conteúdos estarão disponíveis para você.",
+          }
+        : empty(),
+    );
     setOpen(true);
   };
   const submit = async (event: FormEvent) => {
@@ -308,10 +321,34 @@ export default function TaxonomyAdmin({ kind, enabled }: { kind: Kind; enabled: 
                 >
                   <option value="draft">Rascunho</option>
                   <option value="published">Publicado</option>
+                  {kind === "module" ? <option value="coming_soon">Em breve</option> : null}
                   <option value="archived">Arquivado</option>
                 </select>
               </div>
             </div>
+            {kind === "module" && form.status === "coming_soon" ? (
+              <div>
+                <Label>Mensagem de “Em breve”</Label>
+                <Textarea
+                  required
+                  maxLength={360}
+                  value={form.comingSoonMessage ?? ""}
+                  onChange={(e) => setForm((c) => ({ ...c, comingSoonMessage: e.target.value }))}
+                  className="mt-2 min-h-24"
+                />
+                <div className="mt-3 rounded-2xl border border-[var(--line)] bg-white p-4">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#8b5f16]">
+                    Prévia para membros · Em breve
+                  </p>
+                  <h3 className="display-font mt-2 text-2xl font-semibold">
+                    {form.name || "Nome do módulo"}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
+                    {form.comingSoonMessage}
+                  </p>
+                </div>
+              </div>
+            ) : null}
             <Button
               disabled={save.isPending || upload.isPending}
               className="w-full rounded-xl bg-[var(--sage-deep)] font-extrabold text-white"
