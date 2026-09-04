@@ -1,5 +1,5 @@
 import { ArrowRight, BookOpen, PlayCircle, Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { ContentEmpty, MemberShell, SectionHeading } from "@/components/MemberShell";
 import { PdfCover } from "@/components/PdfCover";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { CategoryHub } from "@/components/CategoryHub";
+import { PdfReaderDialog, type ReaderDocument } from "@/components/PdfReaderDialog";
 
 type AcademiaGuide = {
   id: number;
@@ -20,6 +21,7 @@ type AcademiaGuide = {
   videoUrl?: string | null;
   estimatedDuration?: string | null;
   technicalReview?: string | null;
+  hasPdf?: boolean;
 };
 
 type GuideProgress = {
@@ -139,6 +141,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
 
   const [category, setCategory] = useState("todos");
   const [search, setSearch] = useState("");
+  const [reading, setReading] = useState<ReaderDocument | null>(null);
 
   const visibleGuides = useMemo(() => {
     const term = normalize(search.trim());
@@ -158,7 +161,37 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
     });
   }, [guides, category, search, moduleSlug, activeModule?.id, activeModule?.name]);
 
-  const openGuide = (id: number) => setLocation(`/biblioteca?guide=${id}`);
+  const modulePath = moduleSlug ? `/academia/${moduleSlug}` : "/academia";
+  const openGuide = (id: number, title?: string) => {
+    if (!user) {
+      setLocation(`/entrar?next=${encodeURIComponent(`${modulePath}?guide=${id}`)}`);
+      return;
+    }
+    const guide = guides.find((item) => item.id === id);
+    if (guide && !guide.hasPdf) return;
+    setReading({ id, title: title || guide?.title || "Guia da Academia", sourceType: "guide" });
+    setLocation(`${modulePath}?guide=${id}`);
+  };
+  const closeReader = useCallback(() => {
+    setReading(null);
+    setLocation(modulePath);
+  }, [modulePath, setLocation]);
+
+  useEffect(() => {
+    if (!user || reading || typeof window === "undefined") return;
+    const guideId = Number(new URLSearchParams(window.location.search).get("guide"));
+    const guide = guides.find((item) => item.id === guideId);
+    if (guide?.hasPdf) setReading({ id: guide.id, title: guide.title, sourceType: "guide" });
+  }, [guides, reading, user]);
+
+  useEffect(() => {
+    if (!reading) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeReader();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [reading, closeReader]);
 
   const ctaLabel = (id: number) => {
     const progress = progressByGuide.get(id);
@@ -261,7 +294,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
               </div>
               <Button
                 type="button"
-                onClick={() => openGuide(continueReading.documentId)}
+                onClick={() => openGuide(continueReading.documentId, continueReading.title)}
                 className="pressable mt-6 w-fit rounded-xl bg-[var(--sage-deep)] px-4 text-xs font-extrabold text-white hover:bg-[var(--ink)]"
               >
                 Continuar da página {continueReading.currentPage}
@@ -366,7 +399,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
                         ? !user
                           ? setLocation("/assinatura")
                           : undefined
-                        : openGuide(guide.id)
+                        : openGuide(guide.id, guide.title)
                     }
                     className="pressable mt-auto w-full rounded-xl bg-[var(--sage-deep)] px-3 py-2 text-xs font-extrabold text-white hover:bg-[var(--ink)] sm:w-fit"
                   >
@@ -395,6 +428,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
           />
         )}
       </section>
+      {reading ? <PdfReaderDialog document={reading} onClose={closeReader} /> : null}
     </MemberShell>
   );
 }

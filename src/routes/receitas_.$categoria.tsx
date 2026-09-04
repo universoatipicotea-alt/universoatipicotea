@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Page from "@/pages/Receitas";
 
-export const Route = createFileRoute("/receitas/$categoria")({
+export const Route = createFileRoute("/receitas_/$categoria")({
   ssr: false,
   component: ReceitaCategoryPage,
   head: ({ params }) => ({
