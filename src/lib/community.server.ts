@@ -80,8 +80,7 @@ async function authUserFromRequest() {
   const token = header.replace(/^Bearer\s+/i, "").trim();
   if (!token) return null;
   const url = process.env["SUPABASE_URL"] || LOVABLE_CLOUD_SUPABASE_URL;
-  const key =
-    process.env["SUPABASE_PUBLISHABLE_KEY"] || LOVABLE_CLOUD_SUPABASE_PUBLISHABLE_KEY;
+  const key = process.env["SUPABASE_PUBLISHABLE_KEY"] || LOVABLE_CLOUD_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return null;
   const client = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -479,7 +478,7 @@ async function listMemberProgress(userId: number) {
     )
     .eq("user_id", userId)
     .order("updated_at", { ascending: false })
-    .limit(12);
+    .limit(50);
   const progress = rows ?? [];
   if (!progress.length) return [];
 
@@ -518,6 +517,14 @@ async function listMemberProgress(userId: number) {
       if (!content || content.status !== "published") return null;
       const pageCount = Number(row.page_count ?? 0);
       const currentPage = Number(row.current_page ?? 1);
+      const lastSecond = Number(row.last_second ?? 0);
+      const totalSeconds = Number(row.total_seconds ?? 0);
+      const percent =
+        pageCount > 0
+          ? Math.min(100, Math.round((currentPage / pageCount) * 100))
+          : totalSeconds > 0
+            ? Math.min(100, Math.round((lastSecond / totalSeconds) * 100))
+            : 0;
       return {
         sourceType,
         documentId: row.document_id,
@@ -527,12 +534,15 @@ async function listMemberProgress(userId: number) {
         accentColor: content.accent_color ?? null,
         currentPage,
         pageCount,
-        percent: pageCount > 0 ? Math.min(100, Math.round((currentPage / pageCount) * 100)) : 0,
+        lastSecond,
+        totalSeconds,
+        percent,
+        completed: Boolean(row.completed) || percent >= 100,
+        lastAccessAt: row.last_access_at ?? row.updated_at,
         updatedAt: row.updated_at,
       };
     })
-    .filter(Boolean)
-    .slice(0, 4);
+    .filter(Boolean);
 }
 
 /**

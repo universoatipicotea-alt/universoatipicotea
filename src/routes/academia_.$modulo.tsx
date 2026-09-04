@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Page from "@/pages/Academia";
 
-export const Route = createFileRoute("/academia/$modulo")({
+export const Route = createFileRoute("/academia_/$modulo")({
   ssr: false,
   component: AcademiaModulePage,
   head: ({ params }) => ({
