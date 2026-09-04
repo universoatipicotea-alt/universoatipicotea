@@ -52,6 +52,28 @@ function fail(message: string): never {
   throw new Error(message);
 }
 
+async function auditEvent(
+  actor: UaUser,
+  action: string,
+  entityType: string,
+  entityId: string | number | null,
+  outcome: "success" | "failure" | "noop",
+  metadata: Record<string, unknown> = {},
+) {
+  const { error } = await db()
+    .from("ua_audit_events")
+    .insert({
+      actor_auth_id: actor.authId,
+      actor_user_id: actor.id,
+      action,
+      entity_type: entityType,
+      entity_id: entityId === null ? null : String(entityId),
+      outcome,
+      metadata,
+    });
+  if (error) console.error(`[audit] ${action}:`, error.message);
+}
+
 function requestOrigin(): string {
   const request = getRequest();
   const explicit = request?.headers.get("origin");
@@ -1590,6 +1612,151 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         campaigns,
         landingSettings,
       };
+    }
+    case "community.master.drive.defaults": {
+      await requireMaster();
+      const { driveImportDefaults } = await import("./drive-import.server");
+      const defaults = driveImportDefaults();
+      return {
+        rootFolderUrl: `https://drive.google.com/drive/folders/${defaults.rootFolderId}`,
+        coversFolderUrl: `https://drive.google.com/drive/folders/${defaults.coversFolderId}`,
+        extraFolderUrls: defaults.extraFolderIds.map(
+          (id) => `https://drive.google.com/drive/folders/${id}`,
+        ),
+      };
+    }
+    case "community.master.drive.preview": {
+      const masterUser = await requireMaster();
+      try {
+        const [{ scanAcademyDrive }, { reconcileDriveCandidates, NEW_GUIDE_EDITORIAL_COMPARISON }] =
+          await Promise.all([import("./drive-import.server"), import("./drive-import")]);
+        const scan = await scanAcademyDrive({
+          rootFolderId: input.rootFolder,
+          coversFolderId: input.coversFolder,
+          extraFolderIds: Array.isArray(input.extraFolders) ? input.extraFolders : undefined,
+        });
+        const [moduleResult, guideResult, assetResult] = await Promise.all([
+          db()
+            .from("ua_academy_modules")
+            .select("id,name,slug,position,status,drive_folder_id,cover_image_key"),
+          db()
+            .from("ua_guides")
+            .select("id,title,module_id,position,status,drive_folder_id,pdf_key,cover_image_key"),
+          db()
+            .from("ua_drive_assets")
+            .select("drive_file_id,drive_modified_at,drive_version,module_id,guide_id"),
+        ]);
+        for (const result of [moduleResult, guideResult, assetResult])
+          if (result.error) fail(result.error.message);
+        const modules = camel<any[]>(moduleResult.data ?? []);
+        const guides = camel<any[]>(guideResult.data ?? []);
+        const assets = camel<any[]>(assetResult.data ?? []);
+        const candidates = reconcileDriveCandidates(scan.candidates, modules, guides, assets);
+        const matchedGuideIds = new Set(
+          candidates
+            .filter((candidate) => candidate.targetKind === "academy_guide")
+            .map((candidate) => candidate.existingTargetId)
+            .filter(Boolean),
+        );
+        const platformOnly = guides
+          .filter((guide) => !matchedGuideIds.has(guide.id))
+          .map((guide) => ({
+            id: guide.id,
+            title: guide.title,
+            status: guide.status,
+            moduleId: guide.moduleId,
+            issue: "Conteúdo cadastrado sem correspondência confirmada no acervo atual do Drive",
+          }));
+        const publishedWithoutModule = guides
+          .filter((guide) => guide.status === "published" && !guide.moduleId)
+          .map((guide) => ({ id: guide.id, title: guide.title }));
+        const summary = {
+          candidates: candidates.length,
+          moduleCovers: candidates.filter((row) => row.targetKind === "module_cover").length,
+          academyGuides: candidates.filter((row) => row.targetKind === "academy_guide").length,
+          ready: candidates.filter((row) => row.classifications.includes("ready")).length,
+          conflicts: candidates.filter((row) =>
+            row.classifications.some((value) =>
+              ["editorial_conflict", "duplicate", "registered_incorrectly"].includes(value),
+            ),
+          ).length,
+          ignored: scan.ignored.length,
+          platformOnly: platformOnly.length,
+          publishedWithoutModule: publishedWithoutModule.length,
+        };
+        const batchInsert = await db()
+          .from("ua_drive_import_batches")
+          .insert({
+            root_folder_id: scan.rootFolderId,
+            covers_folder_id: scan.coversFolderId,
+            extra_folder_ids: scan.extraFolderIds,
+            status: "preview",
+            requested_by: masterUser.id,
+            summary,
+          })
+          .select("id")
+          .single();
+        if (batchInsert.error || !batchInsert.data)
+          fail(batchInsert.error?.message || "Falha ao registrar a prévia.");
+        const batchId = Number(batchInsert.data.id);
+        const rows = candidates.map((candidate) => ({
+          batch_id: batchId,
+          target_kind: candidate.targetKind,
+          drive_folder_id: candidate.driveFolderId,
+          drive_file_id: candidate.driveFileId,
+          cover_drive_file_id: candidate.cover?.id ?? null,
+          video_drive_file_id: candidate.video?.id ?? null,
+          source_path: candidate.currentFolder,
+          title: candidate.title,
+          position: candidate.position,
+          suggested_module_id: candidate.suggestedModuleId,
+          existing_target_id: candidate.existingTargetId,
+          classification: candidate.classifications.join(","),
+          decision: candidate.selectedByDefault ? "selected" : "pending",
+          import_status: candidate.classifications.some((value) =>
+            ["editorial_conflict", "duplicate", "registered_incorrectly"].includes(value),
+          )
+            ? "conflict"
+            : "discovered",
+          metadata: candidate,
+        }));
+        const itemInsert = await db()
+          .from("ua_drive_import_items")
+          .insert(rows)
+          .select("id,drive_file_id,target_kind");
+        if (itemInsert.error) fail(itemInsert.error.message);
+        const ids = new Map(
+          (itemInsert.data ?? []).map((row: any) => [
+            `${row.target_kind}:${row.drive_file_id}`,
+            Number(row.id),
+          ]),
+        );
+        await auditEvent(
+          masterUser,
+          "drive.preview",
+          "drive_import_batch",
+          batchId,
+          "success",
+          summary,
+        );
+        return {
+          batchId,
+          summary,
+          candidates: candidates.map((candidate) => ({
+            ...candidate,
+            itemId: ids.get(candidate.key),
+          })),
+          ignored: scan.ignored,
+          warnings: scan.warnings,
+          diagnostics: { platformOnly, publishedWithoutModule },
+          editorialComparison: NEW_GUIDE_EDITORIAL_COMPARISON,
+        };
+      } catch (error) {
+        await auditEvent(masterUser, "drive.preview", "drive_import_batch", null, "failure", {
+          error: error instanceof Error ? error.message : "Falha desconhecida",
+        });
+        throw error;
+      }
     }
     case "community.master.updateUserAccess": {
       const master = await requireMaster();

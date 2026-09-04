@@ -1,5 +1,6 @@
 import { ContentEmpty, MemberShell, SectionHeading } from "@/components/MemberShell";
 import AccessControlPanel from "@/components/AccessControlPanel";
+import DriveImportAdmin from "@/components/admin/DriveImportAdmin";
 import TaxonomyAdmin from "@/components/admin/TaxonomyAdmin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import {
   Copy,
   ChefHat,
   Crown,
+  FolderSync,
   ImageUp,
   Link2,
   Megaphone,
@@ -35,7 +37,8 @@ type ProducerView =
   | "conversions"
   | "accounts"
   | "recipeCategories"
-  | "academyModules";
+  | "academyModules"
+  | "driveImport";
 type ProductForm = {
   id?: number;
   title: string;
@@ -359,6 +362,12 @@ export default function Master() {
       label: "Módulos da Academia",
       icon: BookOpen,
       hint: "Capas e publicação",
+    },
+    {
+      id: "driveImport",
+      label: "Importação do Drive",
+      icon: FolderSync,
+      hint: "Prévia e conflitos",
     },
   );
 
@@ -1434,6 +1443,7 @@ export default function Master() {
           ) : null}
           {view === "recipeCategories" ? <TaxonomyAdmin kind="recipe" enabled /> : null}
           {view === "academyModules" ? <TaxonomyAdmin kind="module" enabled /> : null}
+          {view === "driveImport" ? <DriveImportAdmin /> : null}
         </div>
       </div>
     </MemberShell>

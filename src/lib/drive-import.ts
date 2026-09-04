@@ -12,6 +12,35 @@ export const DRIVE_CLASSIFICATION_LABELS = {
   editorial_conflict: "conflito editorial — aguardando decisão",
 } as const;
 
+export const NEW_GUIDE_EDITORIAL_COMPARISON = {
+  newGuide: {
+    title: "Meu filho é AUTISTA. E agora?",
+    objective:
+      "Oferecer uma visão geral e emocional da jornada familiar após o diagnóstico, passando por observação, rede de cuidado, participação no desenvolvimento e autocuidado familiar.",
+    structure: "19 páginas, seis capítulos narrativos.",
+    topics:
+      "Pós-diagnóstico, compreensão da criança, rede de cuidado, informações e emoções, participação no desenvolvimento e cuidado da família.",
+    audience: "Famílias que receberam o diagnóstico e procuram uma introdução ampla.",
+  },
+  existingGuide: {
+    title: "Recebi o diagnóstico. E agora?",
+    objective:
+      "Acolher o momento do diagnóstico e orientar os primeiros movimentos de forma prática, segura e apoiada em referências.",
+    structure: "4 páginas, orientação objetiva, checklist, sinais de urgência e referências.",
+    topics:
+      "Significado do diagnóstico, seis primeiros movimentos, perguntas para consulta, urgências, checklist e fontes.",
+    audience: "Famílias e redes de apoio no primeiro momento após o diagnóstico.",
+  },
+  overlap:
+    "Os dois materiais tratam do pós-diagnóstico, acolhimento e construção de apoio. O novo PDF também atravessa temas que já pertencem a outros caminhos da Academia.",
+  complementary:
+    "O novo PDF aprofunda a experiência familiar e o cuidado ao longo da jornada; o guia existente é mais curto, acionável e tecnicamente referenciado.",
+  possibleClassification:
+    "Material complementar do Módulo 01 ou guia geral da Biblioteca, após revisão editorial e técnica.",
+  recommendation:
+    "Não substituir nem importar automaticamente. Revisar linguagem, referências, escopo e sobreposição; depois escolher entre complemento, Biblioteca, institucional ou arquivo.",
+} as const;
+
 export type DriveClassification = keyof typeof DRIVE_CLASSIFICATION_LABELS;
 export type DriveAssetRole = "module_cover" | "guide_cover" | "pdf" | "video" | "word";
 
