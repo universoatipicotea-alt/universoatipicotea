@@ -84,6 +84,12 @@ type Preview = {
 
 type Override = { moduleId: number | null; title: string; position: number };
 
+type ImportBatch = {
+  id: number;
+  status: string;
+  createdAt: string;
+};
+
 function sourceFile(candidate: Candidate) {
   return candidate.pdf || candidate.video || candidate.cover;
 }
@@ -132,12 +138,18 @@ export default function DriveImportAdmin() {
   const preview = trpc.community.master.drive.preview.useMutation({
     onError: (error) => toast.error(error.message),
   });
+  const importItems = trpc.community.master.drive.importItems.useMutation();
+  const rollback = trpc.community.master.drive.rollback.useMutation();
+  const history = trpc.community.master.drive.history.useQuery();
+  const utils = trpc.useUtils();
   const [rootFolder, setRootFolder] = useState("");
   const [coversFolder, setCoversFolder] = useState("");
   const [extraFolders, setExtraFolders] = useState("");
   const [result, setResult] = useState<Preview | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [overrides, setOverrides] = useState<Record<number, Override>>({});
+  const [confirmedUpdates, setConfirmedUpdates] = useState<Set<number>>(new Set());
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
 
   useEffect(() => {
     if (!defaults.data || rootFolder) return;
@@ -189,6 +201,7 @@ export default function DriveImportAdmin() {
           ]),
         ),
       );
+      setConfirmedUpdates(new Set());
       toast.success(`${data.candidates.length} candidatos encontrados. Nada foi publicado.`);
     } catch {
       // O toast da mutation já apresenta a mensagem segura do backend.
@@ -202,6 +215,96 @@ export default function DriveImportAdmin() {
       else next.delete(itemId);
       return next;
     });
+  };
+
+  const toggleConfirmation = (itemId: number, checked: boolean) => {
+    setConfirmedUpdates((current) => {
+      const next = new Set(current);
+      if (checked) next.add(itemId);
+      else next.delete(itemId);
+      return next;
+    });
+  };
+
+  const importSelected = async () => {
+    if (!result || selected.size === 0) return;
+    const items = result.candidates.filter((candidate) => selected.has(candidate.itemId));
+    const missingConfirmation = items.find(
+      (candidate) =>
+        (candidate.classifications.includes("registered") ||
+          candidate.platformSituation.includes("com capa")) &&
+        !confirmedUpdates.has(candidate.itemId),
+    );
+    if (missingConfirmation) {
+      toast.error(`Confirme a atualização de “${missingConfirmation.title}” antes de importar.`);
+      return;
+    }
+    if (
+      !window.confirm(
+        `Importar ${items.length} item(ns) como rascunho? Arquivos existentes só serão alterados onde a confirmação foi marcada.`,
+      )
+    )
+      return;
+    setImportProgress({ current: 0, total: items.length });
+    let processed = 0;
+    let failures = 0;
+    try {
+      for (let index = 0; index < items.length; index += 5) {
+        const chunk = items.slice(index, index + 5);
+        const response = await importItems.mutateAsync({
+          batchId: result.batchId,
+          items: chunk.map((candidate) => ({
+            itemId: candidate.itemId,
+            ...overrides[candidate.itemId],
+            overwriteConfirmed: confirmedUpdates.has(candidate.itemId),
+            conflictConfirmed: false,
+          })),
+          finalize: index + 5 >= items.length,
+        });
+        processed += chunk.length;
+        failures += response.results.filter((item: { success: boolean }) => !item.success).length;
+        setImportProgress({ current: processed, total: items.length });
+      }
+      await Promise.all([
+        utils.community.master.drive.history.invalidate(),
+        utils.community.admin.taxonomy.invalidate(),
+        utils.community.admin.dashboard.invalidate(),
+        utils.community.memberDashboard.invalidate(),
+      ]);
+      toast[failures ? "warning" : "success"](
+        failures
+          ? `${processed - failures} item(ns) importados; ${failures} precisam de atenção.`
+          : `${processed} item(ns) importados como rascunho.`,
+      );
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
+  };
+
+  const rollbackBatch = async (batchId: number) => {
+    if (
+      !window.confirm(
+        `Desfazer as alterações do lote #${batchId}? Itens editados depois da importação serão preservados.`,
+      )
+    )
+      return;
+    try {
+      const response = await rollback.mutateAsync({ batchId });
+      await Promise.all([
+        utils.community.master.drive.history.invalidate(),
+        utils.community.admin.taxonomy.invalidate(),
+        utils.community.admin.dashboard.invalidate(),
+        utils.community.memberDashboard.invalidate(),
+      ]);
+      const failed = response.results.filter((item: { success: boolean }) => !item.success).length;
+      toast[failed ? "warning" : "success"](
+        failed
+          ? `${failed} item(ns) foram preservados porque mudaram depois da importação.`
+          : "Lote desfeito com sucesso.",
+      );
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
   };
 
   return (
@@ -444,6 +547,18 @@ export default function DriveImportAdmin() {
                               ⚠ {alert}
                             </span>
                           ))}
+                          {candidate.classifications.includes("registered") ||
+                          candidate.platformSituation.includes("com capa") ? (
+                            <label className="mt-3 flex items-start gap-2 rounded-lg border border-[#e4c8bd] bg-[#fff8f5] p-2 text-[11px] font-bold">
+                              <Checkbox
+                                checked={confirmedUpdates.has(candidate.itemId)}
+                                onCheckedChange={(value) =>
+                                  toggleConfirmation(candidate.itemId, value === true)
+                                }
+                              />
+                              Confirmo a atualização deste item existente
+                            </label>
+                          ) : null}
                         </td>
                       </tr>
                     );
@@ -458,10 +573,14 @@ export default function DriveImportAdmin() {
               </p>
               <Button
                 type="button"
-                disabled
+                disabled={importItems.isPending || selected.size === 0}
+                onClick={() => void importSelected()}
                 className="rounded-xl bg-[var(--sage-deep)] font-extrabold text-white"
               >
-                Importar selecionados
+                {importItems.isPending ? <Loader2 size={16} className="mr-2 animate-spin" /> : null}
+                {importItems.isPending
+                  ? `Importando ${importProgress.current}/${importProgress.total}`
+                  : "Importar selecionados"}
               </Button>
             </div>
           </div>
@@ -564,6 +683,51 @@ export default function DriveImportAdmin() {
           </details>
         </div>
       )}
+
+      <section className="mt-10">
+        <SectionHeading label="Auditoria operacional" title="Histórico de importações" />
+        {history.isLoading ? (
+          <div className="h-28 animate-pulse rounded-3xl bg-[var(--linen)]" />
+        ) : history.data?.batches?.length ? (
+          <div className="space-y-3">
+            {(history.data.batches as ImportBatch[]).map((batch) => (
+              <article
+                key={batch.id}
+                className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[var(--line)] bg-white p-4"
+              >
+                <div>
+                  <strong className="text-sm">Lote #{batch.id}</strong>
+                  <p className="mt-1 text-xs text-[var(--ink-soft)]">
+                    {new Intl.DateTimeFormat("pt-BR", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    }).format(new Date(batch.createdAt))}{" "}
+                    {" · "}
+                    {batch.status}
+                  </p>
+                </div>
+                {["completed", "partial"].includes(batch.status) ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={rollback.isPending}
+                    onClick={() => void rollbackBatch(batch.id)}
+                    className="rounded-xl text-xs font-extrabold text-[#9c583c]"
+                  >
+                    Desfazer lote
+                  </Button>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        ) : (
+          <ContentEmpty
+            icon={FolderSync}
+            title="Nenhum lote executado"
+            text="As prévias e importações aparecerão aqui para consulta e rollback seguro."
+          />
+        )}
+      </section>
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import { createSign } from "node:crypto";
+import { createHmac, createSign, timingSafeEqual } from "node:crypto";
 import {
   assetRole,
   extractDriveId,
@@ -137,6 +137,59 @@ export class GoogleDriveReadClient {
       pageToken = payload.nextPageToken ?? "";
     } while (pageToken);
     return output;
+  }
+
+  async downloadResponse(fileId: string, range?: string | null) {
+    const headers: Record<string, string> = { authorization: `Bearer ${await this.token()}` };
+    if (range) headers.range = range;
+    const response = await fetch(`${DRIVE_API}/files/${encodeURIComponent(fileId)}?alt=media`, {
+      headers,
+    });
+    if (!response.ok && response.status !== 206)
+      throw new Error(`Não foi possível baixar o arquivo do Drive (${response.status}).`);
+    return response;
+  }
+
+  async downloadFile(fileId: string, maxBytes = 25 * 1024 * 1024) {
+    const response = await this.downloadResponse(fileId);
+    const declared = Number(response.headers.get("content-length") || 0);
+    if (declared > maxBytes) throw new Error("O arquivo excede o limite seguro de importação.");
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.byteLength > maxBytes)
+      throw new Error("O arquivo excede o limite seguro de importação.");
+    return {
+      bytes,
+      contentType: response.headers.get("content-type") || "application/octet-stream",
+    };
+  }
+}
+
+function mediaSecret() {
+  const secret = process.env["DRIVE_MEDIA_SIGNING_SECRET"];
+  if (!secret || secret.length < 32)
+    throw new Error("Configure DRIVE_MEDIA_SIGNING_SECRET com pelo menos 32 caracteres.");
+  return secret;
+}
+
+export function createDriveMediaToken(guideId: number, lifetimeSeconds = 10 * 60) {
+  const payload = `${guideId}:${Math.floor(Date.now() / 1000) + lifetimeSeconds}`;
+  const signature = createHmac("sha256", mediaSecret()).update(payload).digest("base64url");
+  return Buffer.from(`${payload}:${signature}`).toString("base64url");
+}
+
+export function verifyDriveMediaToken(token: string, guideId: number) {
+  try {
+    const decoded = Buffer.from(token, "base64url").toString("utf8");
+    const [id, expires, signature] = decoded.split(":");
+    if (Number(id) !== guideId || Number(expires) < Math.floor(Date.now() / 1000) || !signature)
+      return false;
+    const payload = `${id}:${expires}`;
+    const expected = createHmac("sha256", mediaSecret()).update(payload).digest("base64url");
+    const left = Buffer.from(signature);
+    const right = Buffer.from(expected);
+    return left.length === right.length && timingSafeEqual(left, right);
+  } catch {
+    return false;
   }
 }
 

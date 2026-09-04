@@ -16,6 +16,7 @@ import {
   legacyValuesForAccessRole,
   type AccessRole,
 } from "@shared/access";
+import type { DriveFile, DriveImportCandidate } from "./drive-import";
 
 const PDF_BUCKET = "guias-pdf";
 const IMAGE_BUCKET = "guias-capas";
@@ -666,7 +667,437 @@ async function signedPdfUrl(pdfKey: string) {
   return data.signedUrl as string;
 }
 
-async function protectedVideoUrl(value: string) {
+function driveStorageName(file: {
+  id: string;
+  name: string;
+  mimeType: string;
+  version?: string | null;
+}) {
+  const extension =
+    file.mimeType === "application/pdf"
+      ? "pdf"
+      : file.mimeType.includes("png")
+        ? "png"
+        : file.mimeType.includes("webp")
+          ? "webp"
+          : "jpg";
+  const base = slugifyPt(file.name.replace(/\.[a-z0-9]+$/i, "")).slice(0, 70) || "arquivo";
+  const version = String(file.version || "atual").replace(/[^a-zA-Z0-9_-]/g, "");
+  return `${file.id}/${version}-${base}.${extension}`;
+}
+
+async function copyDriveAsset(
+  client: {
+    downloadFile: (
+      id: string,
+      maxBytes?: number,
+    ) => Promise<{ bytes: Uint8Array; contentType: string }>;
+  },
+  file: { id: string; name: string; mimeType: string; version?: string | null },
+  bucket: string,
+  folder: string,
+) {
+  const allowed =
+    bucket === PDF_BUCKET
+      ? file.mimeType === "application/pdf"
+      : ["image/jpeg", "image/png", "image/webp"].includes(file.mimeType);
+  if (!allowed) fail("O tipo do arquivo do Drive não é permitido para este destino.");
+  const { bytes, contentType } = await client.downloadFile(
+    file.id,
+    bucket === PDF_BUCKET ? 25 * 1024 * 1024 : 8 * 1024 * 1024,
+  );
+  const key = `${folder}/${driveStorageName(file)}`;
+  const { error } = await db()
+    .storage.from(bucket)
+    .upload(key, bytes, {
+      contentType: file.mimeType || contentType,
+      upsert: true,
+    });
+  if (error) fail(error.message);
+  return {
+    key,
+    url:
+      bucket === IMAGE_BUCKET
+        ? `/api/public/ua-image/${key}`
+        : `/api/protected-pdf/key/${encodeURIComponent(key)}`,
+  };
+}
+
+type DriveImportSelection = {
+  itemId: number;
+  moduleId?: number | null;
+  title?: string;
+  position?: number;
+  overwriteConfirmed?: boolean;
+  conflictConfirmed?: boolean;
+};
+
+type DriveImportResult = {
+  targetKind: "module_cover" | "academy_guide";
+  targetId: number | null;
+  targetUpdatedAt: string | null;
+  created: boolean;
+  storage: Array<{ bucket: string; key: string }>;
+};
+
+type DriveImportRow = {
+  id: number;
+  drive_file_id: string;
+  drive_folder_id: string | null;
+  target_kind: "module_cover" | "academy_guide";
+  title: string;
+  position: number;
+  suggested_module_id: number | null;
+  existing_target_id: number | null;
+  classification: string;
+  prior_snapshot?: Record<string, unknown> | null;
+  metadata: DriveImportCandidate & { importResult?: DriveImportResult };
+};
+
+type DriveDownloadClient = {
+  downloadFile: (
+    id: string,
+    maxBytes?: number,
+  ) => Promise<{ bytes: Uint8Array; contentType: string }>;
+};
+
+async function registerDriveAsset(input: {
+  itemId: number;
+  file: DriveFile;
+  role: "module_cover" | "guide_cover" | "pdf" | "video";
+  bucket?: string | null;
+  key?: string | null;
+  moduleId?: number | null;
+  guideId?: number | null;
+  masterId: number;
+}) {
+  const values = {
+    import_item_id: input.itemId,
+    drive_file_id: input.file.id,
+    drive_folder_id: input.file.parents?.[0] ?? null,
+    asset_role: input.role,
+    file_name: input.file.name,
+    mime_type: input.file.mimeType,
+    drive_modified_at: input.file.modifiedTime ?? null,
+    drive_version: input.file.version ?? null,
+    checksum: input.file.md5Checksum ?? null,
+    storage_bucket: input.bucket ?? null,
+    storage_key: input.key ?? null,
+    module_id: input.moduleId ?? null,
+    guide_id: input.guideId ?? null,
+    import_status: "imported",
+    imported_by: input.masterId,
+    imported_at: new Date().toISOString(),
+    last_seen_at: new Date().toISOString(),
+  };
+  const { error } = await db()
+    .from("ua_drive_assets")
+    .upsert(values, { onConflict: "drive_file_id" });
+  if (error) fail(error.message);
+}
+
+async function saveDriveImportJournal(
+  row: DriveImportRow,
+  priorSnapshot: Record<string, unknown> | null,
+  importResult: Record<string, unknown>,
+) {
+  const metadata = { ...(row.metadata ?? {}), importResult };
+  const { error } = await db()
+    .from("ua_drive_import_items")
+    .update({ prior_snapshot: priorSnapshot, metadata })
+    .eq("id", row.id);
+  if (error) fail(`Falha ao registrar o diário da importação: ${error.message}`);
+}
+
+async function removeImportedStorage(storage: Array<{ bucket: string; key: string }>) {
+  for (const bucket of [IMAGE_BUCKET, PDF_BUCKET]) {
+    const keys = storage.filter((item) => item.bucket === bucket).map((item) => item.key);
+    if (!keys.length) continue;
+    const removed = await db().storage.from(bucket).remove(keys);
+    if (removed.error) fail(removed.error.message);
+  }
+}
+
+async function compensateFailedDriveImport(itemId: number) {
+  const journal = await db()
+    .from("ua_drive_import_items")
+    .select("id,prior_snapshot,metadata")
+    .eq("id", itemId)
+    .maybeSingle();
+  const importResult = (
+    journal.data?.metadata as { importResult?: DriveImportResult } | null | undefined
+  )?.importResult;
+  if (!importResult) return;
+  const storage = Array.isArray(importResult.storage) ? importResult.storage : [];
+  if (importResult.targetId && importResult.targetUpdatedAt) {
+    const table = importResult.targetKind === "module_cover" ? "ua_academy_modules" : "ua_guides";
+    const current = await db()
+      .from(table)
+      .select("id,status,updated_at")
+      .eq("id", Number(importResult.targetId))
+      .maybeSingle();
+    if (current.data?.updated_at === importResult.targetUpdatedAt) {
+      if (
+        importResult.targetKind === "academy_guide" &&
+        importResult.created &&
+        current.data.status === "draft"
+      ) {
+        const removedTarget = await db()
+          .from("ua_guides")
+          .delete()
+          .eq("id", Number(importResult.targetId));
+        if (removedTarget.error) fail(removedTarget.error.message);
+      } else {
+        const restoredTarget = await db()
+          .from(table)
+          .update({ ...(journal.data?.prior_snapshot ?? {}), updated_at: new Date().toISOString() })
+          .eq("id", Number(importResult.targetId));
+        if (restoredTarget.error) fail(restoredTarget.error.message);
+      }
+    }
+  }
+  await removeImportedStorage(storage);
+  const removedAssets = await db().from("ua_drive_assets").delete().eq("import_item_id", itemId);
+  if (removedAssets.error) fail(removedAssets.error.message);
+}
+
+async function importDriveItem(
+  master: UaUser,
+  batchId: number,
+  row: DriveImportRow,
+  selection: DriveImportSelection,
+  client: DriveDownloadClient,
+) {
+  const candidate = row.metadata;
+  const classifications = String(row.classification || "").split(",");
+  if (classifications.includes("editorial_conflict") && !selection.conflictConfirmed)
+    fail("Este material possui conflito editorial e continua bloqueado.");
+  const moduleId = Number(selection.moduleId ?? row.suggested_module_id ?? 0);
+  if (!moduleId) fail("Selecione um módulo antes de importar.");
+  const { data: moduleRow, error: moduleError } = await db()
+    .from("ua_academy_modules")
+    .select("id,name,status,cover_image_key,cover_image_url,drive_folder_id,updated_at")
+    .eq("id", moduleId)
+    .maybeSingle();
+  if (moduleError || !moduleRow) fail("O módulo selecionado não existe.");
+  const existingAsset = await db()
+    .from("ua_drive_assets")
+    .select("id")
+    .eq("drive_file_id", row.drive_file_id)
+    .maybeSingle();
+  if (existingAsset.data && !selection.overwriteConfirmed)
+    fail("Este Drive ID já foi importado. Confirme a atualização para continuar.");
+  const importedStorage: Array<{ bucket: string; key: string }> = [];
+
+  if (row.target_kind === "module_cover") {
+    if (moduleRow.cover_image_key && !selection.overwriteConfirmed)
+      fail("O módulo já possui capa. Confirme a substituição para continuar.");
+    const cover = candidate.cover;
+    if (!cover) fail("A capa do módulo não está disponível.");
+    const snapshot = {
+      cover_image_key: moduleRow.cover_image_key,
+      cover_image_url: moduleRow.cover_image_url,
+      drive_folder_id: moduleRow.drive_folder_id,
+    };
+    const copied = await copyDriveAsset(
+      client,
+      cover,
+      IMAGE_BUCKET,
+      `drive/imports/${batchId}/${row.id}/module-cover`,
+    );
+    importedStorage.push({ bucket: IMAGE_BUCKET, key: copied.key });
+    await saveDriveImportJournal(row, snapshot, {
+      targetKind: "module_cover",
+      targetId: moduleId,
+      targetUpdatedAt: null,
+      created: false,
+      storage: importedStorage,
+    });
+    const updated = await db()
+      .from("ua_academy_modules")
+      .update({
+        cover_image_key: copied.key,
+        cover_image_url: copied.url,
+        drive_folder_id: row.drive_folder_id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", moduleId)
+      .select("id,updated_at")
+      .single();
+    if (updated.error || !updated.data)
+      fail(updated.error?.message || "Falha ao atualizar a capa.");
+    const importResult = {
+      targetKind: "module_cover",
+      targetId: moduleId,
+      targetUpdatedAt: updated.data.updated_at,
+      created: false,
+      storage: importedStorage,
+    };
+    await saveDriveImportJournal(row, snapshot, importResult);
+    await registerDriveAsset({
+      itemId: row.id,
+      file: cover,
+      role: "module_cover",
+      bucket: IMAGE_BUCKET,
+      key: copied.key,
+      moduleId,
+      masterId: master.id,
+    });
+    return {
+      priorSnapshot: snapshot,
+      importResult,
+    };
+  }
+
+  const existingTargetId = Number(row.existing_target_id || 0);
+  let priorSnapshot: Record<string, unknown> | null = null;
+  if (existingTargetId) {
+    const existing = await db()
+      .from("ua_guides")
+      .select(
+        "title,summary,content,category,module_id,content_type,video_url,pdf_key,pdf_url,estimated_duration,technical_review,cover_image_key,cover_image_url,status,position,published_at,drive_folder_id",
+      )
+      .eq("id", existingTargetId)
+      .maybeSingle();
+    if (existing.error || !existing.data) fail("O guia existente não foi encontrado.");
+    if (!selection.overwriteConfirmed)
+      fail("O guia já existe. Confirme a atualização antes de substituir seus arquivos.");
+    priorSnapshot = existing.data;
+  }
+
+  const pdf = candidate.pdf;
+  const cover = candidate.cover;
+  const video = candidate.video;
+  if (!pdf && !video) fail("Este conteúdo ainda não possui PDF oficial nem vídeo válido.");
+  let copiedPdf: { key: string; url: string } | null = null;
+  let copiedCover: { key: string; url: string } | null = null;
+  if (pdf) {
+    copiedPdf = await copyDriveAsset(
+      client,
+      pdf,
+      PDF_BUCKET,
+      `drive/imports/${batchId}/${row.id}/pdf`,
+    );
+    importedStorage.push({ bucket: PDF_BUCKET, key: copiedPdf.key });
+  }
+  if (cover) {
+    copiedCover = await copyDriveAsset(
+      client,
+      cover,
+      IMAGE_BUCKET,
+      `drive/imports/${batchId}/${row.id}/cover`,
+    );
+    importedStorage.push({ bucket: IMAGE_BUCKET, key: copiedCover.key });
+  }
+  await saveDriveImportJournal(row, priorSnapshot, {
+    targetKind: "academy_guide",
+    targetId: existingTargetId || null,
+    targetUpdatedAt: null,
+    created: !existingTargetId,
+    storage: importedStorage,
+  });
+  const values: Record<string, unknown> = {
+    title: String(selection.title || row.title).trim(),
+    category: moduleRow.name,
+    module_id: moduleId,
+    drive_folder_id: row.drive_folder_id,
+    content_type: pdf ? "pdf" : "video",
+    video_url: !pdf && video ? `drive:${video.id}` : null,
+    pdf_key: copiedPdf?.key ?? (priorSnapshot?.pdf_key || null),
+    pdf_url: copiedPdf?.url ?? (priorSnapshot?.pdf_url || null),
+    cover_image_key: copiedCover?.key ?? (priorSnapshot?.cover_image_key || null),
+    cover_image_url: copiedCover?.url ?? (priorSnapshot?.cover_image_url || null),
+    position: Math.max(0, Number(selection.position ?? row.position ?? 0)),
+    status: "draft",
+    published_at: null,
+    updated_at: new Date().toISOString(),
+  };
+  let target: { id: number; updated_at: string };
+  let created = false;
+  if (existingTargetId) {
+    const updated = await db()
+      .from("ua_guides")
+      .update(values)
+      .eq("id", existingTargetId)
+      .select("id,updated_at")
+      .single();
+    if (updated.error || !updated.data)
+      fail(updated.error?.message || "Falha ao atualizar o guia.");
+    target = updated.data;
+  } else {
+    const inserted = await db()
+      .from("ua_guides")
+      .insert({
+        ...values,
+        summary:
+          "Material importado do Google Drive. Revise a descrição e a revisão técnica antes de publicar.",
+        content: null,
+        estimated_duration: null,
+        technical_review: null,
+        status: "draft",
+        published_at: null,
+        created_by: master.id,
+      })
+      .select("id,updated_at")
+      .single();
+    if (inserted.error || !inserted.data)
+      fail(inserted.error?.message || "Falha ao criar o rascunho.");
+    target = inserted.data;
+    created = true;
+  }
+  const importResult = {
+    targetKind: "academy_guide",
+    targetId: Number(target.id),
+    targetUpdatedAt: target.updated_at,
+    created,
+    storage: importedStorage,
+  };
+  await saveDriveImportJournal(row, priorSnapshot, importResult);
+  if (pdf)
+    await registerDriveAsset({
+      itemId: row.id,
+      file: pdf,
+      role: "pdf",
+      bucket: PDF_BUCKET,
+      key: copiedPdf?.key,
+      moduleId,
+      guideId: target.id,
+      masterId: master.id,
+    });
+  if (cover)
+    await registerDriveAsset({
+      itemId: row.id,
+      file: cover,
+      role: "guide_cover",
+      bucket: IMAGE_BUCKET,
+      key: copiedCover?.key,
+      moduleId,
+      guideId: target.id,
+      masterId: master.id,
+    });
+  if (!pdf && video)
+    await registerDriveAsset({
+      itemId: row.id,
+      file: video,
+      role: "video",
+      moduleId,
+      guideId: target.id,
+      masterId: master.id,
+    });
+  return {
+    priorSnapshot,
+    importResult,
+  };
+}
+
+async function protectedVideoUrl(value: string, guideId: number) {
+  if (value.startsWith("drive:")) {
+    const driveFileId = value.slice("drive:".length);
+    if (!/^[a-zA-Z0-9_-]{10,}$/.test(driveFileId)) fail("Vídeo indisponível.");
+    const { createDriveMediaToken } = await import("./drive-import.server");
+    const token = createDriveMediaToken(guideId);
+    return `/api/protected-drive-video/${guideId}?token=${encodeURIComponent(token)}`;
+  }
   if (/^https?:\/\//i.test(value)) return value;
   const publicPrefix = "/api/public/ua-video/";
   const key = value.startsWith(publicPrefix)
@@ -1092,7 +1523,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         (data.status !== "published" && !privileged)
       )
         fail("Conteúdo indisponível.");
-      return { url: await protectedVideoUrl(data.video_url) };
+      return { url: await protectedVideoUrl(data.video_url, Number(data.id)) };
     }
     case "community.readingProgress.get": {
       const user = await requireUser();
@@ -1712,7 +2143,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
           suggested_module_id: candidate.suggestedModuleId,
           existing_target_id: candidate.existingTargetId,
           classification: candidate.classifications.join(","),
-          decision: candidate.selectedByDefault ? "selected" : "pending",
+          decision: "pending",
           import_status: candidate.classifications.some((value) =>
             ["editorial_conflict", "duplicate", "registered_incorrectly"].includes(value),
           )
@@ -1757,6 +2188,246 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         });
         throw error;
       }
+    }
+    case "community.master.drive.importItems": {
+      const masterUser = await requireMaster();
+      const batchId = Number(input.batchId);
+      const selections = (Array.isArray(input.items) ? input.items : []) as DriveImportSelection[];
+      if (!batchId || selections.length < 1 || selections.length > 5)
+        fail("Importe entre 1 e 5 itens por etapa.");
+      const batch = await db()
+        .from("ua_drive_import_batches")
+        .select("id,status,requested_by")
+        .eq("id", batchId)
+        .maybeSingle();
+      if (batch.error || !batch.data) fail("O lote de importação não foi encontrado.");
+      if (!["preview", "importing", "partial"].includes(batch.data.status))
+        fail("Este lote não aceita novas importações.");
+      const ids = selections.map((item) => Number(item.itemId));
+      const itemQuery = await db()
+        .from("ua_drive_import_items")
+        .select("*")
+        .eq("batch_id", batchId)
+        .in("id", ids);
+      if (itemQuery.error) fail(itemQuery.error.message);
+      if ((itemQuery.data ?? []).length !== ids.length)
+        fail("Um ou mais itens não pertencem ao lote.");
+      await db()
+        .from("ua_drive_import_batches")
+        .update({ status: "importing", error_message: null })
+        .eq("id", batchId);
+      const { GoogleDriveReadClient } = await import("./drive-import.server");
+      const client = new GoogleDriveReadClient();
+      const results: Array<{ itemId: number; success: boolean; message?: string }> = [];
+      for (const row of itemQuery.data ?? []) {
+        const selection = selections.find((item) => Number(item.itemId) === Number(row.id));
+        if (!selection) continue;
+        await db()
+          .from("ua_drive_import_items")
+          .update({ decision: "selected", import_status: "importing", error_message: null })
+          .eq("id", row.id);
+        try {
+          const imported = await importDriveItem(
+            masterUser,
+            batchId,
+            row as DriveImportRow,
+            selection,
+            client,
+          );
+          const metadata = { ...(row.metadata ?? {}), importResult: imported.importResult };
+          const saved = await db()
+            .from("ua_drive_import_items")
+            .update({
+              suggested_module_id: Number(selection.moduleId ?? row.suggested_module_id),
+              title: String(selection.title || row.title).trim(),
+              position: Math.max(0, Number(selection.position ?? row.position)),
+              existing_target_id: imported.importResult.targetId,
+              prior_snapshot: imported.priorSnapshot,
+              metadata,
+              import_status: "imported",
+              error_message: null,
+            })
+            .eq("id", row.id);
+          if (saved.error) fail(saved.error.message);
+          await auditEvent(
+            masterUser,
+            "drive.item.import",
+            row.target_kind,
+            imported.importResult.targetId,
+            "success",
+            { batchId, itemId: row.id, driveFileId: row.drive_file_id },
+          );
+          results.push({ itemId: Number(row.id), success: true });
+        } catch (error) {
+          let message = error instanceof Error ? error.message : "Falha desconhecida";
+          try {
+            await compensateFailedDriveImport(Number(row.id));
+          } catch (cleanupError) {
+            const cleanupMessage =
+              cleanupError instanceof Error ? cleanupError.message : "falha desconhecida";
+            message += ` A limpeza automática também falhou: ${cleanupMessage}`;
+          }
+          await db()
+            .from("ua_drive_import_items")
+            .update({ import_status: "failed", error_message: message })
+            .eq("id", row.id);
+          await auditEvent(masterUser, "drive.item.import", row.target_kind, row.id, "failure", {
+            batchId,
+            driveFileId: row.drive_file_id,
+            error: message,
+          });
+          results.push({ itemId: Number(row.id), success: false, message });
+        }
+      }
+      let batchStatus = "importing";
+      if (input.finalize) {
+        await db()
+          .from("ua_drive_import_items")
+          .update({ decision: "ignored" })
+          .eq("batch_id", batchId)
+          .eq("decision", "pending");
+        const statuses = await db()
+          .from("ua_drive_import_items")
+          .select("import_status")
+          .eq("batch_id", batchId)
+          .eq("decision", "selected");
+        const failed = (statuses.data ?? []).some(
+          (row: { import_status?: string }) => row.import_status === "failed",
+        );
+        batchStatus = failed ? "partial" : "completed";
+        await db()
+          .from("ua_drive_import_batches")
+          .update({
+            status: batchStatus,
+            completed_at: new Date().toISOString(),
+            error_message: failed ? "Um ou mais itens não puderam ser importados." : null,
+          })
+          .eq("id", batchId);
+        await auditEvent(
+          masterUser,
+          "drive.batch.import",
+          "drive_import_batch",
+          batchId,
+          failed ? "failure" : "success",
+          { status: batchStatus },
+        );
+      }
+      return { batchId, status: batchStatus, results };
+    }
+    case "community.master.drive.history": {
+      await requireMaster();
+      const batches = await db()
+        .from("ua_drive_import_batches")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (batches.error) fail(batches.error.message);
+      let items: unknown[] = [];
+      if (input.batchId) {
+        const result = await db()
+          .from("ua_drive_import_items")
+          .select(
+            "id,batch_id,target_kind,title,classification,decision,import_status,error_message,source_path,updated_at",
+          )
+          .eq("batch_id", Number(input.batchId))
+          .order("position", { ascending: true });
+        if (result.error) fail(result.error.message);
+        items = result.data ?? [];
+      }
+      return { batches: camel(batches.data ?? []), items: camel(items) };
+    }
+    case "community.master.drive.rollback": {
+      const masterUser = await requireMaster();
+      const batchId = Number(input.batchId);
+      const batch = await db()
+        .from("ua_drive_import_batches")
+        .select("id,status")
+        .eq("id", batchId)
+        .maybeSingle();
+      if (batch.error || !batch.data) fail("O lote não foi encontrado.");
+      if (!["completed", "partial"].includes(batch.data.status))
+        fail("Somente lotes concluídos ou parciais podem ser desfeitos.");
+      const importedItems = await db()
+        .from("ua_drive_import_items")
+        .select("*")
+        .eq("batch_id", batchId)
+        .eq("import_status", "imported")
+        .order("id", { ascending: false });
+      if (importedItems.error) fail(importedItems.error.message);
+      const results: Array<{ itemId: number; success: boolean; message?: string }> = [];
+      for (const row of importedItems.data ?? []) {
+        try {
+          const importResult = (
+            row.metadata as { importResult?: DriveImportResult } | null | undefined
+          )?.importResult;
+          if (!importResult?.targetId || !importResult?.targetUpdatedAt)
+            fail("O item não possui informações suficientes para rollback.");
+          const table =
+            importResult.targetKind === "module_cover" ? "ua_academy_modules" : "ua_guides";
+          const current = await db()
+            .from(table)
+            .select("id,status,updated_at")
+            .eq("id", Number(importResult.targetId))
+            .maybeSingle();
+          if (current.error || !current.data) fail("O registro importado não existe mais.");
+          if (current.data.updated_at !== importResult.targetUpdatedAt)
+            fail(
+              "O registro foi editado depois da importação; o rollback automático foi bloqueado.",
+            );
+          if (importResult.targetKind === "academy_guide" && importResult.created) {
+            if (current.data.status !== "draft")
+              fail("O conteúdo deixou de ser rascunho; o rollback automático foi bloqueado.");
+            const removed = await db().from("ua_guides").delete().eq("id", importResult.targetId);
+            if (removed.error) fail(removed.error.message);
+          } else {
+            const snapshot = {
+              ...(row.prior_snapshot ?? {}),
+              updated_at: new Date().toISOString(),
+            };
+            const restored = await db()
+              .from(table)
+              .update(snapshot)
+              .eq("id", importResult.targetId);
+            if (restored.error) fail(restored.error.message);
+          }
+          const storage = Array.isArray(importResult.storage) ? importResult.storage : [];
+          await removeImportedStorage(storage);
+          await db()
+            .from("ua_drive_assets")
+            .update({ import_status: "rolled_back" })
+            .eq("import_item_id", row.id);
+          await db()
+            .from("ua_drive_import_items")
+            .update({ import_status: "rolled_back" })
+            .eq("id", row.id);
+          results.push({ itemId: Number(row.id), success: true });
+        } catch (error) {
+          results.push({
+            itemId: Number(row.id),
+            success: false,
+            message: error instanceof Error ? error.message : "Falha desconhecida",
+          });
+        }
+      }
+      const failed = results.some((item) => !item.success);
+      await db()
+        .from("ua_drive_import_batches")
+        .update({
+          status: failed ? "partial" : "rolled_back",
+          error_message: failed
+            ? "Alguns itens foram alterados e não puderam ser desfeitos."
+            : null,
+        })
+        .eq("id", batchId);
+      await auditEvent(
+        masterUser,
+        "drive.batch.rollback",
+        "drive_import_batch",
+        batchId,
+        failed ? "failure" : "success",
+        { failed: results.filter((item) => !item.success).length },
+      );
+      return { batchId, status: failed ? "partial" : "rolled_back", results };
     }
     case "community.master.updateUserAccess": {
       const master = await requireMaster();

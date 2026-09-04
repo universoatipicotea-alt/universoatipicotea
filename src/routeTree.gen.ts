@@ -36,6 +36,7 @@ import { Route as VslRouteImport } from './routes/vsl'
 import { Route as AcademiaModuloRouteImport } from './routes/academia_.$modulo'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
 import { Route as ReceitasCategoriaRouteImport } from './routes/receitas_.$categoria'
+import { Route as ApiProtectedDriveVideoSplatRouteImport } from './routes/api/protected-drive-video/$'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
 import { Route as ApiPublicUaImageSplatRouteImport } from './routes/api/public/ua-image/$'
 import { Route as ApiPublicUaVideoSplatRouteImport } from './routes/api/public/ua-video/$'
@@ -175,6 +176,12 @@ const ReceitasCategoriaRoute = ReceitasCategoriaRouteImport.update({
   path: '/receitas/$categoria',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiProtectedDriveVideoSplatRoute =
+  ApiProtectedDriveVideoSplatRouteImport.update({
+    id: '/api/protected-drive-video/$',
+    path: '/api/protected-drive-video/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   id: '/api/public/stripe-webhook',
   path: '/api/public/stripe-webhook',
@@ -219,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/academia/$modulo': typeof AcademiaModuloRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/receitas/$categoria': typeof ReceitasCategoriaRoute
+  '/api/protected-drive-video/$': typeof ApiProtectedDriveVideoSplatRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
   '/api/public/ua-video/$': typeof ApiPublicUaVideoSplatRoute
@@ -251,6 +259,7 @@ export interface FileRoutesByTo {
   '/academia/$modulo': typeof AcademiaModuloRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/receitas/$categoria': typeof ReceitasCategoriaRoute
+  '/api/protected-drive-video/$': typeof ApiProtectedDriveVideoSplatRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
   '/api/public/ua-video/$': typeof ApiPublicUaVideoSplatRoute
@@ -284,6 +293,7 @@ export interface FileRoutesById {
   '/academia_/$modulo': typeof AcademiaModuloRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/receitas_/$categoria': typeof ReceitasCategoriaRoute
+  '/api/protected-drive-video/$': typeof ApiProtectedDriveVideoSplatRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
   '/api/public/ua-video/$': typeof ApiPublicUaVideoSplatRoute
@@ -318,6 +328,7 @@ export interface FileRouteTypes {
     | '/academia/$modulo'
     | '/produto/$slug'
     | '/receitas/$categoria'
+    | '/api/protected-drive-video/$'
     | '/api/public/stripe-webhook'
     | '/api/public/ua-image/$'
     | '/api/public/ua-video/$'
@@ -350,6 +361,7 @@ export interface FileRouteTypes {
     | '/academia/$modulo'
     | '/produto/$slug'
     | '/receitas/$categoria'
+    | '/api/protected-drive-video/$'
     | '/api/public/stripe-webhook'
     | '/api/public/ua-image/$'
     | '/api/public/ua-video/$'
@@ -382,6 +394,7 @@ export interface FileRouteTypes {
     | '/academia_/$modulo'
     | '/produto/$slug'
     | '/receitas_/$categoria'
+    | '/api/protected-drive-video/$'
     | '/api/public/stripe-webhook'
     | '/api/public/ua-image/$'
     | '/api/public/ua-video/$'
@@ -415,6 +428,7 @@ export interface RootRouteChildren {
   AcademiaModuloRoute: typeof AcademiaModuloRoute
   ProdutoSlugRoute: typeof ProdutoSlugRoute
   ReceitasCategoriaRoute: typeof ReceitasCategoriaRoute
+  ApiProtectedDriveVideoSplatRoute: typeof ApiProtectedDriveVideoSplatRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
   ApiPublicUaImageSplatRoute: typeof ApiPublicUaImageSplatRoute
   ApiPublicUaVideoSplatRoute: typeof ApiPublicUaVideoSplatRoute
@@ -611,6 +625,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReceitasCategoriaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/protected-drive-video/$': {
+      id: '/api/protected-drive-video/$'
+      path: '/api/protected-drive-video/$'
+      fullPath: '/api/protected-drive-video/$'
+      preLoaderRoute: typeof ApiProtectedDriveVideoSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/stripe-webhook': {
       id: '/api/public/stripe-webhook'
       path: '/api/public/stripe-webhook'
@@ -663,6 +684,7 @@ const rootRouteChildren: RootRouteChildren = {
   AcademiaModuloRoute: AcademiaModuloRoute,
   ProdutoSlugRoute: ProdutoSlugRoute,
   ReceitasCategoriaRoute: ReceitasCategoriaRoute,
+  ApiProtectedDriveVideoSplatRoute: ApiProtectedDriveVideoSplatRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
   ApiPublicUaImageSplatRoute: ApiPublicUaImageSplatRoute,
   ApiPublicUaVideoSplatRoute: ApiPublicUaVideoSplatRoute,

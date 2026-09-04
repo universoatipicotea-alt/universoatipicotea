@@ -196,12 +196,14 @@ export function reconcileDriveCandidates(
     let selectedByDefault = candidate.selectedByDefault;
 
     if (candidate.targetKind === "module_cover" && module) {
+      candidate.existingTargetId = module.id;
       platformSituation = module.coverImageKey
         ? "Módulo existente com capa; atualização exige confirmação"
         : "Módulo existente sem capa importada";
       recommendedAction = module.coverImageKey
         ? "Comparar a prévia e confirmar a substituição da capa"
         : "Importar a capa para o módulo existente";
+      if (module.coverImageKey) selectedByDefault = false;
     }
     if (guide) {
       candidate.existingTargetId = guide.id;
