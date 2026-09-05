@@ -15,7 +15,8 @@ export const ds = {
   surfaceSoft: "rounded-2xl border border-dashed border-[var(--line)] bg-white",
   input:
     "h-11 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm outline-none transition focus:border-[var(--sage)] focus:ring-2 focus:ring-[var(--sage)]/20",
-  select: "h-11 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm outline-none focus:border-[var(--sage)]",
+  select:
+    "h-11 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm outline-none focus:border-[var(--sage)]",
   primary:
     "pressable inline-flex items-center justify-center rounded-xl bg-[var(--sage-deep)] px-3.5 py-2.5 text-xs font-extrabold text-white transition hover:bg-[var(--ink)] disabled:opacity-60",
   ghost:
@@ -62,12 +63,22 @@ export function PageHeader({
   );
 }
 
-export function SectionTitle({ label, title, action }: { label: string; title: string; action?: ReactNode }) {
+export function SectionTitle({
+  label,
+  title,
+  action,
+}: {
+  label: string;
+  title: string;
+  action?: ReactNode;
+}) {
   return (
     <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
       <div>
         <p className={ds.microLabel}>{label}</p>
-        <h2 className="display-font mt-2 text-2xl font-semibold leading-tight sm:text-3xl">{title}</h2>
+        <h2 className="display-font mt-2 text-2xl font-semibold leading-tight sm:text-3xl">
+          {title}
+        </h2>
       </div>
       {action}
     </div>
@@ -75,8 +86,18 @@ export function SectionTitle({ label, title, action }: { label: string; title: s
 }
 
 /** Barra de filtros padrão (mesma da tela de Receitas na Administração). */
-export function Toolbar({ children, columns = "md:grid-cols-[1.4fr_1fr_1fr_1fr]" }: { children: ReactNode; columns?: string }) {
-  return <div className={`grid gap-3 rounded-2xl border border-[var(--line)] bg-white p-4 ${columns}`}>{children}</div>;
+export function Toolbar({
+  children,
+  columns = "md:grid-cols-[1.4fr_1fr_1fr_1fr]",
+}: {
+  children: ReactNode;
+  columns?: string;
+}) {
+  return (
+    <div className={`grid gap-3 rounded-2xl border border-[var(--line)] bg-white p-4 ${columns}`}>
+      {children}
+    </div>
+  );
 }
 
 export function SearchField({
@@ -92,10 +113,13 @@ export function SearchField({
 }) {
   return (
     <label className="relative block">
-      <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]" size={15} />
+      <Search
+        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]"
+        size={15}
+      />
       <input
         value={value}
-        onChange={event => onChange(event.target.value)}
+        onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         aria-label={label}
         className={`${ds.input} pl-9`}
@@ -104,7 +128,11 @@ export function SearchField({
   );
 }
 
-export function SelectField({ label, className = "", ...props }: ComponentProps<"select"> & { label: string }) {
+export function SelectField({
+  label,
+  className = "",
+  ...props
+}: ComponentProps<"select"> & { label: string }) {
   return <select aria-label={label} className={`${ds.select} ${className}`} {...props} />;
 }
 
@@ -121,7 +149,7 @@ export function ChipFilter({
 }) {
   return (
     <div className="flex flex-wrap gap-2" aria-label={label}>
-      {options.map(option => (
+      {options.map((option) => (
         <button
           key={option.key}
           type="button"
@@ -138,31 +166,42 @@ export function ChipFilter({
 
 /* --------------------------------- estados ---------------------------------- */
 
-export type ContentStatus = "draft" | "published" | "archived";
+export type ContentStatus = "draft" | "published" | "coming_soon" | "archived";
 
 export const statusMeta: Record<ContentStatus, { label: string; className: string }> = {
   published: { label: "Publicado", className: "bg-[var(--sage-pale)] text-[var(--sage-deep)]" },
   draft: { label: "Rascunho", className: "bg-[var(--lavender)] text-[#665d81]" },
+  coming_soon: { label: "Em breve", className: "bg-[#fff1d8] text-[#8b5f16]" },
   archived: { label: "Arquivado", className: "bg-[#f5e7df] text-[#9c583c]" },
 };
 
 export function StatusPill({ status }: { status: ContentStatus }) {
   const meta = statusMeta[status] ?? statusMeta.draft;
   return (
-    <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] ${meta.className}`}>
+    <span
+      className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] ${meta.className}`}
+    >
       {meta.label}
     </span>
   );
 }
 
-export function Badge({ children, tone = "sage" }: { children: ReactNode; tone?: "sage" | "neutral" | "ink" }) {
+export function Badge({
+  children,
+  tone = "sage",
+}: {
+  children: ReactNode;
+  tone?: "sage" | "neutral" | "ink";
+}) {
   const tones = {
     sage: "bg-[var(--sage-pale)] text-[var(--sage-deep)]",
     neutral: "bg-[var(--linen)] text-[var(--ink-soft)]",
     ink: "bg-[var(--ink)]/90 text-white",
   } as const;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] ${tones[tone]}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] ${tones[tone]}`}
+    >
       {children}
     </span>
   );
@@ -189,7 +228,11 @@ export function EmptyState({
   );
 }
 
-export function ErrorState({ text = "Não foi possível carregar estas informações agora." }: { text?: string }) {
+export function ErrorState({
+  text = "Não foi possível carregar estas informações agora.",
+}: {
+  text?: string;
+}) {
   return (
     <div className="rounded-2xl border border-dashed border-[var(--line)] bg-white p-8 text-center text-sm text-[var(--ink-soft)]">
       {text}
@@ -207,7 +250,11 @@ export function SkeletonList({ rows = 3, height = "h-24" }: { rows?: number; hei
   );
 }
 
-export function SkeletonGrid({ items = 3, className = "grid gap-4 sm:grid-cols-2 xl:grid-cols-3", height = "h-72" }) {
+export function SkeletonGrid({
+  items = 3,
+  className = "grid gap-4 sm:grid-cols-2 xl:grid-cols-3",
+  height = "h-72",
+}) {
   return (
     <div className={className}>
       {Array.from({ length: items }).map((_, index) => (
@@ -219,7 +266,15 @@ export function SkeletonGrid({ items = 3, className = "grid gap-4 sm:grid-cols-2
 
 /* ---------------------------------- cards ----------------------------------- */
 
-export function Card({ children, className = "", as: Tag = "article" }: { children: ReactNode; className?: string; as?: any }) {
+export function Card({
+  children,
+  className = "",
+  as: Tag = "article",
+}: {
+  children: ReactNode;
+  className?: string;
+  as?: any;
+}) {
   return (
     <Tag
       className={`rounded-2xl border border-[var(--line)] bg-white shadow-[0_10px_28px_rgba(8,31,77,.04)] transition hover:shadow-[0_18px_38px_rgba(8,31,77,.08)] ${className}`}
@@ -230,14 +285,30 @@ export function Card({ children, className = "", as: Tag = "article" }: { childr
 }
 
 export function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-2xl border border-[var(--line)] bg-white p-5 sm:p-6 ${className}`}>{children}</section>;
+  return (
+    <section className={`rounded-2xl border border-[var(--line)] bg-white p-5 sm:p-6 ${className}`}>
+      {children}
+    </section>
+  );
 }
 
 /** Linha de listagem operacional: thumbnail + metadados + ações. */
-export function ListRow({ media, children, actions }: { media?: ReactNode; children: ReactNode; actions?: ReactNode }) {
+export function ListRow({
+  media,
+  children,
+  actions,
+}: {
+  media?: ReactNode;
+  children: ReactNode;
+  actions?: ReactNode;
+}) {
   return (
     <article className="flex flex-wrap items-center gap-4 rounded-2xl border border-[var(--line)] bg-white p-4">
-      {media ? <div className="grid h-20 w-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-[var(--linen)] p-1">{media}</div> : null}
+      {media ? (
+        <div className="grid h-20 w-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-[var(--linen)] p-1">
+          {media}
+        </div>
+      ) : null}
       <div className="min-w-[200px] flex-1">{children}</div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </article>
