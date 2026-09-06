@@ -79,3 +79,5 @@ O Google Drive será apenas uma fonte opcional de importação e organização. 
 - [ ] Revisão de importação no Admin Master
 - [ ] Mapeamento de pastas sem publicação automática
 - [ ] Conflitos resolvidos manualmente antes de alterar conteúdo
+
+- [ ] UX polish: unify free-now/premium-future messaging; fix member labels and Academy PDF link; qualitative zero metrics; add reduced-motion-safe reveals, card/progress/decorative/loading/checkout transitions; validate.
