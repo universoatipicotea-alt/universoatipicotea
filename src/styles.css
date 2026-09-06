@@ -238,3 +238,181 @@
     transform: translateY(0);
   }
 }
+
+.hero-tech-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    radial-gradient(circle at 75% 45%, rgba(23, 109, 202, 0.36), transparent 33rem);
+  background-size:
+    38px 38px,
+    38px 38px,
+    auto;
+  mask-image: linear-gradient(to bottom, transparent, black 18%, black 78%, transparent);
+}
+
+.brand-orbit-stage {
+  box-sizing: border-box;
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: clamp(20rem, 72vw, 35rem);
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: clamp(1.75rem, 5vw, 3rem);
+  background:
+    radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.15), transparent 39%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.025));
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.16),
+    0 30px 80px rgba(0, 0, 0, 0.28);
+  isolation: isolate;
+}
+
+.brand-orbit-glow {
+  position: absolute;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: rgba(23, 109, 202, 0.32);
+  filter: blur(54px);
+}
+
+.brand-orbit-ring {
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.21);
+}
+
+.brand-orbit-ring-outer {
+  width: 82%;
+}
+.brand-orbit-ring-inner {
+  width: 57%;
+  border-style: dashed;
+  opacity: 0.65;
+}
+
+.brand-orbit-logo-wrap {
+  position: relative;
+  z-index: 2;
+  width: min(64%, 24rem);
+  max-width: calc(100% - 3rem);
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 2rem;
+  background: rgba(255, 255, 255, 0.96);
+  padding: clamp(1rem, 4vw, 2.2rem);
+  box-shadow: 0 24px 65px rgba(0, 0, 0, 0.32);
+}
+
+.brand-orbit-logo {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+}
+
+.brand-orbit-dot {
+  --orbit-radius: 41%;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(0.65rem, 2vw, 1rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: rotate(calc(var(--dot-index) * 60deg)) translateX(var(--orbit-radius));
+  transform-origin: 0 0;
+  box-shadow: 0 0 22px currentColor;
+}
+
+.brand-orbit-dot-blue {
+  color: var(--blue);
+  background: var(--blue);
+}
+.brand-orbit-dot-gold {
+  color: var(--gold);
+  background: var(--gold);
+}
+.brand-orbit-dot-red {
+  color: var(--red);
+  background: var(--red);
+}
+.brand-orbit-dot-green {
+  color: var(--green);
+  background: var(--green);
+}
+
+.brand-orbit-star {
+  position: absolute;
+  color: white;
+  font-size: clamp(1.3rem, 5vw, 2.4rem);
+  text-shadow: 0 0 22px rgba(255, 255, 255, 0.72);
+}
+.brand-orbit-star-one {
+  left: 11%;
+  top: 22%;
+}
+.brand-orbit-star-two {
+  bottom: 23%;
+  right: 10%;
+  color: var(--gold);
+}
+
+.brand-orbit-caption {
+  position: absolute;
+  bottom: 1.15rem;
+  left: 1rem;
+  right: 1rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .brand-orbit-ring-outer {
+    animation: brand-orbit-spin 18s linear infinite;
+  }
+  .brand-orbit-ring-inner {
+    animation: brand-orbit-spin 26s linear infinite reverse;
+  }
+  .brand-orbit-logo-wrap {
+    animation: brand-orbit-float 5s ease-in-out infinite;
+  }
+  .brand-orbit-star {
+    animation: brand-orbit-pulse 2.8s ease-in-out infinite;
+  }
+}
+
+@keyframes brand-orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes brand-orbit-float {
+  50% {
+    transform: translateY(-9px);
+  }
+}
+@keyframes brand-orbit-pulse {
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+@media (max-width: 639px) {
+  .brand-orbit-stage {
+    min-height: 20rem;
+  }
+  .brand-orbit-caption {
+    font-size: 0.58rem;
+  }
+}
