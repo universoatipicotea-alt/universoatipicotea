@@ -7,11 +7,21 @@ const source = (path: string) => readFileSync(new URL(path, import.meta.url), "u
 test("catálogo público da Academia não entrega conteúdo nem origem do vídeo", () => {
   const community = source("../src/lib/community.server.ts");
   const block = community.match(
-    /async function listPublicGuideCards\(\)[\s\S]*?\n}\n\nasync function/,
+    /async function listPublicGuideCards\(\)[\s\S]*?\r?\n}\r?\n\r?\nasync function/,
   )?.[0];
   assert.ok(block, "listPublicGuideCards precisa existir");
   assert.doesNotMatch(block, /\bcontent\b|video_url|pdf_key|pdf_url/);
   assert.match(community, /case "community\.publicGuides":[\s\S]*?listPublicGuideCards\(\)/);
+});
+
+test("download protegido nunca devolve uma rota inexistente", () => {
+  const community = source("../src/lib/community.server.ts");
+  const block = community.match(
+    /case "community\.forum\.downloadGuide":[\s\S]*?\r?\n[ ]{4}}\r?\n\r?\n[ ]{4}\/\*/,
+  )?.[0];
+  assert.ok(block, "fluxo de download do guia precisa existir");
+  assert.match(block, /signedPdfUrl\(guide\.pdf_key\)/);
+  assert.doesNotMatch(block, /\/api\/protected-pdf\/guide/);
 });
 
 test("rota pública de vídeo serve somente o VSL configurado", () => {

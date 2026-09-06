@@ -1490,7 +1490,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       const privileged = isAdminRole(user.accessRole);
       if (!guide?.pdf_key || (guide.status !== "published" && !privileged))
         fail("Guia não encontrado.");
-      return { url: `/api/protected-pdf/guide/${guide.id}` };
+      return { url: await signedPdfUrl(guide.pdf_key) };
     }
 
     /* --------------------------- leitura protegida --------------------------- */

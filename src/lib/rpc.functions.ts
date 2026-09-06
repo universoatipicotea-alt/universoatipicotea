@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 export const rpc = createServerFn({ method: "POST" })
-  .inputValidator((input: { path: string; input?: unknown }) => {
+  .validator((input: { path: string; input?: unknown }) => {
     if (!input || typeof input.path !== "string") throw new Error("Chamada inválida.");
     return input;
   })

@@ -1,5 +1,5 @@
-import heroAsset from "@/assets/universo-atipico-hero.png.asset.json";
 import { Brand } from "@/components/Brand";
+import { BrandOrbitHero } from "@/components/BrandOrbitHero";
 import { PublicHeader } from "@/components/PublicHeader";
 import { InstitutionalFooter } from "@/components/InstitutionalFooter";
 import { Button } from "@/components/ui/button";
@@ -121,6 +121,11 @@ export default function Home() {
       "Um espaço de escuta e troca entre famílias que vivem a mesma realidade.",
     ],
   ] as const;
+  const communityMetrics = [
+    { icon: Users, value: data?.metrics.members ?? 0, label: "membros" },
+    { icon: BookOpen, value: data?.metrics.guides ?? 0, label: "materiais" },
+    { icon: MessageCircleMore, value: data?.metrics.topics ?? 0, label: "conversas" },
+  ];
 
   return (
     <div className="page-texture min-h-screen overflow-hidden bg-[var(--paper)]">
@@ -129,8 +134,9 @@ export default function Home() {
       <main>
         {/* HERO */}
         <section className="relative isolate overflow-hidden bg-[var(--ink)]">
-          <div className="mx-auto grid max-w-[1440px] items-center gap-10 px-5 py-14 sm:px-8 lg:min-h-[640px] lg:grid-cols-[minmax(0,1fr)_minmax(0,.95fr)] lg:px-12 lg:py-20">
-            <div className="relative z-10 flex flex-col justify-center">
+          <div className="hero-tech-grid absolute inset-0 opacity-35" aria-hidden="true" />
+          <div className="mx-auto grid w-[calc(100vw-2.5rem)] min-w-0 max-w-[1440px] items-center gap-10 overflow-hidden pb-14 pt-10 sm:w-[calc(100vw-4rem)] sm:py-16 lg:min-h-[680px] lg:w-[calc(100vw-6rem)] lg:grid-cols-[minmax(0,1fr)_minmax(0,.95fr)] lg:py-20">
+            <div className="relative z-10 flex min-w-0 flex-col justify-center">
               <div className="mb-7 inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-white">
                 <Sparkles size={13} /> Universo Atípico · acesso por assinatura
               </div>
@@ -138,7 +144,7 @@ export default function Home() {
                 Informação, recursos e companhia para a{" "}
                 <em className="font-semibold not-italic text-[#efd4a2]">rotina real</em>.
               </h1>
-              <p className="mt-7 max-w-xl text-base leading-8 text-white/80 sm:text-lg">
+              <p className="mt-7 max-w-xl break-words text-base leading-8 text-white/80 sm:text-lg">
                 Uma assinatura única com guias, receitas, vídeos, biblioteca e comunidade para
                 famílias atípicas — tudo em um só lugar, sem cursos avulsos e sem promessas
                 milagrosas.
@@ -172,13 +178,8 @@ export default function Home() {
                 ))}
               </div>
             </div>
-            <div className="relative">
-              <img
-                src={heroAsset.url}
-                alt="Mãe e criança lendo um livro juntos em um sofá, em um ambiente acolhedor e iluminado"
-                className="w-full rounded-[2rem] object-cover shadow-[0_30px_70px_rgba(0,0,0,.35)] lg:aspect-[4/3]"
-                loading="eager"
-              />
+            <div className="relative order-first min-w-0 lg:order-none">
+              <BrandOrbitHero />
             </div>
           </div>
         </section>
@@ -292,11 +293,7 @@ export default function Home() {
                 Sem julgamento, com moderação e cuidado com a privacidade de cada família.
               </p>
               <div className="mt-8 grid grid-cols-3 gap-4">
-                {[
-                  [Users, data?.metrics.members ?? 0, "membros"],
-                  [BookOpen, data?.metrics.guides ?? 0, "materiais"],
-                  [MessageCircleMore, data?.metrics.topics ?? 0, "conversas"],
-                ].map(([Icon, value, label]: any) => (
+                {communityMetrics.map(({ icon: Icon, value, label }) => (
                   <div key={label} className="rounded-2xl border border-[var(--line)] bg-white p-4">
                     <Icon size={18} className="text-[var(--sage-deep)]" />
                     <strong className="display-font mt-3 block text-2xl font-semibold text-[var(--ink)]">
