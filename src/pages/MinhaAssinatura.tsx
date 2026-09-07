@@ -76,13 +76,8 @@ export default function MinhaAssinatura() {
     <MemberShell
       eyebrow="Sua conta"
       title="Minha assinatura"
-      description="Veja seu acesso atual. A comunidade está gratuita nesta fase; o premium futuro segue em preparação."
+      description="Veja seu acesso atual ao Universo e gerencie a sua assinatura com clareza."
     >
-      <div className="mb-6 rounded-2xl border border-[var(--line)] bg-[var(--sage-pale)] p-5 text-sm leading-6 text-[var(--sage-deep)]">
-        <strong>Acesso gratuito agora.</strong> Nenhuma nova cobrança é iniciada nesta fase.
-        Assinaturas anteriores, quando existentes, continuam visíveis abaixo para gestão e
-        transparência.
-      </div>
       {subscription.isLoading ? (
         <div className="grid gap-5 lg:grid-cols-[1fr_330px]">
           <div className="h-96 animate-pulse rounded-3xl bg-[var(--linen)]" />

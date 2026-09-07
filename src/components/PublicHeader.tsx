@@ -91,7 +91,7 @@ export function PublicHeader() {
                 </Link>
               </Button>
               <p className="mt-3 text-center text-xs text-[var(--ink-soft)]">
-                Acesso gratuito agora · premium em preparação
+                R$ 49,90/mês · acesso completo
               </p>
             </SheetContent>
           </Sheet>

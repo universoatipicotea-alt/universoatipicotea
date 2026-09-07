@@ -450,7 +450,6 @@
   }
   .interactive-card:hover svg {
     transform: rotate(-4deg) scale(1.08);
-    filter: drop-shadow(0 5px 8px rgba(55, 95, 74, 0.2));
   }
   .progress-shimmer::after {
     animation: progress-glow 2.4s ease-in-out infinite;

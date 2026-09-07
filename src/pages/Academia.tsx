@@ -247,10 +247,6 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
         title="Conhecimento organizado para cada momento."
         description="Escolha um módulo e avance no seu ritmo."
       >
-        <div className="mb-6 rounded-2xl border border-[var(--line)] bg-[var(--sage-pale)] px-5 py-4 text-sm font-semibold text-[var(--sage-deep)]">
-          Academia disponível no acesso gratuito atual. O plano premium futuro ainda está em
-          preparação.
-        </div>
         <SectionHeading
           label="Trilhas de conhecimento"
           title={`${modules.length} módulos da Academia`}
@@ -338,10 +334,6 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
       title={activeModule?.name || "Módulo da Academia"}
       description="Explore guias e conteúdos organizados para consultar no seu ritmo e voltar sempre que precisar."
     >
-      <div className="mb-6 rounded-2xl border border-[var(--line)] bg-[var(--sage-pale)] px-5 py-4 text-sm font-semibold text-[var(--sage-deep)]">
-        Academia disponível no acesso gratuito atual. O plano premium futuro ainda está em
-        preparação.
-      </div>
       <Button
         type="button"
         variant="outline"

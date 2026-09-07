@@ -23,11 +23,9 @@ export function Reveal({
   const Component: ElementType = as ?? "div";
   const ref = useRef<HTMLElement | null>(null);
   const [visible, setVisible] = useState(false);
-
   useEffect(() => {
     const node = ref.current;
-    if (!node) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (!node || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setVisible(true);
       return;
     }
@@ -43,7 +41,6 @@ export function Reveal({
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
-
   return (
     <Component
       ref={ref}

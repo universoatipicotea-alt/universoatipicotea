@@ -24,7 +24,7 @@ const faq = [
   {
     question: "O que está incluído no meu acesso?",
     answer:
-      "O acesso gratuito atual reúne receitas, guias da Academia Atípica, sua biblioteca pessoal, a comunidade e a área de facilitadores.",
+      "Sua assinatura dá acesso a todo o Universo Atípico: receitas, guias da Academia Atípica, sua biblioteca pessoal, a comunidade e a área de facilitadores.",
   },
   {
     question: "Como encontro um material que comecei a ler?",
@@ -42,9 +42,9 @@ const faq = [
       "Basta abrir o material desejado. O PDF é exibido dentro da plataforma, com leitura ajustada para celular e o progresso salvo automaticamente.",
   },
   {
-    question: "O acesso tem cobrança agora?",
+    question: "Como funciona a assinatura de R$ 49,90/mês?",
     answer:
-      "Não. A comunidade está gratuita nesta fase. Um plano premium futuro está em preparação e será apresentado antes de qualquer contratação.",
+      "É uma assinatura mensal que mantém seu acesso completo ativo. Você acompanha status, próxima cobrança e histórico em Minha assinatura.",
   },
   {
     question: "Como faço para cancelar?",
@@ -129,7 +129,7 @@ export default function Inicio() {
           }
           text={
             restricted
-              ? "O acesso está gratuito nesta fase. Entre com sua conta para continuar no Universo Atípico."
+              ? "A assinatura de R$ 49,90/mês libera todo o Universo Atípico. Verifique o status em Minha assinatura."
               : "Tente atualizar a página em alguns instantes."
           }
         />
