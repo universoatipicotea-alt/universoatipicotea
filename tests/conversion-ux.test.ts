@@ -27,3 +27,14 @@ test("animações preservam preferência por movimento reduzido", () => {
   assert.match(styles, /scroll-reveal/);
   assert.match(styles, /progress-shimmer/);
 });
+
+test("login aprimorado preserva autenticação e não anuncia gratuidade", () => {
+  const auth = read("src/pages/Auth.tsx");
+  const visiblePages = ["Home", "Checkout", "Assinatura", "Academia", "Auth"]
+    .map((name) => read(`src/pages/${name}.tsx`))
+    .join("\n");
+  assert.match(auth, /trpc\.auth\.login/);
+  assert.match(auth, /showPassword/);
+  assert.match(auth, /auth\.resetPassword/);
+  assert.doesNotMatch(visiblePages, /gratuit[oa]|grátis/i);
+});
