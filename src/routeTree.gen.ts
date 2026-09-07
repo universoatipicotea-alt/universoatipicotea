@@ -18,6 +18,7 @@ import { Route as AssinaturaRouteImport } from './routes/assinatura'
 import { Route as AssinaturaECancelamentoRouteImport } from './routes/assinatura-e-cancelamento'
 import { Route as AvisoDeResponsabilidadeRouteImport } from './routes/aviso-de-responsabilidade'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
+import { Route as CamilaribeiroautismoRouteImport } from './routes/camilaribeiroautismo'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ComunidadeRouteImport } from './routes/comunidade'
 import { Route as EntrarRouteImport } from './routes/entrar'
@@ -84,6 +85,11 @@ const AvisoDeResponsabilidadeRoute = AvisoDeResponsabilidadeRouteImport.update({
 const BibliotecaRoute = BibliotecaRouteImport.update({
   id: '/biblioteca',
   path: '/biblioteca',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CamilaribeiroautismoRoute = CamilaribeiroautismoRouteImport.update({
+  id: '/camilaribeiroautismo',
+  path: '/camilaribeiroautismo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutRoute = CheckoutRouteImport.update({
@@ -208,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/assinatura-e-cancelamento': typeof AssinaturaECancelamentoRoute
   '/aviso-de-responsabilidade': typeof AvisoDeResponsabilidadeRoute
   '/biblioteca': typeof BibliotecaRoute
+  '/camilaribeiroautismo': typeof CamilaribeiroautismoRoute
   '/checkout': typeof CheckoutRoute
   '/comunidade': typeof ComunidadeRoute
   '/entrar': typeof EntrarRoute
@@ -241,6 +248,7 @@ export interface FileRoutesByTo {
   '/assinatura-e-cancelamento': typeof AssinaturaECancelamentoRoute
   '/aviso-de-responsabilidade': typeof AvisoDeResponsabilidadeRoute
   '/biblioteca': typeof BibliotecaRoute
+  '/camilaribeiroautismo': typeof CamilaribeiroautismoRoute
   '/checkout': typeof CheckoutRoute
   '/comunidade': typeof ComunidadeRoute
   '/entrar': typeof EntrarRoute
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/assinatura-e-cancelamento': typeof AssinaturaECancelamentoRoute
   '/aviso-de-responsabilidade': typeof AvisoDeResponsabilidadeRoute
   '/biblioteca': typeof BibliotecaRoute
+  '/camilaribeiroautismo': typeof CamilaribeiroautismoRoute
   '/checkout': typeof CheckoutRoute
   '/comunidade': typeof ComunidadeRoute
   '/entrar': typeof EntrarRoute
@@ -310,6 +319,7 @@ export interface FileRouteTypes {
     | '/assinatura-e-cancelamento'
     | '/aviso-de-responsabilidade'
     | '/biblioteca'
+    | '/camilaribeiroautismo'
     | '/checkout'
     | '/comunidade'
     | '/entrar'
@@ -343,6 +353,7 @@ export interface FileRouteTypes {
     | '/assinatura-e-cancelamento'
     | '/aviso-de-responsabilidade'
     | '/biblioteca'
+    | '/camilaribeiroautismo'
     | '/checkout'
     | '/comunidade'
     | '/entrar'
@@ -376,6 +387,7 @@ export interface FileRouteTypes {
     | '/assinatura-e-cancelamento'
     | '/aviso-de-responsabilidade'
     | '/biblioteca'
+    | '/camilaribeiroautismo'
     | '/checkout'
     | '/comunidade'
     | '/entrar'
@@ -410,6 +422,7 @@ export interface RootRouteChildren {
   AssinaturaECancelamentoRoute: typeof AssinaturaECancelamentoRoute
   AvisoDeResponsabilidadeRoute: typeof AvisoDeResponsabilidadeRoute
   BibliotecaRoute: typeof BibliotecaRoute
+  CamilaribeiroautismoRoute: typeof CamilaribeiroautismoRoute
   CheckoutRoute: typeof CheckoutRoute
   ComunidadeRoute: typeof ComunidadeRoute
   EntrarRoute: typeof EntrarRoute
@@ -497,6 +510,13 @@ declare module '@tanstack/react-router' {
       path: '/biblioteca'
       fullPath: '/biblioteca'
       preLoaderRoute: typeof BibliotecaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/camilaribeiroautismo': {
+      id: '/camilaribeiroautismo'
+      path: '/camilaribeiroautismo'
+      fullPath: '/camilaribeiroautismo'
+      preLoaderRoute: typeof CamilaribeiroautismoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout': {
@@ -666,6 +686,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssinaturaECancelamentoRoute: AssinaturaECancelamentoRoute,
   AvisoDeResponsabilidadeRoute: AvisoDeResponsabilidadeRoute,
   BibliotecaRoute: BibliotecaRoute,
+  CamilaribeiroautismoRoute: CamilaribeiroautismoRoute,
   CheckoutRoute: CheckoutRoute,
   ComunidadeRoute: ComunidadeRoute,
   EntrarRoute: EntrarRoute,
