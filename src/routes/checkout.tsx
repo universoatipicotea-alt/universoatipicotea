@@ -7,9 +7,9 @@ export const Route = createFileRoute("/checkout")({
   head: () => ({
     meta: [
       { title: "Checkout — Universo Atípico" },
-      { name: "description", content: "Finalize sua assinatura da Academia Atípica." },
+      { name: "description", content: "Crie seu acesso gratuito ao Universo Atípico." },
       { property: "og:title", content: "Checkout — Universo Atípico" },
-      { property: "og:description", content: "Finalize sua assinatura da Academia Atípica." },
+      { property: "og:description", content: "Crie seu acesso gratuito ao Universo Atípico." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

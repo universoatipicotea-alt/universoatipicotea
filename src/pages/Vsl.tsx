@@ -49,9 +49,7 @@ export default function Vsl() {
     }
   }, []);
 
-  const videoSrc = funnel?.vslVideoPath
-    ? `/api/public/ua-video/${funnel.vslVideoPath}`
-    : null;
+  const videoSrc = funnel?.vslVideoPath ? `/api/public/ua-video/${funnel.vslVideoPath}` : null;
 
   const handleEnded = () => {
     setWatched(true);
@@ -88,10 +86,15 @@ export default function Vsl() {
             Antes de fazer parte
           </p>
           <h1 className="display-font mx-auto mt-4 max-w-2xl text-3xl font-semibold leading-[1.05] tracking-[-0.035em] text-[var(--ink)] sm:text-4xl lg:text-5xl">
-            {isLoading ? "Carregando..." : (funnel?.headline ?? "Alimentação com mais possibilidades, sem pressão.")}
+            {isLoading
+              ? "Carregando..."
+              : (funnel?.headline ?? "Alimentação com mais possibilidades, sem pressão.")}
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-[var(--ink-soft)]">
-            {isLoading ? "" : (funnel?.subheadline ?? "Uma comunidade de apoio, estratégias e materiais para famílias atípicas.")}
+            {isLoading
+              ? ""
+              : (funnel?.subheadline ??
+                "Uma comunidade de apoio, estratégias e materiais para famílias atípicas.")}
           </p>
         </div>
 
@@ -162,7 +165,10 @@ export default function Vsl() {
                 </h2>
                 <ul className="mt-5 space-y-3">
                   {benefits.map((item) => (
-                    <li key={item} className="flex items-start gap-3 text-sm text-[var(--ink-soft)]">
+                    <li
+                      key={item}
+                      className="flex items-start gap-3 text-sm text-[var(--ink-soft)]"
+                    >
                       <Check size={18} className="mt-0.5 shrink-0 text-[var(--green)]" />
                       {item}
                     </li>
@@ -172,18 +178,17 @@ export default function Vsl() {
               <div className="flex flex-col items-start gap-4 lg:items-end">
                 <div className="rounded-2xl bg-[var(--linen)] px-6 py-4">
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--ink-soft)]">
-                    Investimento
+                    Plano premium futuro
                   </p>
                   <p className="display-font mt-1 text-4xl font-semibold text-[var(--ink)]">
-                    {funnel?.priceLabel ?? "R$ 49,90"}
-                    <span className="ml-1 font-sans text-sm font-bold text-[var(--ink-soft)]">/mês</span>
+                    Em preparação
                   </p>
                 </div>
                 <Button
-                  onClick={() => setLocation("/checkout")}
+                  onClick={() => setLocation("/entrar")}
                   className="pressable h-14 rounded-xl bg-[var(--sage-deep)] px-8 text-base font-extrabold text-white shadow-[0_12px_24px_rgba(34,91,73,.18)] transition hover:-translate-y-0.5 hover:bg-[var(--ink)] hover:shadow-[0_16px_30px_rgba(34,91,73,.22)]"
                 >
-                  {funnel?.ctaLabel ?? "Começar agora"}
+                  Acessar gratuitamente
                 </Button>
               </div>
             </div>
@@ -193,7 +198,7 @@ export default function Vsl() {
         {!watched && (
           <div className="mt-8 flex items-center justify-center gap-2 text-xs font-bold text-[var(--ink-soft)]">
             <Lock size={14} />
-            O botão de compra será liberado ao final do vídeo.
+            Continue assistindo para conhecer todos os espaços do Universo.
           </div>
         )}
       </main>
