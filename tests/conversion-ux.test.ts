@@ -36,5 +36,6 @@ test("login aprimorado preserva autenticação e não anuncia gratuidade", () =>
   assert.match(auth, /trpc\.auth\.login/);
   assert.match(auth, /showPassword/);
   assert.match(auth, /auth\.resetPassword/);
+  assert.match(auth, /login-universo-atipico\.png/);
   assert.doesNotMatch(visiblePages, /gratuit[oa]|grátis/i);
 });

@@ -11,7 +11,6 @@ import {
   Loader2,
   LockKeyhole,
   Mail,
-  ShieldCheck,
   Sparkles,
 } from "lucide-react";
 import { FormEvent, useState } from "react";
@@ -77,6 +76,14 @@ export default function Auth() {
             <div className="rounded-xl bg-white px-2 py-1 shadow-sm lg:hidden">
               <Brand compact />
             </div>
+          </div>
+
+          <div className="mb-7 overflow-hidden rounded-2xl border border-[var(--line)] shadow-[0_14px_34px_rgba(8,31,77,.1)] lg:hidden">
+            <img
+              src="/login-universo-atipico.png"
+              alt="Universo Atípico — chegue como você está"
+              className="h-40 w-full object-cover object-[center_34%] sm:h-52"
+            />
           </div>
 
           <div className="max-w-md">
@@ -217,34 +224,17 @@ export default function Auth() {
           </div>
         </section>
 
-        {/* Painel editorial: some no mobile para priorizar o formulário */}
-        <section className="relative order-2 hidden min-h-[560px] overflow-hidden bg-[var(--ink)] lg:order-1 lg:block">
+        {/* A arte fornecida ocupa o painel editorial sem textos sobrepostos. */}
+        <section className="relative order-2 hidden min-h-[680px] overflow-hidden bg-[var(--ink)] lg:order-1 lg:block">
           <img
-            src="/manus-storage/universo-atipico-acesso-premium_73c1c0dd.webp"
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 h-full w-full object-cover object-center opacity-70"
+            src="/login-universo-atipico.png"
+            alt="Universo Atípico — um espaço para você chegar como está"
+            className="absolute inset-0 h-full w-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--ink)] via-[var(--ink)]/75 to-[var(--ink)]/10" />
-          <div className="hero-tech-grid absolute inset-0 opacity-30" aria-hidden="true" />
-          <div className="relative flex h-full flex-col justify-end p-12">
-            <div className="mb-auto w-fit rounded-2xl border border-white/20 bg-white/95 p-3 shadow-2xl">
-              <Brand compact />
-            </div>
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#efd4a2]">
-              Universo Atípico
-            </p>
-            <h2 className="display-font mt-4 max-w-sm text-4xl font-semibold leading-[1.02] text-white">
-              Seu Universo continua aqui.
-            </h2>
-            <p className="mt-4 max-w-sm text-sm leading-7 text-white/75">
-              Entre para continuar seus conteúdos, acessar sua biblioteca e participar da
-              comunidade.
-            </p>
-            <p className="mt-8 inline-flex items-center gap-2 text-xs font-bold text-white/70">
-              <ShieldCheck size={15} /> Seus dados ficam protegidos.
-            </p>
-          </div>
+          <div
+            className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/15"
+            aria-hidden="true"
+          />
         </section>
       </div>
     </main>
