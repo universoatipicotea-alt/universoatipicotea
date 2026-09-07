@@ -178,8 +178,8 @@ export function MemberShell({
             Entre para continuar sua jornada.
           </h1>
           <p className="mx-auto mt-5 max-w-md text-sm leading-7 text-[var(--ink-soft)]">
-            O acesso é por assinatura de R$ 49,90/mês. Entre com sua conta para acessar os
-            materiais, conversas e seu perfil.
+            O acesso à comunidade está gratuito nesta fase. Entre ou crie sua conta sem informar
+            dados de pagamento; o plano premium futuro ainda está em preparação.
           </p>
           <Button
             onClick={() => setLocation("/entrar")}

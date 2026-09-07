@@ -7,9 +7,15 @@ export const Route = createFileRoute("/academia")({
   head: () => ({
     meta: [
       { title: "Academia — Universo Atípico" },
-      { name: "description", content: "Área de estudo com materiais exclusivos para membros da Academia Atípica." },
+      {
+        name: "description",
+        content: "Área de estudo do Universo Atípico, disponível no acesso gratuito atual.",
+      },
       { property: "og:title", content: "Academia — Universo Atípico" },
-      { property: "og:description", content: "Área de estudo com materiais exclusivos para membros da Academia Atípica." },
+      {
+        property: "og:description",
+        content: "Área de estudo do Universo Atípico, disponível no acesso gratuito atual.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

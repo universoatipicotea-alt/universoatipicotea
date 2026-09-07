@@ -396,7 +396,7 @@ export default function Receitas({ categorySlug }: { categorySlug?: string }) {
         </article>
         <article className="rounded-3xl bg-[var(--sage-deep)] p-7 text-white sm:p-9">
           <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#efd4a2]">
-            Incluído na sua assinatura
+            Disponível no acesso gratuito atual
           </p>
           <h2 className="display-font mt-3 text-3xl font-semibold leading-tight">
             Quer explorar mais conteúdos?
