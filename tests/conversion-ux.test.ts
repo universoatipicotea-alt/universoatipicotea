@@ -12,6 +12,8 @@ test("funil mantém assinatura de R$ 49,90 e checkout real", () => {
   assert.match(checkout, /billing\.createCheckout/);
   assert.match(checkout, /Pagar agora/);
   assert.match(checkout, /R\$ 49,90/);
+  assert.match(checkout, /Um universo de possibilidades/);
+  assert.match(checkout, /bg-gradient-to-r/);
 });
 
 test("métricas baixas não exibem zeros como prova social", () => {
@@ -38,6 +40,40 @@ test("login aprimorado preserva autenticação e não anuncia gratuidade", () =>
   assert.match(auth, /auth\.resetPassword/);
   assert.match(auth, /login-universo-atipico\.png/);
   assert.doesNotMatch(visiblePages, /gratuit[oa]|grátis/i);
+});
+
+test("página de assinatura apresenta o Plano Universo e preserva o checkout", () => {
+  const subscription = read("src/pages/Assinatura.tsx");
+  assert.match(subscription, /Plano Universo/);
+  assert.match(subscription, /Um Universo inteiro por/);
+  assert.match(subscription, /R\$ 49,90/);
+  assert.match(subscription, /Menos de R\$ 1,67 por dia/);
+  assert.match(subscription, /QUERO FAZER PARTE/);
+  assert.match(subscription, /setLocation\("\/checkout"\)/);
+  assert.match(subscription, /\/plano-universo-oferta\.png/);
+  assert.match(subscription, /whitespace-nowrap/);
+  assert.doesNotMatch(subscription, /Cobrança ainda não ativada/i);
+});
+
+test("página pública da Camila preserva destinos oficiais e não exige autenticação", () => {
+  const page = read("src/pages/CamilaRibeiroAutismo.tsx");
+  const profileHeader = read("src/components/camila/PublicProfileHeader.tsx");
+  const socialLinks = read("src/components/camila/SocialLinks.tsx");
+  const linkCard = read("src/components/camila/PublicLinkCard.tsx");
+  const route = read("src/routes/camilaribeiroautismo.tsx");
+  const links = read("src/config/camilaPublicLinks.ts");
+  assert.match(route, /createFileRoute\("\/camilaribeiroautismo"\)/);
+  assert.match(route, /Camila Ribeiro Autismo \| Links/);
+  assert.doesNotMatch(page, /useAuth|MemberShell|redirect/);
+  assert.doesNotMatch(profileHeader, /<img|avatar|personagem/i);
+  assert.match(socialLinks, /target="_blank"/);
+  assert.match(socialLinks, /rel="noopener noreferrer"/);
+  assert.match(linkCard, /target="_blank"/);
+  assert.match(links, /https:\/\/universoatipico\.app/);
+  assert.match(links, /chat\.whatsapp\.com/);
+  assert.match(links, /https:\/\/t\.me\//);
+  assert.match(links, /vt\.tiktok\.com/);
+  assert.match(links, /camila_(universo_atipico|lacos_espectro|atualizatea|mundo_azul)/);
 });
 
 test("áreas de membros usam as novas artes sem substituir dados reais", () => {

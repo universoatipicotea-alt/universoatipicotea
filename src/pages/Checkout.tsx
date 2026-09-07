@@ -2,7 +2,17 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { MemberShell } from "@/components/MemberShell";
 import { Button } from "@/components/ui/button";
 import { call, trpc } from "@/lib/trpc";
-import { ArrowRight, Check, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  Check,
+  ChefHat,
+  Compass,
+  LockKeyhole,
+  ShieldCheck,
+  Sparkles,
+  UsersRound,
+} from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
@@ -14,12 +24,22 @@ const benefits = [
   "Guias complementares exclusivos",
 ];
 
+const planHighlights = [
+  { label: "Receitas", icon: ChefHat, color: "text-[#f2a625]" },
+  { label: "Academia Atípica", icon: Compass, color: "text-[#2f9ce0]" },
+  { label: "Guias", icon: BookOpen, color: "text-[#16a88b]" },
+  { label: "Comunidade", icon: UsersRound, color: "text-[#ef5f67]" },
+];
+
 export default function Checkout() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
 
   const params = useMemo(
-    () => (typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search)),
+    () =>
+      typeof window === "undefined"
+        ? new URLSearchParams()
+        : new URLSearchParams(window.location.search),
     [],
   );
   const status = params.get("status");
@@ -47,7 +67,7 @@ export default function Checkout() {
 
   useEffect(() => {
     if (sessionInfo.data?.email && !email) setEmail(sessionInfo.data.email);
-  }, [sessionInfo.data?.email]);
+  }, [email, sessionInfo.data?.email]);
 
   // Já logado voltando do pagamento: apenas sincroniza a assinatura.
   useEffect(() => {
@@ -82,7 +102,9 @@ export default function Checkout() {
     }
   };
 
-  const ctaLabel = createCheckout.isPending ? "Abrindo pagamento seguro..." : "Pagar agora — R$ 49,90/mês";
+  const ctaLabel = createCheckout.isPending
+    ? "Abrindo pagamento seguro..."
+    : "Pagar agora — R$ 49,90/mês";
 
   return (
     <MemberShell
@@ -134,7 +156,7 @@ export default function Checkout() {
                     <input
                       required
                       value={name}
-                      onChange={e => setName(e.target.value)}
+                      onChange={(e) => setName(e.target.value)}
                       placeholder="Como podemos chamar você?"
                       className="mt-2 h-13 w-full rounded-xl border border-[var(--line)] bg-[var(--paper)] px-4 text-sm font-medium outline-none transition focus:border-[var(--sage)] focus:bg-white"
                     />
@@ -145,7 +167,7 @@ export default function Checkout() {
                       required
                       type="email"
                       value={email}
-                      onChange={e => setEmail(e.target.value)}
+                      onChange={(e) => setEmail(e.target.value)}
                       placeholder="voce@exemplo.com"
                       className="mt-2 h-13 w-full rounded-xl border border-[var(--line)] bg-[var(--paper)] px-4 text-sm font-medium outline-none transition focus:border-[var(--sage)] focus:bg-white"
                     />
@@ -157,7 +179,7 @@ export default function Checkout() {
                       type="password"
                       minLength={8}
                       value={password}
-                      onChange={e => setPassword(e.target.value)}
+                      onChange={(e) => setPassword(e.target.value)}
                       placeholder="Mínimo de 8 caracteres"
                       className="mt-2 h-13 w-full rounded-xl border border-[var(--line)] bg-[var(--paper)] px-4 text-sm font-medium outline-none transition focus:border-[var(--sage)] focus:bg-white"
                     />
@@ -167,12 +189,22 @@ export default function Checkout() {
                     disabled={creating}
                     className="pressable h-13 w-full rounded-xl bg-[var(--sage-deep)] text-sm font-extrabold text-white hover:bg-[var(--ink)]"
                   >
-                    {creating ? "Criando sua conta..." : <>Criar conta e acessar <ArrowRight size={17} className="ml-2" /></>}
+                    {creating ? (
+                      "Criando sua conta..."
+                    ) : (
+                      <>
+                        Criar conta e acessar <ArrowRight size={17} className="ml-2" />
+                      </>
+                    )}
                   </Button>
                 </form>
                 <p className="mt-4 text-center text-xs font-medium text-[var(--ink-soft)]">
                   Já tem conta?{" "}
-                  <button type="button" onClick={() => setLocation(`/entrar?next=/checkout?status=sucesso`)} className="font-extrabold text-[var(--sage-deep)] underline">
+                  <button
+                    type="button"
+                    onClick={() => setLocation(`/entrar?next=/checkout?status=sucesso`)}
+                    className="font-extrabold text-[var(--sage-deep)] underline"
+                  >
                     Entrar
                   </button>
                 </p>
@@ -182,21 +214,54 @@ export default function Checkout() {
         ) : (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
             <section className="overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white p-6 shadow-[0_24px_60px_rgba(8,31,77,.08)] sm:p-9">
-              {/* Preço e CTA no topo, sem rolagem */}
-              <div className="relative overflow-hidden rounded-[1.5rem] bg-[var(--ink)] p-6 text-white sm:p-7">
-                <div className="absolute -right-14 -top-16 h-44 w-44 rounded-full bg-[var(--clay)]/80" aria-hidden="true" />
-                <div className="relative flex flex-wrap items-end justify-between gap-5">
+              <div className="relative isolate overflow-hidden rounded-[1.5rem] border border-[#dce7f0] bg-[#fffdf8] p-5 sm:p-7">
+                <div
+                  aria-hidden="true"
+                  className="absolute -left-16 -top-20 -z-10 h-48 w-48 rounded-full bg-[#ff786a]/25"
+                />
+                <div
+                  aria-hidden="true"
+                  className="absolute -right-16 -top-14 -z-10 h-48 w-48 rounded-full bg-[#f8c849]/30"
+                />
+                <div
+                  aria-hidden="true"
+                  className="absolute -bottom-20 right-10 -z-10 h-40 w-64 rounded-[50%] bg-[#8bd5cb]/25"
+                />
+                <div className="relative grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(250px,.78fr)] md:items-center">
                   <div>
-                    <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#efd4a2]">Plano Universo</p>
-                    <p className="display-font mt-2 text-4xl font-semibold tracking-[-.04em] sm:text-5xl">
-                      R$ 49,90
-                      <span className="ml-1 font-sans text-sm font-bold tracking-normal text-white/65">/mês</span>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#3e6b9e]">
+                      Plano Universo
                     </p>
-                    <p className="mt-1 text-xs font-medium text-white/65">Cancele quando quiser.</p>
+                    <h2 className="display-font mt-3 max-w-xl text-3xl font-semibold leading-[.97] tracking-[-.045em] text-[#082c62] sm:text-5xl">
+                      Um universo de possibilidades{" "}
+                      <span className="bg-gradient-to-r from-[#ff5e52] to-[#ef7c5c] bg-clip-text text-transparent">
+                        com você.
+                      </span>
+                    </h2>
+                    <div className="mt-6 grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4">
+                      {planHighlights.map(({ label, icon: Icon, color }) => (
+                        <span
+                          key={label}
+                          className="flex min-w-0 flex-col gap-1 text-xs font-extrabold text-[#082c62]"
+                        >
+                          <Icon size={24} className={color} strokeWidth={2} />
+                          {label}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <span className="w-fit rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#efd4a2]">
-                    Assinatura mensal
-                  </span>
+                  <div className="rounded-[1.5rem] border border-[#cfe3f4] bg-[#eef8ff]/90 p-5 text-center shadow-[0_12px_28px_rgba(8,44,98,.08)] sm:p-6">
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#4b70a0]">
+                      Acesso mensal
+                    </p>
+                    <p className="display-font mt-3 whitespace-nowrap text-[clamp(2.8rem,9vw,4.8rem)] font-semibold leading-none tracking-[-.065em] text-[#082c62]">
+                      R$ 49,90
+                      <span className="ml-1 font-sans text-sm font-extrabold tracking-normal sm:text-base">
+                        /mês
+                      </span>
+                    </p>
+                    <p className="mt-4 text-xs font-bold text-[#536d91]">Cancele quando quiser.</p>
+                  </div>
                 </div>
               </div>
 
@@ -208,12 +273,18 @@ export default function Checkout() {
               >
                 {createCheckout.isPending ? (
                   <>
-                    <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white" aria-hidden="true" />
+                    <span
+                      className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white"
+                      aria-hidden="true"
+                    />
                     {ctaLabel}
                   </>
                 ) : (
                   <>
-                    Pagar agora <ArrowRight size={18} className="ml-2" />
+                    <span className="bg-gradient-to-r from-white via-[#fbe2a8] to-white bg-clip-text text-transparent">
+                      Pagar agora
+                    </span>{" "}
+                    <ArrowRight size={18} className="ml-2" />
                   </>
                 )}
               </Button>
@@ -222,8 +293,11 @@ export default function Checkout() {
               </p>
 
               <div className="mt-8 grid gap-3 border-t border-[var(--line)] pt-6 sm:grid-cols-2">
-                {benefits.map(item => (
-                  <div key={item} className="flex items-center gap-2 text-sm font-bold text-[var(--ink-soft)]">
+                {benefits.map((item) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-2 text-sm font-bold text-[var(--ink-soft)]"
+                  >
                     <Check size={16} className="shrink-0 text-[var(--sage)]" />
                     {item}
                   </div>
@@ -232,7 +306,10 @@ export default function Checkout() {
             </section>
 
             <aside className="relative hidden overflow-hidden rounded-[2rem] bg-[var(--sage-deep)] p-7 text-white shadow-[0_24px_60px_rgba(55,95,74,.18)] lg:block">
-              <div className="absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-[var(--sage)]/45" aria-hidden="true" />
+              <div
+                className="absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-[var(--sage)]/45"
+                aria-hidden="true"
+              />
               <div className="relative flex h-full flex-col">
                 <span className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10 text-[#efd4a2]">
                   <LockKeyhole size={20} />
@@ -241,14 +318,17 @@ export default function Checkout() {
                   Um acesso feito para a vida real.
                 </h2>
                 <p className="mt-4 text-sm leading-7 text-white/75">
-                  Receitas, jornadas e trocas com outras famílias em um só lugar — com mais calma e menos ruído.
+                  Receitas, jornadas e trocas com outras famílias em um só lugar — com mais calma e
+                  menos ruído.
                 </p>
                 <div className="mt-auto space-y-4 border-t border-white/10 pt-6">
                   <p className="flex items-start gap-2 text-xs font-bold text-white/80">
-                    <ShieldCheck size={16} className="mt-0.5 shrink-0 text-[#efd4a2]" /> Seus dados de pagamento ficam com o Stripe.
+                    <ShieldCheck size={16} className="mt-0.5 shrink-0 text-[#efd4a2]" /> Seus dados
+                    de pagamento ficam com o Stripe.
                   </p>
                   <p className="flex items-start gap-2 text-xs font-bold text-white/80">
-                    <Sparkles size={16} className="mt-0.5 shrink-0 text-[#efd4a2]" /> Cancele quando quiser em Minha assinatura.
+                    <Sparkles size={16} className="mt-0.5 shrink-0 text-[#efd4a2]" /> Cancele quando
+                    quiser em Minha assinatura.
                   </p>
                 </div>
               </div>
@@ -266,7 +346,13 @@ export default function Checkout() {
             disabled={createCheckout.isPending}
             className="pressable h-13 w-full rounded-xl bg-[var(--sage-deep)] text-sm font-extrabold text-white hover:bg-[var(--ink)]"
           >
-            {createCheckout.isPending ? "Abrindo pagamento..." : ctaLabel}
+            {createCheckout.isPending ? (
+              "Abrindo pagamento..."
+            ) : (
+              <span className="bg-gradient-to-r from-white via-[#fbe2a8] to-white bg-clip-text text-transparent">
+                {ctaLabel}
+              </span>
+            )}
           </Button>
         </div>
       ) : null}
