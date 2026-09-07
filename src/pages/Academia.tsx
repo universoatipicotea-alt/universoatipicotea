@@ -247,10 +247,29 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
         title="Conhecimento organizado para cada momento."
         description="Escolha um módulo e avance no seu ritmo."
       >
-        <SectionHeading
-          label="Trilhas de conhecimento"
-          title={`${modules.length} módulos da Academia`}
-        />
+        <section className="mb-8 overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white shadow-[0_22px_54px_rgba(8,31,77,.08)]">
+          <div className="relative aspect-[16/9] overflow-hidden bg-[var(--linen)]">
+            <img
+              src="/academia-universo-atipico.png"
+              alt="Academia Atípica — conhecimento que abre novos mundos"
+              className="h-full w-full object-cover object-center"
+            />
+            <button
+              type="button"
+              onClick={() =>
+                document.getElementById("academy-modules")?.scrollIntoView({ behavior: "smooth" })
+              }
+              aria-label="Explorar os módulos da Academia"
+              className="absolute left-[6.8%] top-[65%] h-[8%] w-[24.5%] rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--blue)]"
+            />
+          </div>
+        </section>
+        <div id="academy-modules" className="scroll-mt-24">
+          <SectionHeading
+            label="Trilhas de conhecimento"
+            title={`${modules.length} módulos da Academia`}
+          />
+        </div>
         {taxonomy.isLoading ? (
           <div className="grid gap-5 md:grid-cols-3">
             <div className="h-72 animate-pulse rounded-3xl bg-[var(--linen)]" />

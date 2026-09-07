@@ -75,3 +75,10 @@ test("página pública da Camila preserva destinos oficiais e não exige autenti
   assert.match(links, /vt\.tiktok\.com/);
   assert.match(links, /camila_(universo_atipico|lacos_espectro|atualizatea|mundo_azul)/);
 });
+
+test("áreas de membros usam as novas artes sem substituir dados reais", () => {
+  assert.match(read("src/pages/Inicio.tsx"), /home-membros-universo-atipico\.png/);
+  assert.match(read("src/pages/Receitas.tsx"), /receitas-universo-atipico\.png/);
+  assert.match(read("src/pages/Academia.tsx"), /academia-universo-atipico\.png/);
+  assert.match(read("src/pages/Inicio.tsx"), /memberDashboard/);
+});

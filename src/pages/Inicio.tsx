@@ -16,7 +16,6 @@ import {
   CircleHelp,
   MessageCircleMore,
   PlayCircle,
-  Sparkles,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
@@ -161,49 +160,42 @@ export default function Inicio() {
 
   return (
     <MemberShell eyebrow={eyebrow} title={title} description={description}>
-      <section className="relative overflow-hidden rounded-[2rem] bg-[var(--ink)] p-7 text-white shadow-[0_24px_60px_rgba(8,31,77,.12)] sm:p-9">
-        <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full border border-white/10" />
-        <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#efd4a2]">
-              <Sparkles size={13} /> Seu Universo hoje
-            </span>
-            <h2 className="display-font mt-5 max-w-2xl text-4xl font-semibold leading-[0.98] sm:text-5xl">
-              Um próximo passo possível, no seu ritmo.
-            </h2>
-            <p className="mt-4 max-w-xl text-sm leading-7 text-white/70">
-              Retome uma leitura, encontre uma receita ou participe de uma conversa com outras
-              famílias.
-            </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Button
-                onClick={() => setLocation("/academia")}
-                className="bg-[#efd4a2] text-[var(--ink)] hover:bg-white"
-              >
-                Explorar Academia <ArrowRight size={15} className="ml-2" />
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setLocation("/comunidade")}
-                className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
-              >
-                <MessageCircleMore size={15} className="mr-2" />
-                Ir para a comunidade
-              </Button>
-            </div>
+      <section className="overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white shadow-[0_24px_60px_rgba(8,31,77,.1)]">
+        <div className="relative aspect-[4/3] overflow-hidden bg-[var(--linen)] sm:aspect-[16/7] lg:aspect-[16/6]">
+          <img
+            src="/home-membros-universo-atipico.png"
+            alt="Universo Atípico — uma vida mais leve, juntos"
+            className="h-full w-full object-cover object-top"
+          />
+        </div>
+        <div className="grid gap-4 border-t border-[var(--line)] p-4 sm:p-5 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              onClick={() => setLocation("/academia")}
+              className="h-11 rounded-xl bg-[#fdbb2d] px-5 font-extrabold text-[var(--ink)] hover:bg-[#efaa16]"
+            >
+              Explorar Academia <ArrowRight size={15} className="ml-2" />
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setLocation("/comunidade")}
+              className="h-11 rounded-xl border-[var(--line)] bg-white px-5 font-extrabold text-[var(--ink)] hover:bg-[var(--linen)]"
+            >
+              <MessageCircleMore size={15} className="mr-2" />
+              Ir para a comunidade
+            </Button>
           </div>
-          <div className="grid grid-cols-3 gap-2 lg:w-80">
+          <div className="grid grid-cols-3 gap-2 lg:w-72">
             {[
               [progress.length, "em andamento"],
               [data?.guides?.length ?? 0, "guias"],
               [data?.recipes?.length ?? 0, "receitas"],
             ].map(([value, label]) => (
-              <div
-                key={label}
-                className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center backdrop-blur"
-              >
-                <strong className="display-font block text-3xl font-semibold">{value}</strong>
-                <span className="mt-1 block text-[9px] font-extrabold uppercase tracking-[0.12em] text-white/55">
+              <div key={label} className="rounded-xl bg-[var(--linen)] px-3 py-2.5 text-center">
+                <strong className="display-font block text-xl font-semibold text-[var(--ink)]">
+                  {value}
+                </strong>
+                <span className="mt-1 block text-[8px] font-extrabold uppercase tracking-[0.1em] text-[var(--ink-soft)]">
                   {label}
                 </span>
               </div>
