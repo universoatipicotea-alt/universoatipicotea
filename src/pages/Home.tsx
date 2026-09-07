@@ -89,12 +89,10 @@ function PreviewCard({ item, badge }: { item: PreviewItem; badge: string }) {
 
 export default function Home() {
   const landing = trpc.community.landing.useQuery();
-  const funnel = trpc.community.funnel.get.useQuery();
   const [, setLocation] = useLocation();
   const data = landing.data;
 
-  const ctaLabel = funnel.data?.ctaLabel ?? "Começar agora";
-  const priceLabel = funnel.data?.priceLabel ?? "R$ 49,90";
+  const priceLabel = "R$ 49,90";
   const guides: PreviewItem[] = data?.preview?.guides ?? [];
   const recipes: PreviewItem[] = data?.preview?.recipes ?? [];
 
@@ -148,26 +146,29 @@ export default function Home() {
         {/* HERO */}
         <section className="relative isolate overflow-hidden bg-[var(--ink)]">
           <div className="hero-tech-grid absolute inset-0 opacity-35" aria-hidden="true" />
-          <div className="mx-auto grid w-[calc(100vw-2.5rem)] min-w-0 max-w-[1440px] items-center gap-10 overflow-hidden pb-14 pt-10 sm:w-[calc(100vw-4rem)] sm:py-16 lg:min-h-[680px] lg:w-[calc(100vw-6rem)] lg:grid-cols-[minmax(0,1fr)_minmax(0,.95fr)] lg:py-20">
+          <div
+            className="aurora-float absolute -left-32 top-24 h-80 w-80 rounded-full bg-[var(--blue)]/15 blur-3xl"
+            aria-hidden="true"
+          />
+          <div className="mx-auto grid w-[calc(100vw-2rem)] min-w-0 max-w-[1440px] items-center gap-10 overflow-hidden pb-14 pt-8 sm:w-[calc(100vw-4rem)] sm:py-16 lg:min-h-[700px] lg:w-[calc(100vw-6rem)] lg:grid-cols-[minmax(0,1fr)_minmax(0,.92fr)] lg:py-20">
             <div className="relative z-10 flex min-w-0 flex-col justify-center">
               <div className="mb-7 inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-white">
-                <Sparkles size={13} /> Universo Atípico · acesso por assinatura
+                <Sparkles size={13} /> Assinatura Universo · R$ 49,90 por mês
               </div>
               <h1 className="display-font max-w-2xl text-4xl font-semibold leading-[0.98] tracking-[-0.045em] text-white sm:text-5xl lg:text-[3.4rem]">
-                Informação, recursos e companhia para a{" "}
-                <em className="font-semibold not-italic text-[#efd4a2]">rotina real</em>.
+                Apoio prático para transformar informação em{" "}
+                <em className="font-semibold not-italic text-[#efd4a2]">caminhos possíveis</em>.
               </h1>
               <p className="mt-7 max-w-xl break-words text-base leading-8 text-white/80 sm:text-lg">
-                Uma assinatura única com guias, receitas, vídeos, biblioteca e comunidade para
-                famílias atípicas — tudo em um só lugar, sem cursos avulsos e sem promessas
-                milagrosas.
+                Academia, receitas, biblioteca e comunidade reunidas para apoiar famílias atípicas
+                com conteúdo organizado, acolhimento e menos ruído na rotina.
               </p>
               <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
                 <Button
                   onClick={goCheckout}
                   className="pressable h-14 min-w-[240px] rounded-xl bg-[#efd4a2] px-8 text-base font-extrabold uppercase tracking-[0.08em] text-[var(--ink)] shadow-[0_12px_24px_rgba(0,0,0,.18)] transition hover:-translate-y-0.5 hover:bg-white"
                 >
-                  {ctaLabel} <ArrowRight className="ml-3" size={19} />
+                  Assinar por R$ 49,90/mês <ArrowRight className="ml-3" size={19} />
                 </Button>
                 <Button
                   asChild
@@ -178,10 +179,14 @@ export default function Home() {
                 </Button>
               </div>
               <p className="mt-5 text-xs font-medium text-white/60">
-                {priceLabel}/mês · acesso completo. Cancele quando quiser.
+                Renovação mensal · acesso liberado após a confirmação · cancele quando quiser.
               </p>
               <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-white/75">
-                {["Acesso imediato", "Conteúdo atualizado", "Cancelamento simples"].map((item) => (
+                {[
+                  "Pagamento seguro",
+                  "Acesso imediato após confirmação",
+                  "Cancelamento simples",
+                ].map((item) => (
                   <span
                     key={item}
                     className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5"
@@ -193,53 +198,111 @@ export default function Home() {
             </div>
             <div className="relative order-first min-w-0 lg:order-none">
               <BrandOrbitHero />
+              <div className="absolute bottom-5 left-1/2 z-10 flex w-[calc(100%-2.5rem)] -translate-x-1/2 items-center justify-between rounded-2xl border border-white/20 bg-[var(--ink)]/85 px-4 py-3 text-white shadow-2xl backdrop-blur sm:bottom-7 sm:w-auto sm:min-w-[320px] sm:px-5">
+                <div>
+                  <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-white/55">
+                    Plano completo
+                  </p>
+                  <p className="mt-0.5 text-sm font-extrabold">
+                    {priceLabel}
+                    <span className="text-xs text-white/60">/mês</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={goCheckout}
+                  className="pressable rounded-xl bg-[#efd4a2] px-4 py-2 text-xs font-extrabold text-[var(--ink)]"
+                >
+                  Assinar
+                </button>
+              </div>
             </div>
           </div>
         </section>
 
+        <section
+          className="border-b border-[var(--line)] bg-white"
+          aria-label="Benefícios da assinatura"
+        >
+          <div className="mx-auto grid max-w-6xl divide-y divide-[var(--line)] px-5 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-8">
+            {[
+              "Um único plano, sem módulos avulsos",
+              "Conteúdo organizado para consultar no seu ritmo",
+              "Comunidade moderada com cuidado",
+            ].map((item, index) => (
+              <div key={item} className="flex items-center gap-3 px-3 py-5 sm:px-6">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--sage-pale)] text-xs font-extrabold text-[var(--sage-deep)]">
+                  {index + 1}
+                </span>
+                <p className="text-xs font-extrabold leading-5 text-[var(--ink)]">{item}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* SOBRE */}
-        <section id="sobre" className="scroll-mt-24 bg-white">
-          <div className="mx-auto grid max-w-6xl gap-8 px-5 py-16 sm:px-8 lg:grid-cols-[1fr_1fr] lg:px-12 lg:py-20">
-            <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[var(--sage)]">
-                Sobre o Universo
-              </p>
-              <h2 className="display-font mt-3 text-4xl font-semibold leading-[1.02] tracking-[-0.035em] text-[var(--ink)]">
-                Feito por quem vive a rotina atípica.
-              </h2>
-            </div>
-            <div className="space-y-4 text-sm leading-7 text-[var(--ink-soft)]">
-              <p>
-                O Universo Atípico nasceu para reunir, em um lugar só, o que costuma estar
-                espalhado: informação confiável, materiais práticos e pessoas que entendem o dia a
-                dia de uma família atípica.
-              </p>
-              <p>
-                Não vendemos cursos soltos nem prometemos soluções rápidas. Oferecemos um acesso
-                contínuo, com conteúdo novo publicado ao longo do tempo e uma comunidade para
-                caminhar junto.
-              </p>
-              <ul className="grid gap-2 pt-2">
-                {[
-                  "Assinatura única, sem venda de módulos avulsos",
-                  "Conteúdo publicado e atualizado pela equipe",
-                  "Comunidade moderada e respeitosa",
-                ].map((item) => (
-                  <li
-                    key={item}
-                    className="flex items-start gap-2 text-sm font-semibold text-[var(--ink)]"
-                  >
-                    <Check size={16} className="mt-0.5 shrink-0 text-[var(--sage-deep)]" /> {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
+        <section id="sobre" className="relative scroll-mt-24 overflow-hidden bg-[var(--linen)]">
+          <div
+            className="absolute -right-24 top-10 h-64 w-64 rounded-full border border-[var(--sage)]/15"
+            aria-hidden="true"
+          />
+          <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 lg:px-12 lg:py-16">
+            <Reveal className="grid overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white shadow-[0_24px_70px_rgba(8,31,77,.08)] lg:grid-cols-[.8fr_1.2fr]">
+              <div className="relative overflow-hidden bg-[var(--ink)] p-7 text-white sm:p-9 lg:p-11">
+                <div className="hero-tech-grid absolute inset-0 opacity-25" aria-hidden="true" />
+                <div className="relative">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[var(--sage)]">
+                    Sobre o Universo
+                  </p>
+                  <h2 className="display-font mt-4 text-4xl font-semibold leading-[1.02] tracking-[-0.035em] text-white">
+                    Feito por quem vive a rotina atípica.
+                  </h2>
+                  <p className="mt-5 text-sm leading-7 text-white/70">
+                    Conhecimento que acolhe, organiza e ajuda você a encontrar o próximo passo.
+                  </p>
+                  <span className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-[10px] font-extrabold uppercase tracking-[.14em] text-[#efd4a2]">
+                    <Sparkles size={13} /> Conteúdo com propósito
+                  </span>
+                </div>
+              </div>
+              <div className="p-7 sm:p-9 lg:p-11">
+                <div className="space-y-4 text-sm leading-7 text-[var(--ink-soft)]">
+                  <p>
+                    O Universo Atípico nasceu para reunir, em um lugar só, o que costuma estar
+                    espalhado: informação confiável, materiais práticos e pessoas que entendem o dia
+                    a dia de uma família atípica.
+                  </p>
+                  <p>
+                    Não vendemos cursos soltos nem prometemos soluções rápidas. Oferecemos um acesso
+                    contínuo, com conteúdo novo publicado ao longo do tempo e uma comunidade para
+                    caminhar junto.
+                  </p>
+                </div>
+                <ul className="mt-7 grid gap-3 sm:grid-cols-3">
+                  {[
+                    "Assinatura única, sem venda de módulos avulsos",
+                    "Conteúdo publicado e atualizado pela equipe",
+                    "Comunidade moderada e respeitosa",
+                  ].map((item, index) => (
+                    <li
+                      key={item}
+                      className="rounded-2xl border border-[var(--line)] bg-[var(--paper)] p-4 text-xs font-extrabold leading-5 text-[var(--ink)]"
+                    >
+                      <span className="mb-3 grid h-7 w-7 place-items-center rounded-full bg-[var(--sage-pale)] text-[10px] text-[var(--sage-deep)]">
+                        {index + 1}
+                      </span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Reveal>
           </div>
         </section>
 
         {/* O QUE VOCÊ ENCONTRA */}
         <section id="o-que-encontra" className="scroll-mt-24">
-          <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-12 lg:py-20">
+          <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-12 lg:py-18">
             <div className="text-center">
               <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[var(--sage)]">
                 O que você encontra
@@ -248,19 +311,25 @@ export default function Home() {
                 Tudo incluído na mesma assinatura.
               </h2>
             </div>
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {pillars.map(([Icon, title, text], index) => (
                 <Reveal
                   as="article"
                   key={title}
                   delay={index * 70}
-                  className="interactive-card rounded-2xl border border-[var(--line)] bg-white p-6"
+                  className="interactive-card group relative min-h-56 overflow-hidden rounded-3xl border border-[var(--line)] bg-white p-6 shadow-[0_14px_36px_rgba(8,31,77,.05)]"
                 >
-                  <Icon size={22} className="text-[var(--sage-deep)]" />
+                  <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--sage-pale)] text-[var(--sage-deep)]">
+                    <Icon size={21} />
+                  </span>
                   <h3 className="display-font mt-5 text-xl font-semibold text-[var(--ink)]">
                     {title}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{text}</p>
+                  <span
+                    className="absolute bottom-0 left-0 h-1 w-0 bg-[var(--sage)] transition-all duration-300 group-hover:w-full"
+                    aria-hidden="true"
+                  />
                 </Reveal>
               ))}
             </div>
@@ -294,16 +363,23 @@ export default function Home() {
         </section>
 
         {/* COMUNIDADE */}
-        <section id="comunidade" className="scroll-mt-24 bg-[var(--linen)]">
+        <section
+          id="comunidade"
+          className="relative scroll-mt-24 overflow-hidden bg-[var(--sage-deep)] text-white"
+        >
+          <div
+            className="aurora-float absolute -right-28 -top-24 h-80 w-80 rounded-full bg-white/10 blur-2xl"
+            aria-hidden="true"
+          />
           <div className="mx-auto grid max-w-6xl items-center gap-8 px-5 py-16 sm:px-8 lg:grid-cols-[1.1fr_.9fr] lg:px-12 lg:py-20">
             <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[var(--sage)]">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#efd4a2]">
                 Comunidade
               </p>
-              <h2 className="display-font mt-3 text-4xl font-semibold leading-[1.02] tracking-[-0.035em] text-[var(--ink)]">
+              <h2 className="display-font mt-3 text-4xl font-semibold leading-[1.02] tracking-[-0.035em] text-white">
                 Você não precisa atravessar isso sozinha.
               </h2>
-              <p className="mt-5 max-w-xl text-sm leading-7 text-[var(--ink-soft)]">
+              <p className="mt-5 max-w-xl text-sm leading-7 text-white/70">
                 Um espaço para perguntar, contar como foi o dia e ler experiências de quem entende.
                 Sem julgamento, com moderação e cuidado com a privacidade de cada família.
               </p>
@@ -315,13 +391,13 @@ export default function Home() {
                       <Reveal
                         key={metric.label}
                         delay={index * 80}
-                        className="interactive-card rounded-2xl border border-[var(--line)] bg-white p-4"
+                        className="interactive-card rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur"
                       >
-                        <Icon size={18} className="text-[var(--sage-deep)]" />
-                        <strong className="display-font mt-3 block text-xl font-semibold text-[var(--ink)]">
+                        <Icon size={18} className="text-[#efd4a2]" />
+                        <strong className="display-font mt-3 block text-xl font-semibold text-white">
                           {"value" in metric ? <CountUp value={metric.value} /> : metric.title}
                         </strong>
-                        <span className="mt-1 block text-[10px] font-extrabold uppercase tracking-[0.1em] text-[var(--ink-soft)]">
+                        <span className="mt-1 block text-[10px] font-extrabold uppercase tracking-[0.1em] text-white/55">
                           {metric.label}
                         </span>
                       </Reveal>
@@ -330,7 +406,7 @@ export default function Home() {
                 )}
               </div>
             </div>
-            <div className="rounded-3xl border border-[var(--line)] bg-white p-7">
+            <div className="relative rounded-3xl border border-white/15 bg-white p-7 text-[var(--ink)] shadow-[0_24px_60px_rgba(0,0,0,.18)]">
               <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--sage)]">
                 Como funciona
               </p>
@@ -356,9 +432,16 @@ export default function Home() {
         </section>
 
         {/* ASSINATURA */}
-        <section id="assinatura" className="scroll-mt-24">
+        <section
+          id="assinatura"
+          className="relative scroll-mt-24 overflow-hidden bg-[var(--paper)]"
+        >
           <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8 lg:py-20">
-            <div className="rounded-[2rem] border border-[var(--line)] bg-white p-7 text-center shadow-[0_24px_60px_rgba(8,31,77,.08)] sm:p-10">
+            <Reveal className="relative overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white p-7 text-center shadow-[0_28px_80px_rgba(8,31,77,.12)] sm:p-10">
+              <div
+                className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[var(--blue)] via-[var(--green)] to-[var(--gold)]"
+                aria-hidden="true"
+              />
               <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[var(--sage)]">
                 Plano Universo
               </p>
@@ -387,12 +470,12 @@ export default function Home() {
                 onClick={goCheckout}
                 className="pressable mt-8 h-14 w-full rounded-xl bg-[var(--sage-deep)] text-base font-extrabold uppercase tracking-[0.08em] text-white hover:bg-[var(--ink)]"
               >
-                {ctaLabel} <ArrowRight className="ml-3" size={18} />
+                Assinar agora <ArrowRight className="ml-3" size={18} />
               </Button>
               <p className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[var(--ink-soft)]">
                 <ShieldCheck size={14} /> Pagamento seguro · sua conta é criada após a confirmação
               </p>
-            </div>
+            </Reveal>
           </div>
         </section>
 
@@ -429,6 +512,15 @@ export default function Home() {
           </div>
         </section>
       </main>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-white/95 p-3 shadow-[0_-10px_30px_rgba(8,31,77,.08)] backdrop-blur sm:hidden">
+        <Button
+          onClick={goCheckout}
+          className="h-12 w-full rounded-xl bg-[var(--sage-deep)] text-sm font-extrabold text-white"
+        >
+          Assinar por R$ 49,90/mês <ArrowRight size={16} className="ml-2" />
+        </Button>
+      </div>
 
       <footer className="border-t border-[var(--line)] bg-white px-5 py-10 sm:px-8 lg:px-12">
         <div className="mx-auto flex max-w-7xl flex-col gap-8">
