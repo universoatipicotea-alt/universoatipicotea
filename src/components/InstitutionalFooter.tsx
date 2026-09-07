@@ -21,16 +21,21 @@ export function InstitutionalFooter({ tone = "light" }: { tone?: "light" | "dark
       >
         Institucional
       </p>
-      <nav className="mt-3 flex flex-wrap gap-x-6 gap-y-2" aria-label="Links institucionais">
+      <nav
+        className="mt-3 flex flex-wrap gap-x-6 gap-y-2"
+        aria-label="Links institucionais"
+      >
         {institutionalLinks.map((item) => (
           <Link key={item.to} to={item.to} className={`text-xs font-bold ${base}`}>
             {item.label}
           </Link>
         ))}
       </nav>
-      <p className={`mt-4 text-xs ${tone === "dark" ? "text-white/45" : "text-[var(--ink-soft)]"}`}>
-        Universo Atípico · acesso gratuito nesta fase, com plano premium futuro em preparação.
-        Conteúdos informativos e educacionais, que não substituem avaliação profissional.
+      <p
+        className={`mt-4 text-xs ${tone === "dark" ? "text-white/45" : "text-[var(--ink-soft)]"}`}
+      >
+        Universo Atípico · assinatura R$ 49,90/mês com acesso completo à plataforma. Conteúdos
+        informativos e educacionais, que não substituem avaliação profissional.
       </p>
     </div>
   );

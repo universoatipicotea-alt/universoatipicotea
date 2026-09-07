@@ -2,7 +2,6 @@ import { Brand } from "@/components/Brand";
 import { BrandOrbitHero } from "@/components/BrandOrbitHero";
 import { PublicHeader } from "@/components/PublicHeader";
 import { InstitutionalFooter } from "@/components/InstitutionalFooter";
-import { CountUp, Reveal } from "@/components/Motion";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -34,16 +33,16 @@ type PreviewItem = {
 
 const FAQ = [
   {
-    q: "O acesso é pago?",
-    a: "Não neste momento. O acesso à comunidade está gratuito enquanto preparamos um plano premium futuro. Nenhuma cobrança é iniciada nesta fase.",
+    q: "Como funciona a assinatura?",
+    a: "É um acesso mensal de R$ 49,90. Você assina, cria sua conta logo após a confirmação do pagamento e entra na plataforma completa no mesmo dia.",
   },
   {
-    q: "Como começo?",
-    a: "Crie sua conta gratuita ou entre com uma conta existente. Você poderá conhecer os espaços disponíveis sem informar dados de pagamento.",
+    q: "Preciso criar conta antes de assinar?",
+    a: "Não. A conta é criada depois do pagamento confirmado, com o e-mail usado na compra. Isso deixa o acesso mais simples e seguro.",
   },
   {
-    q: "Haverá um plano premium?",
-    a: "Sim, ele está em preparação. Condições e recursos serão apresentados com clareza antes de qualquer futura contratação.",
+    q: "Posso cancelar quando quiser?",
+    a: "Sim. O cancelamento é feito em Minha assinatura, sem burocracia. O acesso segue ativo até o fim do período já pago.",
   },
   {
     q: "O conteúdo substitui acompanhamento profissional?",
@@ -57,7 +56,7 @@ const FAQ = [
 
 function PreviewCard({ item, badge }: { item: PreviewItem; badge: string }) {
   return (
-    <article className="interactive-card group overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-[0_10px_30px_-22px_rgba(8,31,77,.5)]">
+    <article className="group overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-[0_10px_30px_-22px_rgba(8,31,77,.5)]">
       <div className="grid aspect-[4/3] place-items-center overflow-hidden bg-[var(--linen)]">
         {item.coverImageUrl ? (
           <img
@@ -93,11 +92,12 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const data = landing.data;
 
+  const ctaLabel = funnel.data?.ctaLabel ?? "Começar agora";
   const priceLabel = funnel.data?.priceLabel ?? "R$ 49,90";
   const guides: PreviewItem[] = data?.preview?.guides ?? [];
   const recipes: PreviewItem[] = data?.preview?.recipes ?? [];
 
-  const startFree = () => setLocation("/entrar");
+  const goCheckout = () => setLocation("/checkout");
 
   const pillars = [
     [
@@ -126,18 +126,6 @@ export default function Home() {
     { icon: BookOpen, value: data?.metrics.guides ?? 0, label: "materiais" },
     { icon: MessageCircleMore, value: data?.metrics.topics ?? 0, label: "conversas" },
   ];
-  const showQuantitativeMetrics =
-    communityMetrics[0].value >= 10 &&
-    (communityMetrics[1].value >= 3 || communityMetrics[2].value >= 5);
-  const qualitativeMetrics = [
-    { icon: Users, title: "Comunidade em crescimento", label: "um espaço acolhedor para chegar" },
-    { icon: BookOpen, title: "Acervo em evolução", label: "materiais organizados pela equipe" },
-    {
-      icon: MessageCircleMore,
-      title: "Trocas com cuidado",
-      label: "conversas moderadas e respeitosas",
-    },
-  ];
 
   return (
     <div className="page-texture min-h-screen overflow-hidden bg-[var(--paper)]">
@@ -150,22 +138,23 @@ export default function Home() {
           <div className="mx-auto grid w-[calc(100vw-2.5rem)] min-w-0 max-w-[1440px] items-center gap-10 overflow-hidden pb-14 pt-10 sm:w-[calc(100vw-4rem)] sm:py-16 lg:min-h-[680px] lg:w-[calc(100vw-6rem)] lg:grid-cols-[minmax(0,1fr)_minmax(0,.95fr)] lg:py-20">
             <div className="relative z-10 flex min-w-0 flex-col justify-center">
               <div className="mb-7 inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-white">
-                <Sparkles size={13} /> Universo Atípico · acesso gratuito agora
+                <Sparkles size={13} /> Universo Atípico · acesso por assinatura
               </div>
               <h1 className="display-font max-w-2xl text-4xl font-semibold leading-[0.98] tracking-[-0.045em] text-white sm:text-5xl lg:text-[3.4rem]">
                 Informação, recursos e companhia para a{" "}
                 <em className="font-semibold not-italic text-[#efd4a2]">rotina real</em>.
               </h1>
               <p className="mt-7 max-w-xl break-words text-base leading-8 text-white/80 sm:text-lg">
-                Guias, receitas, vídeos, biblioteca e comunidade para famílias atípicas — com acesso
-                gratuito nesta fase e um plano premium futuro sendo preparado com clareza.
+                Uma assinatura única com guias, receitas, vídeos, biblioteca e comunidade para
+                famílias atípicas — tudo em um só lugar, sem cursos avulsos e sem promessas
+                milagrosas.
               </p>
               <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
                 <Button
-                  onClick={startFree}
+                  onClick={goCheckout}
                   className="pressable h-14 min-w-[240px] rounded-xl bg-[#efd4a2] px-8 text-base font-extrabold uppercase tracking-[0.08em] text-[var(--ink)] shadow-[0_12px_24px_rgba(0,0,0,.18)] transition hover:-translate-y-0.5 hover:bg-white"
                 >
-                  Acessar gratuitamente <ArrowRight className="ml-3" size={19} />
+                  {ctaLabel} <ArrowRight className="ml-3" size={19} />
                 </Button>
                 <Button
                   asChild
@@ -176,14 +165,10 @@ export default function Home() {
                 </Button>
               </div>
               <p className="mt-5 text-xs font-medium text-white/60">
-                Sem cobrança agora · o plano premium ainda está em preparação.
+                {priceLabel}/mês · acesso completo. Cancele quando quiser.
               </p>
               <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-white/75">
-                {[
-                  "Acesso imediato e gratuito",
-                  "Conteúdo atualizado",
-                  "Sem dados de pagamento",
-                ].map((item) => (
+                {["Acesso imediato", "Conteúdo atualizado", "Cancelamento simples"].map((item) => (
                   <span
                     key={item}
                     className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5"
@@ -223,7 +208,7 @@ export default function Home() {
               </p>
               <ul className="grid gap-2 pt-2">
                 {[
-                  "Acesso gratuito durante esta fase",
+                  "Assinatura única, sem venda de módulos avulsos",
                   "Conteúdo publicado e atualizado pela equipe",
                   "Comunidade moderada e respeitosa",
                 ].map((item) => (
@@ -247,23 +232,21 @@ export default function Home() {
                 O que você encontra
               </p>
               <h2 className="display-font mx-auto mt-3 max-w-2xl text-4xl font-semibold tracking-[-0.035em] text-[var(--ink)]">
-                Um ecossistema acolhedor, reunido em um só lugar.
+                Tudo incluído na mesma assinatura.
               </h2>
             </div>
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {pillars.map(([Icon, title, text], index) => (
-                <Reveal
-                  as="article"
+              {pillars.map(([Icon, title, text]) => (
+                <article
                   key={title}
-                  delay={index * 70}
-                  className="interactive-card rounded-2xl border border-[var(--line)] bg-white p-6"
+                  className="rounded-2xl border border-[var(--line)] bg-white p-6"
                 >
                   <Icon size={22} className="text-[var(--sage-deep)]" />
                   <h3 className="display-font mt-5 text-xl font-semibold text-[var(--ink)]">
                     {title}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{text}</p>
-                </Reveal>
+                </article>
               ))}
             </div>
 
@@ -309,27 +292,18 @@ export default function Home() {
                 Um espaço para perguntar, contar como foi o dia e ler experiências de quem entende.
                 Sem julgamento, com moderação e cuidado com a privacidade de cada família.
               </p>
-              <div className="mt-8 grid gap-4 sm:grid-cols-3">
-                {(showQuantitativeMetrics ? communityMetrics : qualitativeMetrics).map(
-                  (metric, index) => {
-                    const Icon = metric.icon;
-                    return (
-                      <Reveal
-                        key={"label" in metric ? metric.label : metric.title}
-                        delay={index * 80}
-                        className="interactive-card rounded-2xl border border-[var(--line)] bg-white p-4"
-                      >
-                        <Icon size={18} className="text-[var(--sage-deep)]" />
-                        <strong className="display-font mt-3 block text-xl font-semibold text-[var(--ink)]">
-                          {"value" in metric ? <CountUp value={metric.value} /> : metric.title}
-                        </strong>
-                        <span className="mt-1 block text-[10px] font-extrabold uppercase tracking-[0.1em] text-[var(--ink-soft)]">
-                          {metric.label}
-                        </span>
-                      </Reveal>
-                    );
-                  },
-                )}
+              <div className="mt-8 grid grid-cols-3 gap-4">
+                {communityMetrics.map(({ icon: Icon, value, label }) => (
+                  <div key={label} className="rounded-2xl border border-[var(--line)] bg-white p-4">
+                    <Icon size={18} className="text-[var(--sage-deep)]" />
+                    <strong className="display-font mt-3 block text-2xl font-semibold text-[var(--ink)]">
+                      {value}
+                    </strong>
+                    <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[var(--ink-soft)]">
+                      {label}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
             <div className="rounded-3xl border border-[var(--line)] bg-white p-7">
@@ -338,8 +312,8 @@ export default function Home() {
               </p>
               <ol className="mt-5 space-y-5">
                 {[
-                  ["Crie sua conta gratuita", "Sem cartão e sem iniciar uma cobrança."],
-                  ["Conheça o Universo", "Explore os espaços disponíveis nesta fase."],
+                  ["Assine por R$ 49,90/mês", "Pagamento seguro, em poucos cliques."],
+                  ["Crie sua conta", "Logo após a confirmação, com o e-mail da compra."],
                   ["Acesse tudo", "Academia, receitas, vídeos, biblioteca e comunidade."],
                 ].map(([title, text], index) => (
                   <li key={title} className="flex gap-4">
@@ -362,10 +336,11 @@ export default function Home() {
           <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8 lg:py-20">
             <div className="rounded-[2rem] border border-[var(--line)] bg-white p-7 text-center shadow-[0_24px_60px_rgba(8,31,77,.08)] sm:p-10">
               <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[var(--sage)]">
-                Plano premium em preparação
+                Plano Universo
               </p>
               <p className="display-font mt-4 text-5xl font-semibold tracking-[-0.04em] text-[var(--ink)]">
-                Futuro
+                {priceLabel}
+                <span className="text-base font-bold text-[var(--ink-soft)]">/mês</span>
               </p>
               <ul className="mx-auto mt-7 grid max-w-md gap-2 text-left">
                 {[
@@ -374,7 +349,7 @@ export default function Home() {
                   "Vídeos e biblioteca",
                   "Comunidade moderada",
                   "Novos conteúdos todo mês",
-                  "Condições apresentadas antes do lançamento",
+                  "Cancelamento quando quiser",
                 ].map((item) => (
                   <li
                     key={item}
@@ -385,14 +360,13 @@ export default function Home() {
                 ))}
               </ul>
               <Button
-                onClick={startFree}
+                onClick={goCheckout}
                 className="pressable mt-8 h-14 w-full rounded-xl bg-[var(--sage-deep)] text-base font-extrabold uppercase tracking-[0.08em] text-white hover:bg-[var(--ink)]"
               >
-                Acessar gratuitamente <ArrowRight className="ml-3" size={18} />
+                {ctaLabel} <ArrowRight className="ml-3" size={18} />
               </Button>
               <p className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[var(--ink-soft)]">
-                <ShieldCheck size={14} /> Nenhuma cobrança agora · referência futura: {priceLabel}
-                /mês
+                <ShieldCheck size={14} /> Pagamento seguro · sua conta é criada após a confirmação
               </p>
             </div>
           </div>
