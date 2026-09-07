@@ -2,6 +2,7 @@ import { Brand } from "@/components/Brand";
 import { BrandOrbitHero } from "@/components/BrandOrbitHero";
 import { PublicHeader } from "@/components/PublicHeader";
 import { InstitutionalFooter } from "@/components/InstitutionalFooter";
+import { CountUp, Reveal } from "@/components/Motion";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -56,7 +57,7 @@ const FAQ = [
 
 function PreviewCard({ item, badge }: { item: PreviewItem; badge: string }) {
   return (
-    <article className="group overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-[0_10px_30px_-22px_rgba(8,31,77,.5)]">
+    <article className="interactive-card group overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-[0_10px_30px_-22px_rgba(8,31,77,.5)]">
       <div className="grid aspect-[4/3] place-items-center overflow-hidden bg-[var(--linen)]">
         {item.coverImageUrl ? (
           <img
@@ -125,6 +126,18 @@ export default function Home() {
     { icon: Users, value: data?.metrics.members ?? 0, label: "membros" },
     { icon: BookOpen, value: data?.metrics.guides ?? 0, label: "materiais" },
     { icon: MessageCircleMore, value: data?.metrics.topics ?? 0, label: "conversas" },
+  ];
+  const showQuantitativeMetrics =
+    communityMetrics[0].value >= 10 &&
+    (communityMetrics[1].value >= 3 || communityMetrics[2].value >= 5);
+  const qualitativeMetrics = [
+    { icon: Users, title: "Comunidade em crescimento", label: "um espaço acolhedor para chegar" },
+    { icon: BookOpen, title: "Acervo em evolução", label: "materiais organizados pela equipe" },
+    {
+      icon: MessageCircleMore,
+      title: "Trocas com cuidado",
+      label: "conversas moderadas e respeitosas",
+    },
   ];
 
   return (
@@ -236,17 +249,19 @@ export default function Home() {
               </h2>
             </div>
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {pillars.map(([Icon, title, text]) => (
-                <article
+              {pillars.map(([Icon, title, text], index) => (
+                <Reveal
+                  as="article"
                   key={title}
-                  className="rounded-2xl border border-[var(--line)] bg-white p-6"
+                  delay={index * 70}
+                  className="interactive-card rounded-2xl border border-[var(--line)] bg-white p-6"
                 >
                   <Icon size={22} className="text-[var(--sage-deep)]" />
                   <h3 className="display-font mt-5 text-xl font-semibold text-[var(--ink)]">
                     {title}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{text}</p>
-                </article>
+                </Reveal>
               ))}
             </div>
 
@@ -292,18 +307,27 @@ export default function Home() {
                 Um espaço para perguntar, contar como foi o dia e ler experiências de quem entende.
                 Sem julgamento, com moderação e cuidado com a privacidade de cada família.
               </p>
-              <div className="mt-8 grid grid-cols-3 gap-4">
-                {communityMetrics.map(({ icon: Icon, value, label }) => (
-                  <div key={label} className="rounded-2xl border border-[var(--line)] bg-white p-4">
-                    <Icon size={18} className="text-[var(--sage-deep)]" />
-                    <strong className="display-font mt-3 block text-2xl font-semibold text-[var(--ink)]">
-                      {value}
-                    </strong>
-                    <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[var(--ink-soft)]">
-                      {label}
-                    </span>
-                  </div>
-                ))}
+              <div className="mt-8 grid gap-4 sm:grid-cols-3">
+                {(showQuantitativeMetrics ? communityMetrics : qualitativeMetrics).map(
+                  (metric, index) => {
+                    const Icon = metric.icon;
+                    return (
+                      <Reveal
+                        key={metric.label}
+                        delay={index * 80}
+                        className="interactive-card rounded-2xl border border-[var(--line)] bg-white p-4"
+                      >
+                        <Icon size={18} className="text-[var(--sage-deep)]" />
+                        <strong className="display-font mt-3 block text-xl font-semibold text-[var(--ink)]">
+                          {"value" in metric ? <CountUp value={metric.value} /> : metric.title}
+                        </strong>
+                        <span className="mt-1 block text-[10px] font-extrabold uppercase tracking-[0.1em] text-[var(--ink-soft)]">
+                          {metric.label}
+                        </span>
+                      </Reveal>
+                    );
+                  },
+                )}
               </div>
             </div>
             <div className="rounded-3xl border border-[var(--line)] bg-white p-7">

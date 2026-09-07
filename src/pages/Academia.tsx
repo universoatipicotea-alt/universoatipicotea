@@ -419,7 +419,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
                   aria-label={`Progresso da leitura: ${continueReading.percent}%`}
                 >
                   <div
-                    className="h-full rounded-full bg-[var(--sage-deep)] transition-[width] duration-300"
+                    className="progress-shimmer h-full rounded-full bg-[var(--sage-deep)]"
                     style={{ width: `${continueReading.percent}%` }}
                   />
                 </div>

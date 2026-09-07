@@ -32,7 +32,10 @@ export function ContentCard({
       {...(interactive && onClick ? { type: "button" as const, onClick } : {})}
       className="group flex h-full w-full flex-col overflow-hidden rounded-3xl border border-[var(--line)] bg-white text-left shadow-[0_12px_30px_rgba(8,31,77,.05)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(8,31,77,.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sage)]"
     >
-      <div className="relative h-44 overflow-hidden" style={{ backgroundColor: accentColor || "var(--linen)" }}>
+      <div
+        className="relative h-44 overflow-hidden"
+        style={{ backgroundColor: accentColor || "var(--linen)" }}
+      >
         {coverImageUrl ? (
           <img
             src={coverImageUrl}
@@ -51,18 +54,27 @@ export function ContentCard({
       </div>
       <div className="flex flex-1 flex-col p-5">
         {category ? (
-          <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[var(--sage)]">{category}</span>
+          <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[var(--sage)]">
+            {category}
+          </span>
         ) : null}
-        <h3 className="display-font mt-2 text-xl font-semibold leading-tight text-[var(--ink)]">{title}</h3>
+        <h3 className="display-font mt-2 text-xl font-semibold leading-tight text-[var(--ink)]">
+          {title}
+        </h3>
         {summary ? (
-          <p className="mt-3 line-clamp-3 flex-1 text-sm leading-6 text-[var(--ink-soft)]">{summary}</p>
+          <p className="mt-3 line-clamp-3 flex-1 text-sm leading-6 text-[var(--ink-soft)]">
+            {summary}
+          </p>
         ) : (
           <div className="flex-1" />
         )}
         {progress ? (
           <div className="mt-4">
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--linen)]">
-              <div className="h-full rounded-full bg-[var(--sage-deep)]" style={{ width: `${progress.percent}%` }} />
+              <div
+                className="progress-shimmer h-full rounded-full bg-[var(--sage-deep)]"
+                style={{ width: `${progress.percent}%` }}
+              />
             </div>
             <p className="mt-2 text-[11px] font-bold text-[var(--ink-soft)]">
               {progress.percent}% · página {progress.currentPage}
