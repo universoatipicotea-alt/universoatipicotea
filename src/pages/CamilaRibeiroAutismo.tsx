@@ -2,7 +2,6 @@ import { Brand } from "@/components/Brand";
 import { PublicLinkCard } from "@/components/camila/PublicLinkCard";
 import { PublicProfileHeader } from "@/components/camila/PublicProfileHeader";
 import { SocialLinks } from "@/components/camila/SocialLinks";
-import ResponsiveVisualAsset from "@/components/ResponsiveVisualAsset";
 import { camilaPrimaryLinks, camilaProfile, camilaSocialLinks } from "@/config/camilaPublicLinks";
 
 export default function CamilaRibeiroAutismo() {
@@ -31,21 +30,7 @@ export default function CamilaRibeiroAutismo() {
         <PublicProfileHeader {...camilaProfile} />
         <SocialLinks links={camilaSocialLinks} />
 
-        <ResponsiveVisualAsset
-          slot="public_camila"
-          fallback={{
-            desktopImageUrl: "/camila-public-universo-atipico-desktop.webp",
-            tabletImageUrl: "/camila-public-universo-atipico-tablet.webp",
-            mobileImageUrl: "/camila-public-universo-atipico-mobile.webp",
-            altText: "Universo Atípico — chegue como você está",
-          }}
-          defaultAlt="Imagem de apoio da página Camila Ribeiro Autismo"
-          pictureClassName="mt-8 block aspect-[3/4] max-h-[520px] overflow-hidden rounded-3xl border border-[#dfe6ee] bg-white shadow-[0_12px_30px_rgba(8,31,77,.07)]"
-          className="h-full w-full object-contain"
-          sizes="(max-width: 639px) calc(100vw - 40px), 720px"
-        />
-
-        <section aria-labelledby="camila-links-title" className="mt-10">
+        <section aria-labelledby="camila-links-title" className="mt-8 sm:mt-10">
           <h1 id="camila-links-title" className="sr-only">
             Links de Camila Ribeiro Autismo
           </h1>

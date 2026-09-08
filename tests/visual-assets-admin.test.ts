@@ -108,13 +108,13 @@ test("slots visuais estão conectados às páginas sem substituir copy em HTML",
     ["Inicio", "inicio"],
     ["Home", "public_home"],
     ["Checkout", "checkout"],
-    ["CamilaRibeiroAutismo", "public_camila"],
     ["Receitas", "receitas"],
     ["Academia", "academia"],
     ["Assinatura", "plano"],
   ]) {
     assert.match(read(`src/pages/${page}.tsx`), new RegExp(`slot="${slot}"`));
   }
+  assert.doesNotMatch(read("src/pages/CamilaRibeiroAutismo.tsx"), /slot="public_camila"/);
   assert.match(read("src/pages/Auth.tsx"), /useVisualAsset\("login"/);
   assert.match(read("src/pages/Checkout.tsx"), /R\$ 49,90/);
 });
