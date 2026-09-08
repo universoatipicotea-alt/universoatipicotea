@@ -42,7 +42,9 @@ export const camilaPrimaryLinks = [
     href: "https://chat.whatsapp.com/CNHZqNXDmbZDAsmbWuRh6G?s=cl&p=i&ilr=0",
     event: "camila_lacos_espectro",
     accent: "green",
-    brand: "pending",
+    brand: "image",
+    imageSrc: "/camila-lacos-do-espectro.webp",
+    imageAlt: "Logo do Laços do Espectro",
   },
   {
     title: "AtualizaTEA",
@@ -50,7 +52,9 @@ export const camilaPrimaryLinks = [
     href: "https://t.me/+NPvBuRydXI5iYjJh",
     event: "camila_atualizatea",
     accent: "blue",
-    brand: "pending",
+    brand: "image",
+    imageSrc: "/camila-atualizatea.webp",
+    imageAlt: "Logo do canal AtualizaTEA",
   },
   {
     title: "Mundo Azul — Loja",

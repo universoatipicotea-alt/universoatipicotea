@@ -69,16 +69,6 @@ export const VISUAL_ASSET_SLOT_DEFINITIONS = {
       mobile: "750 × 900 px",
     },
   },
-  public_camila: {
-    label: "Página pública da Camila",
-    route: "/camilaribeiroautismo",
-    description: "Asset opcional da página pública, sem substituir a logo oficial.",
-    recommended: {
-      desktop: "1440 × 720 px",
-      tablet: "1024 × 768 px",
-      mobile: "750 × 1000 px",
-    },
-  },
 } as const;
 
 export type VisualAssetSlot = keyof typeof VISUAL_ASSET_SLOT_DEFINITIONS;

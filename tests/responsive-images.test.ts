@@ -7,7 +7,6 @@ const read = (path: string) => readFileSync(path, "utf8");
 test("artes principais possuem variantes WebP leves por viewport", () => {
   for (const name of [
     "academia-universo-atipico",
-    "camila-public-universo-atipico",
     "home-membros-universo-atipico",
     "login-universo-atipico",
     "plano-universo-oferta",
@@ -18,6 +17,17 @@ test("artes principais possuem variantes WebP leves por viewport", () => {
       assert.ok(statSync(file).size < 200_000, `${file} deve permanecer abaixo de 200 KB`);
     }
   }
+});
+
+test("capas públicas da Camila são leves e associadas aos cards", () => {
+  for (const name of ["camila-atualizatea", "camila-lacos-do-espectro"]) {
+    const file = `public/${name}.webp`;
+    assert.ok(statSync(file).size < 100_000, `${file} deve permanecer abaixo de 100 KB`);
+  }
+
+  const links = read("src/config/camilaPublicLinks.ts");
+  assert.match(links, /camila-atualizatea\.webp/);
+  assert.match(links, /camila-lacos-do-espectro\.webp/);
 });
 
 test("componente responsivo não baixa a arte desktop no celular", () => {

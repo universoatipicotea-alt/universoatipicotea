@@ -16,7 +16,9 @@ type PublicLinkCardProps = {
   href: string;
   event: CamilaLinkEvent;
   accent: keyof typeof accentClasses;
-  brand: "universo" | "pending";
+  brand: "universo" | "image" | "pending";
+  imageSrc?: string;
+  imageAlt?: string;
 };
 
 export function PublicLinkCard({
@@ -26,6 +28,8 @@ export function PublicLinkCard({
   event,
   accent,
   brand,
+  imageSrc,
+  imageAlt,
 }: PublicLinkCardProps) {
   const colors = accentClasses[accent];
 
@@ -43,6 +47,18 @@ export function PublicLinkCard({
       <span className="col-span-2 flex min-h-10 items-center pl-1 sm:col-span-1">
         {brand === "universo" ? (
           <Brand compact linked={false} />
+        ) : brand === "image" && imageSrc ? (
+          <span className="grid h-24 w-24 place-items-center overflow-hidden rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-[#dfe6ee] sm:h-28 sm:w-28">
+            <img
+              src={imageSrc}
+              alt={imageAlt ?? ""}
+              width={112}
+              height={112}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-contain"
+            />
+          </span>
         ) : (
           <span className="inline-flex rounded-full border border-dashed border-[#9bacbf] bg-white/70 px-3 py-2 text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#6b7d93]">
             Logo pendente
