@@ -52,7 +52,7 @@ export function PublicHeader() {
             <SheetContent
               id="menu-mobile"
               side="left"
-              className="w-[300px] border-r border-[var(--line)] bg-[#fdfcf9] p-6"
+              className="w-[min(300px,calc(100vw-1rem))] border-r border-[var(--line)] bg-[#fdfcf9] p-6"
               onCloseAutoFocus={(event) => {
                 event.preventDefault();
                 menuButtonRef.current?.focus();
@@ -60,7 +60,7 @@ export function PublicHeader() {
             >
               <SheetHeader className="text-left">
                 <SheetTitle>
-                  <Brand />
+                  <Brand priority />
                 </SheetTitle>
               </SheetHeader>
               <nav className="mt-8 flex flex-col gap-1" aria-label="Navegação principal">
@@ -100,10 +100,10 @@ export function PublicHeader() {
         {/* Logo */}
         <div className="flex min-w-0 items-center">
           <div className="hidden lg:block">
-            <Brand />
+            <Brand priority />
           </div>
           <div className="lg:hidden">
-            <Brand compact />
+            <Brand compact priority />
           </div>
         </div>
 

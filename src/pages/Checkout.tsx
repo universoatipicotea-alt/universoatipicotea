@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { MemberShell } from "@/components/MemberShell";
+import ResponsiveVisualAsset from "@/components/ResponsiveVisualAsset";
 import { Button } from "@/components/ui/button";
 import { call, trpc } from "@/lib/trpc";
 import {
@@ -113,7 +114,9 @@ export default function Checkout() {
       title="Comece sua jornada no Universo."
       description="Um acesso mais completo para encontrar receitas, caminhos e companhia para a vida real."
     >
-      <div className="mx-auto max-w-6xl pb-24 lg:pb-0">
+      <div
+        className={`mx-auto min-w-0 max-w-6xl ${!isSuccess ? (user ? "pb-40 lg:pb-0" : "pb-24 lg:pb-0") : "pb-10 lg:pb-0"}`}
+      >
         {status === "cancelado" ? (
           <div className="mb-6 rounded-2xl border border-[#e4b9a4] bg-[#fdf3ee] p-5 text-sm font-semibold text-[#8e5744]">
             O pagamento foi cancelado. Você pode tentar novamente quando quiser.
@@ -121,7 +124,7 @@ export default function Checkout() {
         ) : null}
 
         {isSuccess ? (
-          <section className="mx-auto max-w-2xl overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white p-6 shadow-[0_24px_60px_rgba(8,31,77,.08)] sm:p-10">
+          <section className="mx-auto min-w-0 max-w-2xl overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white p-4 shadow-[0_24px_60px_rgba(8,31,77,.08)] min-[360px]:p-5 sm:rounded-[2rem] sm:p-10">
             <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[var(--sage-pale)] text-[var(--sage-deep)]">
               <Check size={28} />
             </span>
@@ -131,7 +134,7 @@ export default function Checkout() {
 
             {user || linked ? (
               <>
-                <h2 className="display-font mt-3 text-center text-4xl font-semibold leading-[.98] tracking-[-.04em] text-[var(--ink)]">
+                <h2 className="display-font mt-3 text-center text-3xl font-semibold leading-[.98] tracking-[-.04em] text-[var(--ink)] min-[360px]:text-4xl">
                   Seu acesso está liberado.
                 </h2>
                 <Button
@@ -144,7 +147,7 @@ export default function Checkout() {
               </>
             ) : (
               <>
-                <h2 className="display-font mt-3 text-center text-4xl font-semibold leading-[.98] tracking-[-.04em] text-[var(--ink)]">
+                <h2 className="display-font mt-3 text-center text-3xl font-semibold leading-[.98] tracking-[-.04em] text-[var(--ink)] min-[360px]:text-4xl">
                   Agora crie sua conta.
                 </h2>
                 <p className="mx-auto mt-4 max-w-md text-center text-sm leading-7 text-[var(--ink-soft)]">
@@ -212,9 +215,9 @@ export default function Checkout() {
             )}
           </section>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-            <section className="overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white p-6 shadow-[0_24px_60px_rgba(8,31,77,.08)] sm:p-9">
-              <div className="relative isolate overflow-hidden rounded-[1.5rem] border border-[#dce7f0] bg-[#fffdf8] p-5 sm:p-7">
+          <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+            <section className="min-w-0 overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white p-3 shadow-[0_24px_60px_rgba(8,31,77,.08)] min-[360px]:p-4 sm:rounded-[2rem] sm:p-9">
+              <div className="relative isolate min-w-0 overflow-hidden rounded-[1.25rem] border border-[#dce7f0] bg-[#fffdf8] p-4 min-[360px]:p-5 sm:rounded-[1.5rem] sm:p-7">
                 <div
                   aria-hidden="true"
                   className="absolute -left-16 -top-20 -z-10 h-48 w-48 rounded-full bg-[#ff786a]/25"
@@ -227,36 +230,38 @@ export default function Checkout() {
                   aria-hidden="true"
                   className="absolute -bottom-20 right-10 -z-10 h-40 w-64 rounded-[50%] bg-[#8bd5cb]/25"
                 />
-                <div className="relative grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(250px,.78fr)] md:items-center">
-                  <div>
+                <div className="relative grid min-w-0 gap-5 md:grid-cols-[minmax(0,1fr)_minmax(250px,.78fr)] md:items-center md:gap-6">
+                  <div className="min-w-0">
                     <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#3e6b9e]">
                       Plano Universo
                     </p>
-                    <h2 className="display-font mt-3 max-w-xl text-3xl font-semibold leading-[.97] tracking-[-.045em] text-[#082c62] sm:text-5xl">
+                    <h2 className="display-font mt-3 max-w-xl text-[clamp(1.75rem,9vw,3rem)] font-semibold leading-[.97] tracking-[-.045em] text-[#082c62] sm:text-5xl">
                       Um universo de possibilidades{" "}
                       <span className="bg-gradient-to-r from-[#ff5e52] to-[#ef7c5c] bg-clip-text text-transparent">
                         com você.
                       </span>
                     </h2>
-                    <div className="mt-6 grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4">
+                    <div className="mt-6 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:grid-cols-4 sm:gap-x-3 sm:gap-y-4">
                       {planHighlights.map(({ label, icon: Icon, color }) => (
                         <span
                           key={label}
-                          className="flex min-w-0 flex-col gap-1 text-xs font-extrabold text-[#082c62]"
+                          className="flex min-w-0 items-center gap-2 text-xs font-extrabold leading-tight text-[#082c62] sm:flex-col sm:items-start sm:gap-1"
                         >
-                          <Icon size={24} className={color} strokeWidth={2} />
-                          {label}
+                          <Icon size={22} className={`shrink-0 ${color}`} strokeWidth={2} />
+                          <span>{label}</span>
                         </span>
                       ))}
                     </div>
                   </div>
-                  <div className="rounded-[1.5rem] border border-[#cfe3f4] bg-[#eef8ff]/90 p-5 text-center shadow-[0_12px_28px_rgba(8,44,98,.08)] sm:p-6">
+                  <div className="min-w-0 rounded-[1.25rem] border border-[#cfe3f4] bg-[#eef8ff]/90 p-4 text-center shadow-[0_12px_28px_rgba(8,44,98,.08)] min-[360px]:p-5 sm:rounded-[1.5rem] sm:p-6">
                     <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#4b70a0]">
                       Acesso mensal
                     </p>
-                    <p className="display-font mt-3 whitespace-nowrap text-[clamp(2.8rem,9vw,4.8rem)] font-semibold leading-none tracking-[-.065em] text-[#082c62]">
-                      R$ 49,90
-                      <span className="ml-1 font-sans text-sm font-extrabold tracking-normal sm:text-base">
+                    <p className="mt-3 flex min-w-0 items-baseline justify-center whitespace-nowrap text-[#082c62]">
+                      <span className="display-font text-[clamp(2.15rem,11vw,4.8rem)] font-semibold leading-none tracking-[-.06em]">
+                        R$ 49,90
+                      </span>
+                      <span className="ml-1 shrink-0 font-sans text-xs font-extrabold tracking-normal min-[360px]:text-sm sm:text-base">
                         /mês
                       </span>
                     </p>
@@ -265,11 +270,26 @@ export default function Checkout() {
                 </div>
               </div>
 
+              <ResponsiveVisualAsset
+                slot="checkout"
+                fallback={{
+                  desktopImageUrl: "/plano-universo-oferta-desktop.webp",
+                  tabletImageUrl: "/plano-universo-oferta-tablet.webp",
+                  mobileImageUrl: "/plano-universo-oferta-mobile.webp",
+                  altText: "Plano Universo com receitas, Academia Atípica, guias e comunidade",
+                }}
+                defaultAlt="Imagem de apoio do Plano Universo"
+                pictureClassName="mt-5 block aspect-[5/8] max-h-[480px] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--linen)]"
+                className="h-full w-full object-contain"
+                sizes="(max-width: 639px) calc(100vw - 64px), (max-width: 1023px) calc(100vw - 96px), 700px"
+              />
+
               <Button
                 type="button"
                 onClick={startCheckout}
                 disabled={createCheckout.isPending}
-                className="pressable mt-5 h-14 w-full rounded-2xl bg-[var(--sage-deep)] text-base font-extrabold text-white shadow-[0_12px_28px_rgba(55,95,74,.28)] hover:bg-[var(--ink)]"
+                className="pressable mt-4 min-h-12 w-full min-w-0 rounded-xl bg-[var(--sage-deep)] px-3 text-[.78rem] font-extrabold text-white shadow-[0_12px_28px_rgba(55,95,74,.28)] hover:bg-[var(--ink)] min-[360px]:h-14 min-[360px]:rounded-2xl min-[360px]:text-sm sm:mt-5 sm:px-4 sm:text-base"
+                aria-busy={createCheckout.isPending}
               >
                 {createCheckout.isPending ? (
                   <>
@@ -281,10 +301,10 @@ export default function Checkout() {
                   </>
                 ) : (
                   <>
-                    <span className="bg-gradient-to-r from-white via-[#fbe2a8] to-white bg-clip-text text-transparent">
-                      Pagar agora
+                    <span className="min-w-0 bg-gradient-to-r from-white via-[#fbe2a8] to-white bg-clip-text text-transparent">
+                      Pagar agora — R$ 49,90/mês
                     </span>{" "}
-                    <ArrowRight size={18} className="ml-2" />
+                    <ArrowRight size={18} className="ml-2 hidden shrink-0 min-[360px]:block" />
                   </>
                 )}
               </Button>
@@ -339,21 +359,26 @@ export default function Checkout() {
 
       {/* Barra fixa de conversão no mobile */}
       {!isSuccess ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-white/95 p-3 backdrop-blur lg:hidden">
-          <Button
-            type="button"
-            onClick={startCheckout}
-            disabled={createCheckout.isPending}
-            className="pressable h-13 w-full rounded-xl bg-[var(--sage-deep)] text-sm font-extrabold text-white hover:bg-[var(--ink)]"
-          >
-            {createCheckout.isPending ? (
-              "Abrindo pagamento..."
-            ) : (
-              <span className="bg-gradient-to-r from-white via-[#fbe2a8] to-white bg-clip-text text-transparent">
-                {ctaLabel}
-              </span>
-            )}
-          </Button>
+        <div
+          className={`fixed inset-x-0 z-40 border-t border-[var(--line)] bg-white/95 px-3 pt-3 backdrop-blur lg:hidden ${user ? "bottom-[calc(4.25rem+env(safe-area-inset-bottom))] pb-3" : "bottom-0 pb-[max(.75rem,env(safe-area-inset-bottom))]"}`}
+        >
+          <div className="mx-auto w-full max-w-md">
+            <Button
+              type="button"
+              onClick={startCheckout}
+              disabled={createCheckout.isPending}
+              className="pressable min-h-12 w-full min-w-0 rounded-xl bg-[var(--sage-deep)] px-3 text-[.78rem] font-extrabold text-white hover:bg-[var(--ink)] min-[360px]:h-13 min-[360px]:text-sm"
+              aria-busy={createCheckout.isPending}
+            >
+              {createCheckout.isPending ? (
+                "Abrindo pagamento..."
+              ) : (
+                <span className="min-w-0 bg-gradient-to-r from-white via-[#fbe2a8] to-white bg-clip-text text-transparent">
+                  {ctaLabel}
+                </span>
+              )}
+            </Button>
+          </div>
         </div>
       ) : null}
     </MemberShell>

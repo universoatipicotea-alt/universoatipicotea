@@ -2,6 +2,7 @@ import { ContentEmpty, MemberShell, SectionHeading } from "@/components/MemberSh
 import AccessControlPanel from "@/components/AccessControlPanel";
 import DriveImportAdmin from "@/components/admin/DriveImportAdmin";
 import TaxonomyAdmin from "@/components/admin/TaxonomyAdmin";
+import VisualAssetsAdmin from "@/components/admin/VisualAssetsAdmin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,7 @@ import {
   ImageUp,
   Link2,
   Megaphone,
+  Palette,
   ReceiptText,
   Save,
   Settings2,
@@ -38,6 +40,7 @@ type ProducerView =
   | "accounts"
   | "recipeCategories"
   | "academyModules"
+  | "visualAssets"
   | "driveImport";
 type ProductForm = {
   id?: number;
@@ -362,6 +365,12 @@ export default function Master() {
       label: "Módulos da Academia",
       icon: BookOpen,
       hint: "Capas e publicação",
+    },
+    {
+      id: "visualAssets",
+      label: "Aparência",
+      icon: Palette,
+      hint: "Banners responsivos",
     },
     {
       id: "driveImport",
@@ -912,7 +921,9 @@ export default function Master() {
                             <img
                               src={item.coverImageUrl}
                               alt=""
-                              className="h-full w-full object-cover"
+                              loading="lazy"
+                              decoding="async"
+                              className="h-full w-full object-contain"
                             />
                           ) : (
                             <div className="quiet-grid h-full" />
@@ -1443,6 +1454,7 @@ export default function Master() {
           ) : null}
           {view === "recipeCategories" ? <TaxonomyAdmin kind="recipe" enabled /> : null}
           {view === "academyModules" ? <TaxonomyAdmin kind="module" enabled /> : null}
+          {view === "visualAssets" ? <VisualAssetsAdmin /> : null}
           {view === "driveImport" ? <DriveImportAdmin /> : null}
         </div>
       </div>

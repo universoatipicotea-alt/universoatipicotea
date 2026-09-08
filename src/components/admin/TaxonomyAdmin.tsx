@@ -162,7 +162,9 @@ export default function TaxonomyAdmin({ kind, enabled }: { kind: Kind; enabled: 
                   <img
                     src={item.coverImageUrl}
                     alt={`Capa de ${item.name}`}
-                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-contain"
                   />
                 ) : (
                   <div className="grid h-full place-items-center px-6 text-center">
@@ -286,7 +288,8 @@ export default function TaxonomyAdmin({ kind, enabled }: { kind: Kind; enabled: 
                 <img
                   src={form.coverImageUrl}
                   alt="Prévia da capa"
-                  className="aspect-[4/3] w-full object-cover"
+                  decoding="async"
+                  className="aspect-[4/3] w-full object-contain"
                 />
                 <button
                   type="button"

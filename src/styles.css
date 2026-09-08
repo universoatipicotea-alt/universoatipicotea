@@ -117,6 +117,12 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
+  img,
+  video {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
   button,
   input,
   textarea,

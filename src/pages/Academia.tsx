@@ -17,6 +17,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { CategoryHub } from "@/components/CategoryHub";
 import { PdfReaderDialog, type ReaderDocument } from "@/components/PdfReaderDialog";
+import { ResponsiveImage } from "@/components/ResponsiveImage";
 
 type AcademiaGuide = {
   id: number;
@@ -248,11 +249,19 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
         description="Escolha um módulo e avance no seu ritmo."
       >
         <section className="mb-8 overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white shadow-[0_22px_54px_rgba(8,31,77,.08)]">
-          <div className="relative aspect-[16/9] overflow-hidden bg-[var(--linen)]">
-            <img
-              src="/academia-universo-atipico.png"
+          <div className="relative aspect-video overflow-hidden bg-[var(--linen)]">
+            <ResponsiveImage
+              sources={{
+                desktop: "/academia-universo-atipico-desktop.webp",
+                tablet: "/academia-universo-atipico-tablet.webp",
+                mobile: "/academia-universo-atipico-mobile.webp",
+              }}
+              fallback="/academia-universo-atipico.png"
               alt="Academia Atípica — conhecimento que abre novos mundos"
-              className="h-full w-full object-cover object-center"
+              className="h-full w-full object-contain object-center"
+              pictureClassName="block h-full w-full"
+              sizes="(max-width: 639px) calc(100vw - 40px), (max-width: 1023px) calc(100vw - 64px), 1200px"
+              eager
             />
             <button
               type="button"
@@ -334,7 +343,10 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
               <img
                 src={activeModule.coverImageUrl}
                 alt={`Capa do módulo ${activeModule.name}`}
-                className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
+                sizes="(max-width: 1023px) calc(100vw - 40px), 380px"
+                className="h-full w-full object-contain"
               />
             ) : (
               <div className="quiet-grid grid h-full min-h-72 place-items-center">
@@ -397,7 +409,10 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
               <img
                 src={activeModule.coverImageUrl}
                 alt={`Capa do módulo ${activeModule.name}`}
-                className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
+                sizes="(max-width: 1023px) calc(100vw - 40px), 360px"
+                className="h-full w-full object-contain"
               />
             ) : (
               <div className="quiet-grid grid h-full place-items-center">

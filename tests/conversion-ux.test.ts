@@ -38,7 +38,8 @@ test("login aprimorado preserva autenticação e não anuncia gratuidade", () =>
   assert.match(auth, /trpc\.auth\.login/);
   assert.match(auth, /showPassword/);
   assert.match(auth, /auth\.resetPassword/);
-  assert.match(auth, /login-universo-atipico\.png/);
+  assert.match(auth, /login-universo-atipico-desktop\.webp/);
+  assert.match(auth, /useVisualAsset\("login"/);
   assert.doesNotMatch(visiblePages, /gratuit[oa]|grátis/i);
 });
 
@@ -69,6 +70,7 @@ test("página pública da Camila preserva destinos oficiais e não exige autenti
   assert.match(socialLinks, /target="_blank"/);
   assert.match(socialLinks, /rel="noopener noreferrer"/);
   assert.match(linkCard, /target="_blank"/);
+  assert.match(linkCard, /<Brand compact linked=\{false\} \/>/);
   assert.match(links, /https:\/\/universoatipico\.app/);
   assert.match(links, /chat\.whatsapp\.com/);
   assert.match(links, /https:\/\/t\.me\//);
@@ -76,9 +78,13 @@ test("página pública da Camila preserva destinos oficiais e não exige autenti
   assert.match(links, /camila_(universo_atipico|lacos_espectro|atualizatea|mundo_azul)/);
 });
 
-test("áreas de membros usam as novas artes sem substituir dados reais", () => {
-  assert.match(read("src/pages/Inicio.tsx"), /home-membros-universo-atipico\.png/);
-  assert.match(read("src/pages/Receitas.tsx"), /receitas-universo-atipico\.png/);
-  assert.match(read("src/pages/Academia.tsx"), /academia-universo-atipico\.png/);
-  assert.match(read("src/pages/Inicio.tsx"), /memberDashboard/);
+test("área de membros prioriza navegação simples e preserva dados reais", () => {
+  const start = read("src/pages/Inicio.tsx");
+  assert.match(start, /Bem-vindo ao seu Universo/);
+  assert.match(start, /Tudo o que você precisa, organizado para encontrar com facilidade/);
+  assert.match(start, /\.slice\(0, 3\)/);
+  assert.match(start, /memberDashboard/);
+  assert.doesNotMatch(start, /home-membros-universo-atipico\.png/);
+  assert.match(read("src/pages/Receitas.tsx"), /receitas-universo-atipico-mobile\.webp/);
+  assert.match(read("src/pages/Academia.tsx"), /academia-universo-atipico-mobile\.webp/);
 });

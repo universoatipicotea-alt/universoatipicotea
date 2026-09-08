@@ -17,10 +17,13 @@ import {
   type AccessRole,
 } from "@shared/access";
 import { driveRollbackDecision, type DriveFile, type DriveImportCandidate } from "./drive-import";
+import { isVisualAssetSlot } from "./visual-assets";
 
 const PDF_BUCKET = "guias-pdf";
 const IMAGE_BUCKET = "guias-capas";
 const VIDEO_BUCKET = "funil-video";
+const VISUAL_ASSET_PUBLIC_COLUMNS =
+  "slot,desktop_image_url,tablet_image_url,mobile_image_url,alt_text";
 
 type UaUser = {
   id: number;
@@ -208,6 +211,59 @@ async function getCommunityMetrics() {
     countRows("ua_guides", { status: "published" }),
   ]);
   return { members, topics, guides };
+}
+
+function visualAssetTableMissing(error: { code?: string; message?: string } | null) {
+  return Boolean(
+    error &&
+    (error.code === "42P01" ||
+      error.message?.toLowerCase().includes("ua_visual_assets") ||
+      error.message?.toLowerCase().includes("schema cache")),
+  );
+}
+
+async function listVisualAssets(activeOnly: boolean) {
+  let query = db()
+    .from("ua_visual_assets")
+    .select(activeOnly ? VISUAL_ASSET_PUBLIC_COLUMNS : "*")
+    .order("slot", { ascending: true });
+  if (activeOnly) query = query.eq("is_active", true);
+  const { data, error } = await query;
+  // Mantém os fallbacks locais operantes durante a janela entre deploy e migration.
+  if (visualAssetTableMissing(error)) return [];
+  if (error) fail("Não foi possível carregar a configuração visual.");
+  return camel(data ?? []);
+}
+
+function requiredVisualText(value: unknown, label: string, maxLength: number) {
+  const text = String(value ?? "").trim();
+  if (text.length < 2 || text.length > maxLength)
+    fail(`${label} deve ter entre 2 e ${maxLength} caracteres.`);
+  return text;
+}
+
+function optionalVisualText(value: unknown, maxLength: number) {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  if (text.length > maxLength) fail("Um dos campos da imagem excede o limite permitido.");
+  return text;
+}
+
+function visualImageUrl(value: unknown, required: boolean) {
+  const url = optionalVisualText(value, 2048);
+  if (!url) {
+    if (required) fail("Envie a imagem desktop antes de salvar.");
+    return null;
+  }
+  const isLocal = url.startsWith("/") && !url.startsWith("//");
+  let isHttps = false;
+  try {
+    isHttps = new URL(url).protocol === "https:";
+  } catch {
+    // Uma URL local válida não precisa ser absoluta.
+  }
+  if (!isLocal && !isHttps) fail("A URL da imagem não é segura.");
+  return url;
 }
 
 export function slugifyPt(value: string) {
@@ -610,13 +666,56 @@ async function listMemberVideos() {
 
 /* -------------------------------- uploads -------------------------------- */
 
-function decodeDataUrl(dataUrl: string) {
+const IMAGE_UPLOAD_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const PDF_UPLOAD_MIME_TYPES = new Set(["application/pdf"]);
+const MAX_IMAGE_UPLOAD_BYTES = 6 * 1024 * 1024;
+const MAX_PDF_UPLOAD_BYTES = 50 * 1024 * 1024;
+
+function startsWithBytes(bytes: Uint8Array, signature: number[]) {
+  return signature.every((byte, index) => bytes[index] === byte);
+}
+
+function hasExpectedFileSignature(bytes: Uint8Array, mimeType: string) {
+  if (mimeType === "image/jpeg") return startsWithBytes(bytes, [0xff, 0xd8, 0xff]);
+  if (mimeType === "image/png") {
+    return startsWithBytes(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  }
+  if (mimeType === "image/webp") {
+    return (
+      startsWithBytes(bytes, [0x52, 0x49, 0x46, 0x46]) &&
+      bytes[8] === 0x57 &&
+      bytes[9] === 0x45 &&
+      bytes[10] === 0x42 &&
+      bytes[11] === 0x50
+    );
+  }
+  if (mimeType === "application/pdf") {
+    return startsWithBytes(bytes, [0x25, 0x50, 0x44, 0x46, 0x2d]);
+  }
+  return false;
+}
+
+function decodeDataUrl(
+  dataUrl: string,
+  policy: { allowedMimeTypes: Set<string>; maxBytes: number },
+) {
+  const maxEncodedLength = Math.ceil((policy.maxBytes * 4) / 3) + 512;
+  if (dataUrl.length > maxEncodedLength) fail("O arquivo excede o limite permitido.");
   const match = /^data:([^;,]+);base64,(.+)$/s.exec(dataUrl);
   if (!match) fail("Arquivo inválido.");
-  const mimeType = match[1]!;
-  const binary = atob(match[2]!);
+  const mimeType = match[1]!.toLowerCase();
+  if (!policy.allowedMimeTypes.has(mimeType)) fail("Tipo de arquivo não permitido.");
+  let binary = "";
+  try {
+    binary = atob(match[2]!);
+  } catch {
+    fail("Arquivo inválido.");
+  }
+  if (binary.length > policy.maxBytes) fail("O arquivo excede o limite permitido.");
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  if (!hasExpectedFileSignature(bytes, mimeType))
+    fail("O conteúdo do arquivo não corresponde ao tipo informado.");
   return { bytes, mimeType };
 }
 
@@ -643,11 +742,16 @@ async function saveUpload(
   bucket: string,
   folder: string,
 ) {
-  const { bytes, mimeType } = decodeDataUrl(input.dataUrl);
+  if (!input.fileName || input.fileName.length > 255) fail("Nome de arquivo inválido.");
+  const policy =
+    bucket === IMAGE_BUCKET
+      ? { allowedMimeTypes: IMAGE_UPLOAD_MIME_TYPES, maxBytes: MAX_IMAGE_UPLOAD_BYTES }
+      : { allowedMimeTypes: PDF_UPLOAD_MIME_TYPES, maxBytes: MAX_PDF_UPLOAD_BYTES };
+  const { bytes, mimeType } = decodeDataUrl(input.dataUrl, policy);
   const key = `${folder}/${safeName(input.fileName, mimeType)}`;
   const { error } = await db()
     .storage.from(bucket)
-    .upload(key, bytes, { contentType: mimeType, upsert: true });
+    .upload(key, bytes, { contentType: mimeType, upsert: false });
   if (error) fail(error.message);
   if (bucket === IMAGE_BUCKET) {
     return { key, url: `/api/public/ua-image/${key}`, fileName: input.fileName };
@@ -1152,6 +1256,10 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         preview,
       };
     }
+
+    case "community.visualAssets.active":
+      // Endpoint público somente-leitura: não devolve chaves, títulos internos ou auditoria.
+      return listVisualAssets(true);
 
     case "community.funnel.get":
       return getFunnelSettings();
@@ -2043,6 +2151,71 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         campaigns,
         landingSettings,
       };
+    }
+    case "community.master.visualAssets": {
+      await requireMaster();
+      return listVisualAssets(false);
+    }
+    case "community.master.saveVisualAsset": {
+      const masterUser = await requireMaster();
+      if (!isVisualAssetSlot(input.slot)) fail("Slot visual inválido.");
+
+      const slot = input.slot;
+      const values = {
+        slot,
+        name: requiredVisualText(input.name, "Nome", 120),
+        internal_title: requiredVisualText(input.internalTitle, "Título interno", 160),
+        desktop_image_key: optionalVisualText(input.desktopImageKey, 500),
+        desktop_image_url: visualImageUrl(input.desktopImageUrl, true),
+        tablet_image_key: optionalVisualText(input.tabletImageKey, 500),
+        tablet_image_url: visualImageUrl(input.tabletImageUrl, false),
+        mobile_image_key: optionalVisualText(input.mobileImageKey, 500),
+        mobile_image_url: visualImageUrl(input.mobileImageUrl, false),
+        alt_text: requiredVisualText(input.altText, "Texto alternativo", 240),
+        is_active: input.isActive !== false,
+        updated_by: masterUser.id,
+        updated_at: new Date().toISOString(),
+      };
+      const existing = await db()
+        .from("ua_visual_assets")
+        .select("id")
+        .eq("slot", slot)
+        .maybeSingle();
+      if (visualAssetTableMissing(existing.error))
+        fail("A configuração visual ainda não está disponível no banco de dados.");
+      if (existing.error) fail("Não foi possível verificar este slot visual.");
+
+      const saved = existing.data
+        ? await db()
+            .from("ua_visual_assets")
+            .update(values)
+            .eq("id", existing.data.id)
+            .select("id")
+            .single()
+        : await db()
+            .from("ua_visual_assets")
+            .insert({ ...values, created_by: masterUser.id })
+            .select("id")
+            .single();
+
+      if (saved.error) {
+        await auditEvent(
+          masterUser,
+          "visual_asset.save",
+          "visual_asset",
+          existing.data?.id ?? null,
+          "failure",
+          { slot, reason: "database_write_failed" },
+        );
+        fail("Não foi possível salvar a configuração visual.");
+      }
+
+      await auditEvent(masterUser, "visual_asset.save", "visual_asset", saved.data.id, "success", {
+        slot,
+        isActive: values.is_active,
+        operation: existing.data ? "update" : "create",
+      });
+      return { success: true, id: saved.data.id };
     }
     case "community.master.drive.defaults": {
       await requireMaster();

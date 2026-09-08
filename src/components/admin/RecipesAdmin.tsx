@@ -468,6 +468,7 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
                     src={row.coverImageUrl}
                     alt={`Capa de ${row.title}`}
                     loading="lazy"
+                    decoding="async"
                     className="max-h-full max-w-full object-contain"
                   />
                 ) : (
@@ -676,6 +677,7 @@ export default function RecipesAdmin({ enabled }: { enabled: boolean }) {
                     <img
                       src={form.coverImageUrl}
                       alt="Prévia da capa"
+                      decoding="async"
                       className="max-h-full max-w-full object-contain"
                     />
                   ) : (

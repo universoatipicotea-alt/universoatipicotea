@@ -169,7 +169,7 @@ export function MemberShell({
       <div className="page-texture grid min-h-screen place-items-center p-6">
         <section className="soft-card w-full max-w-lg rounded-[2rem] p-8 text-center sm:p-12">
           <div className="mx-auto mb-8 w-fit">
-            <Brand />
+            <Brand priority />
           </div>
           <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.18em] text-[var(--sage)]">
             Área exclusiva da comunidade
@@ -226,11 +226,11 @@ export function MemberShell({
               </SheetTrigger>
               <SheetContent
                 side="left"
-                className="w-[290px] border-r border-[var(--line)] bg-[#f7f4ee] p-5"
+                className="w-[min(290px,calc(100vw-1rem))] border-r border-[var(--line)] bg-[#f7f4ee] p-5"
               >
                 <SheetHeader className="text-left">
                   <SheetTitle>
-                    <Brand compact />
+                    <Brand compact priority />
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="mt-9 flex flex-col gap-1">
@@ -257,7 +257,9 @@ export function MemberShell({
                 </nav>
               </SheetContent>
             </Sheet>
-            <Brand compact />
+            <div className="max-w-[9.5rem] overflow-hidden sm:max-w-none">
+              <Brand compact priority />
+            </div>
           </div>
           <Link href="/perfil">
             <Initials name={user.name} />
@@ -272,7 +274,7 @@ export function MemberShell({
             className={`flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between"}`}
           >
             <div className={sidebarCollapsed ? "max-w-[3.5rem] overflow-hidden" : "min-w-0"}>
-              <Brand compact={!sidebarCollapsed} />
+              <Brand compact={!sidebarCollapsed} priority />
             </div>
             <button
               type="button"
@@ -358,7 +360,7 @@ export function MemberShell({
           </div>
         </aside>
         <main className="page-texture min-w-0 flex-1">
-          <div className="mx-auto w-full max-w-[1500px] px-5 py-7 sm:px-8 lg:px-12 lg:py-9">
+          <div className="mx-auto w-full max-w-[1500px] px-5 pb-24 pt-7 sm:px-8 lg:px-12 lg:py-9">
             <div className="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3 shadow-sm backdrop-blur sm:px-5">
               <div className="flex items-center gap-3">
                 <span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--sage-pale)] text-[var(--sage-deep)]">
@@ -395,17 +397,20 @@ export function MemberShell({
           </div>
         </main>
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-[var(--line)] bg-white/95 p-2 backdrop-blur lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-[var(--line)] bg-white/95 px-1.5 pt-2 pb-[calc(.5rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
         {mobileNavigation.map((item) => {
           const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`nav-link flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-extrabold ${isNavigationActive(location, item.href) ? "text-[var(--sage-deep)]" : "text-[var(--ink-soft)]"}`}
+              aria-label={item.label}
+              className={`nav-link flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[9px] font-extrabold min-[375px]:text-[10px] ${isNavigationActive(location, item.href) ? "text-[var(--sage-deep)]" : "text-[var(--ink-soft)]"}`}
             >
               <Icon size={18} />
-              <span>{item.label}</span>
+              <span className="max-w-full truncate px-0.5">
+                {item.href === "/academia" ? "Academia" : item.label}
+              </span>
             </Link>
           );
         })}
