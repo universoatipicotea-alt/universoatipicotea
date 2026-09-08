@@ -43,7 +43,7 @@ export const camilaPrimaryLinks = [
     event: "camila_lacos_espectro",
     accent: "green",
     brand: "image",
-    imageSrc: "/camila-lacos-do-espectro.webp",
+    imageSrc: "/camila-lacos-do-espectro.png",
     imageAlt: "Logo do Laços do Espectro",
   },
   {
@@ -59,10 +59,12 @@ export const camilaPrimaryLinks = [
   {
     title: "Mundo Azul — Loja",
     description: "Produtos e recursos selecionados para famílias atípicas.",
-    href: "https://vt.tiktok.com/ZS9jh9ggHCF3M-BfaeN",
+    href: "https://tr.ee/oROBENGyFa",
     event: "camila_mundo_azul",
     accent: "yellow",
-    brand: "pending",
+    brand: "image",
+    imageSrc: "/camila-mundo-azul.png",
+    imageAlt: "Logo da loja Mundo Azul",
   },
 ] as const;
 

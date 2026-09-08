@@ -20,14 +20,20 @@ test("artes principais possuem variantes WebP leves por viewport", () => {
 });
 
 test("capas públicas da Camila são leves e associadas aos cards", () => {
-  for (const name of ["camila-atualizatea", "camila-lacos-do-espectro"]) {
-    const file = `public/${name}.webp`;
-    assert.ok(statSync(file).size < 100_000, `${file} deve permanecer abaixo de 100 KB`);
+  const assets = [
+    ["public/camila-atualizatea.webp", 100_000],
+    ["public/camila-lacos-do-espectro.png", 150_000],
+    ["public/camila-mundo-azul.png", 100_000],
+  ] as const;
+
+  for (const [file, budget] of assets) {
+    assert.ok(statSync(file).size < budget, `${file} deve permanecer abaixo de ${budget} bytes`);
   }
 
   const links = read("src/config/camilaPublicLinks.ts");
   assert.match(links, /camila-atualizatea\.webp/);
-  assert.match(links, /camila-lacos-do-espectro\.webp/);
+  assert.match(links, /camila-lacos-do-espectro\.png/);
+  assert.match(links, /camila-mundo-azul\.png/);
 });
 
 test("componente responsivo não baixa a arte desktop no celular", () => {
