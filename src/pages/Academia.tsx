@@ -1,3 +1,4 @@
+import { PlatformBanner } from "@/components/PlatformBanner";
 import {
   ArrowRight,
   BookOpen,
@@ -249,9 +250,11 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
       >
         <section className="mb-8 overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white shadow-[0_22px_54px_rgba(8,31,77,.08)]">
           <div className="relative aspect-[16/9] overflow-hidden bg-[var(--linen)]">
-            <img
-              src="/academia-universo-atipico.png"
+            <PlatformBanner
+              slot="academia"
+              base="/academia-universo-atipico"
               alt="Academia Atípica — conhecimento que abre novos mundos"
+              priority
               className="h-full w-full object-cover object-center"
             />
             <button

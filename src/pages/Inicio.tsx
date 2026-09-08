@@ -1,3 +1,4 @@
+import { PlatformBanner } from "@/components/PlatformBanner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { CardRail, ContentCard } from "@/components/ContentCard";
 import { ContentEmpty, MemberShell, SectionHeading } from "@/components/MemberShell";
@@ -162,9 +163,11 @@ export default function Inicio() {
     <MemberShell eyebrow={eyebrow} title={title} description={description}>
       <section className="overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white shadow-[0_24px_60px_rgba(8,31,77,.1)]">
         <div className="relative aspect-[4/3] overflow-hidden bg-[var(--linen)] sm:aspect-[16/7] lg:aspect-[16/6]">
-          <img
-            src="/home-membros-universo-atipico.png"
+          <PlatformBanner
+            slot="inicio"
+            base="/home-membros-universo-atipico"
             alt="Universo Atípico — uma vida mais leve, juntos"
+            priority
             className="h-full w-full object-cover object-top"
           />
         </div>

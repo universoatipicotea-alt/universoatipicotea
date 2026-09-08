@@ -1153,6 +1153,32 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       };
     }
 
+    case "community.banners": {
+      const { data } = await db().from("ua_banners").select("*");
+      return camel(data ?? []);
+    }
+    case "community.master.saveBanner": {
+      const master = await requireMaster();
+      const slot = String(input.slot || "").trim();
+      if (!slot) fail("Informe o espaço da imagem.");
+      await db()
+        .from("ua_banners")
+        .upsert(
+          {
+            slot,
+            desktop_url: input.desktopUrl || null,
+            tablet_url: input.tabletUrl || null,
+            mobile_url: input.mobileUrl || null,
+            alt_text: input.altText || null,
+            updated_by: master.id,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "slot" },
+        );
+      return { success: true };
+    }
+
+
     case "community.funnel.get":
       return getFunnelSettings();
     case "community.funnel.update":

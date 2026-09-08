@@ -341,6 +341,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ua_banners: {
+        Row: {
+          alt_text: string | null
+          desktop_url: string | null
+          mobile_url: string | null
+          slot: string
+          tablet_url: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          alt_text?: string | null
+          desktop_url?: string | null
+          mobile_url?: string | null
+          slot: string
+          tablet_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          alt_text?: string | null
+          desktop_url?: string | null
+          mobile_url?: string | null
+          slot?: string
+          tablet_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       ua_campaigns: {
         Row: {
           created_at: string
