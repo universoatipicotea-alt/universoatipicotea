@@ -1,3 +1,4 @@
+import { PlatformBanner } from "@/components/PlatformBanner";
 import { Brand } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,11 +79,13 @@ export default function Auth() {
             </div>
           </div>
 
-          <div className="mb-7 overflow-hidden rounded-2xl border border-[var(--line)] shadow-[0_14px_34px_rgba(8,31,77,.1)] lg:hidden">
-            <img
-              src="/login-universo-atipico.png"
+          <div className="mb-7 overflow-hidden rounded-2xl border border-[var(--line)] bg-[#123064] shadow-[0_14px_34px_rgba(8,31,77,.1)] lg:hidden">
+            <PlatformBanner
+              slot="login"
+              base="/login-universo-atipico"
               alt="Universo Atípico — chegue como você está"
-              className="h-40 w-full object-cover object-[center_34%] sm:h-52"
+              priority
+              className="block h-auto w-full object-contain"
             />
           </div>
 
@@ -225,11 +228,13 @@ export default function Auth() {
         </section>
 
         {/* A arte fornecida ocupa o painel editorial sem textos sobrepostos. */}
-        <section className="relative order-2 hidden min-h-[680px] overflow-hidden bg-[var(--ink)] lg:order-1 lg:block">
-          <img
-            src="/login-universo-atipico.png"
+        <section className="relative order-2 hidden overflow-hidden bg-[#123064] lg:order-1 lg:flex lg:items-center">
+          <PlatformBanner
+            slot="login"
+            base="/login-universo-atipico"
             alt="Universo Atípico — um espaço para você chegar como está"
-            className="absolute inset-0 h-full w-full object-cover object-center"
+            priority
+            className="h-auto max-h-full w-full object-contain"
           />
           <div
             className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/15"
