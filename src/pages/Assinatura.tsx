@@ -1,3 +1,4 @@
+import { PlatformBanner } from "@/components/PlatformBanner";
 import { MemberShell } from "@/components/MemberShell";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BookOpen, ChefHat, Compass, ShieldCheck, UsersRound } from "lucide-react";
@@ -128,12 +129,12 @@ export default function Assinatura() {
           </div>
 
           <figure className="min-w-0 overflow-hidden rounded-[1.75rem] border border-white/80 bg-white shadow-[0_22px_55px_rgba(8,31,77,.14)]">
-            <img
-              src="/plano-universo-oferta.png"
+            <PlatformBanner
+              slot="plano"
+              base="/plano-universo-oferta"
               alt="Apresentação visual do Plano Universo com receitas, Academia Atípica, guias e comunidade"
-              className="aspect-[4/5] h-full w-full object-cover object-top sm:aspect-[3/4] lg:max-h-[760px]"
-              loading="eager"
-              decoding="async"
+              priority
+              className="aspect-[4/5] h-full w-full object-contain object-top sm:aspect-[3/4] lg:max-h-[760px]"
             />
           </figure>
         </div>

@@ -1,3 +1,4 @@
+import { PlatformBanner } from "@/components/PlatformBanner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ContentEmpty, MemberShell } from "@/components/MemberShell";
 import { CategoryHub } from "@/components/CategoryHub";
@@ -156,9 +157,11 @@ export default function Receitas({ categorySlug }: { categorySlug?: string }) {
       >
         <section className="mb-8 overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white shadow-[0_22px_54px_rgba(8,31,77,.08)]">
           <div className="aspect-[4/3] overflow-hidden bg-[var(--linen)] sm:aspect-[16/7]">
-            <img
-              src="/receitas-universo-atipico.png"
+            <PlatformBanner
+              slot="receitas"
+              base="/receitas-universo-atipico"
               alt="Receitas — sabor, saúde e praticidade para o seu dia a dia"
+              priority
               className="h-full w-full object-cover object-top"
             />
           </div>
