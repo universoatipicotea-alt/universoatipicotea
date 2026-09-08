@@ -76,7 +76,13 @@ function relativeDate(value: Date | string) {
 
 function Avatar({ name, image }: { name?: string | null; image?: string | null }) {
   return image ? (
-    <img src={image} alt="" className="h-10 w-10 rounded-full object-cover" />
+    <img
+      src={image}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      className="h-10 w-10 shrink-0 rounded-full object-cover"
+    />
   ) : (
     <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--sage-pale)] text-xs font-extrabold text-[var(--sage-deep)]">
       {initials(name)}

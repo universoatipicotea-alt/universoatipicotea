@@ -1,4 +1,3 @@
-import { PlatformBanner } from "@/components/PlatformBanner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ContentEmpty, MemberShell } from "@/components/MemberShell";
 import { CategoryHub } from "@/components/CategoryHub";
@@ -6,6 +5,7 @@ import { SearchField, SectionTitle, SelectField, Toolbar } from "@/components/ds
 import PdfReader from "@/components/PdfReaderClient";
 import PdfCover from "@/components/PdfCover";
 import { RecipeCover } from "@/components/RecipeCover";
+import ResponsiveVisualAsset from "@/components/ResponsiveVisualAsset";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { slugifyPt } from "@/lib/slug";
@@ -156,13 +156,19 @@ export default function Receitas({ categorySlug }: { categorySlug?: string }) {
         description="Escolha uma categoria para abrir as receitas disponíveis dentro dela."
       >
         <section className="mb-8 overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white shadow-[0_22px_54px_rgba(8,31,77,.08)]">
-          <div className="aspect-[4/3] overflow-hidden bg-[var(--linen)] sm:aspect-[16/7]">
-            <PlatformBanner
+          <div className="aspect-[3/2] overflow-hidden bg-[var(--linen)]">
+            <ResponsiveVisualAsset
               slot="receitas"
-              base="/receitas-universo-atipico"
-              alt="Receitas — sabor, saúde e praticidade para o seu dia a dia"
-              priority
-              className="h-full w-full object-cover object-top"
+              fallback={{
+                desktopImageUrl: "/receitas-universo-atipico-desktop.webp",
+                tabletImageUrl: "/receitas-universo-atipico-tablet.webp",
+                mobileImageUrl: "/receitas-universo-atipico-mobile.webp",
+              }}
+              defaultAlt="Receitas — sabor, saúde e praticidade para o seu dia a dia"
+              className="h-full w-full object-contain object-center"
+              pictureClassName="block h-full w-full"
+              sizes="(max-width: 639px) calc(100vw - 40px), (max-width: 1023px) calc(100vw - 64px), 1200px"
+              eager
             />
           </div>
         </section>
@@ -230,7 +236,10 @@ export default function Receitas({ categorySlug }: { categorySlug?: string }) {
               <img
                 src={activeCategory.coverImageUrl}
                 alt={`Capa da categoria ${activeCategory.name}`}
-                className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
+                sizes="(max-width: 1023px) calc(100vw - 40px), 420px"
+                className="h-full w-full object-contain"
               />
             ) : (
               <div className="quiet-grid grid h-full place-items-center">

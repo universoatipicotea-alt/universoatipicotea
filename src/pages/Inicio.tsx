@@ -1,60 +1,55 @@
-import { PlatformBanner } from "@/components/PlatformBanner";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { CardRail, ContentCard } from "@/components/ContentCard";
 import { ContentEmpty, MemberShell, SectionHeading } from "@/components/MemberShell";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import ResponsiveVisualAsset from "@/components/ResponsiveVisualAsset";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowRight,
+  BookMarked,
   BookOpen,
   ChefHat,
-  CircleHelp,
+  GraduationCap,
   MessageCircleMore,
-  PlayCircle,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 
-const faq = [
+type Shortcut = {
+  href: string;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+  iconClassName: string;
+};
+
+const shortcuts: Shortcut[] = [
   {
-    question: "O que está incluído no meu acesso?",
-    answer:
-      "Sua assinatura dá acesso a todo o Universo Atípico: receitas, guias da Academia Atípica, sua biblioteca pessoal, a comunidade e a área de facilitadores.",
+    href: "/receitas",
+    label: "Receitas",
+    description: "Ideias práticas para facilitar as refeições e a rotina.",
+    icon: ChefHat,
+    iconClassName: "bg-[#fff1d2] text-[#a46100]",
   },
   {
-    question: "Como encontro um material que comecei a ler?",
-    answer:
-      "Tudo o que você abre fica registrado na Biblioteca, com a página em que parou. A seção “Continue de onde parou” aqui no início também traz os materiais mais recentes.",
+    href: "/academia",
+    label: "Academia Atípica",
+    description: "Conteúdos organizados para aprender no seu ritmo.",
+    icon: GraduationCap,
+    iconClassName: "bg-[#e2f2ff] text-[#0f6ba8]",
   },
   {
-    question: "Como funciona a Academia Atípica?",
-    answer:
-      "A Academia reúne guias e conteúdos organizados por tema, para você percorrer no seu ritmo. Não há prazo: comece, pause e volte quando fizer sentido.",
+    href: "/biblioteca",
+    label: "Biblioteca",
+    description: "Guias e materiais para consultar quando precisar.",
+    icon: BookMarked,
+    iconClassName: "bg-[#e4f5ec] text-[#17795b]",
   },
   {
-    question: "Como acesso meus PDFs?",
-    answer:
-      "Basta abrir o material desejado. O PDF é exibido dentro da plataforma, com leitura ajustada para celular e o progresso salvo automaticamente.",
-  },
-  {
-    question: "Como funciona a assinatura de R$ 49,90/mês?",
-    answer:
-      "É uma assinatura mensal que mantém seu acesso completo ativo. Você acompanha status, próxima cobrança e histórico em Minha assinatura.",
-  },
-  {
-    question: "Como faço para cancelar?",
-    answer:
-      "O cancelamento é feito por você mesma em Minha assinatura, a qualquer momento, e o acesso permanece até o fim do período já pago.",
-  },
-  {
-    question: "Os conteúdos substituem acompanhamento profissional?",
-    answer:
-      "Não. Os materiais têm caráter educativo e informativo e não substituem avaliação, diagnóstico ou tratamento por profissionais de saúde ou educação.",
+    href: "/comunidade",
+    label: "Comunidade",
+    description: "Um espaço para trocar experiências e caminhar junto.",
+    icon: MessageCircleMore,
+    iconClassName: "bg-[#ffe5e4] text-[#b53640]",
   },
 ];
 
@@ -69,48 +64,97 @@ function SectionShell({
   title: string;
   actionLabel?: string;
   actionHref?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
+  const titleId = `${label.toLowerCase()}-title`;
+
   return (
-    <section className="mt-12">
-      <SectionHeading
-        label={label}
-        title={title}
-        action={
-          actionLabel && actionHref ? (
-            <Link
-              href={actionHref}
-              className="shrink-0 text-xs font-extrabold uppercase tracking-[0.1em] text-[var(--sage-deep)] underline underline-offset-4"
-            >
-              {actionLabel}
-            </Link>
-          ) : undefined
-        }
-      />
+    <section className="mt-10 sm:mt-12" aria-labelledby={titleId}>
+      <div className="mb-5 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--sage)]">
+            {label}
+          </p>
+          <h2 id={titleId} className="display-font text-3xl font-semibold tracking-[-0.03em]">
+            {title}
+          </h2>
+        </div>
+        {actionLabel && actionHref ? (
+          <Link
+            href={actionHref}
+            className="rounded-lg py-2 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[var(--sage-deep)] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sage)]"
+          >
+            {actionLabel}
+          </Link>
+        ) : null}
+      </div>
       {children}
     </section>
   );
 }
 
+function ShortcutCard({ shortcut }: { shortcut: Shortcut }) {
+  const Icon = shortcut.icon;
+
+  return (
+    <Link
+      href={shortcut.href}
+      aria-label={`${shortcut.label}: ${shortcut.description}`}
+      className="group flex min-h-36 min-w-0 items-start gap-4 rounded-3xl border border-[var(--line)] bg-white p-5 shadow-[0_10px_26px_rgba(8,31,77,.055)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[var(--sage)] hover:shadow-[0_16px_34px_rgba(8,31,77,.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sage)] focus-visible:ring-offset-2 sm:min-h-40 sm:flex-col"
+    >
+      <span
+        className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${shortcut.iconClassName}`}
+        aria-hidden="true"
+      >
+        <Icon size={23} strokeWidth={1.8} />
+      </span>
+      <span className="flex min-w-0 flex-1 items-start gap-3 sm:w-full">
+        <span className="min-w-0 flex-1">
+          <strong className="display-font block text-xl font-semibold leading-tight text-[var(--ink)]">
+            {shortcut.label}
+          </strong>
+          <span className="mt-2 block text-sm leading-6 text-[var(--ink-soft)]">
+            {shortcut.description}
+          </span>
+        </span>
+        <ArrowRight
+          size={18}
+          className="mt-1 shrink-0 text-[var(--sage-deep)] transition-transform duration-200 group-hover:translate-x-1"
+          aria-hidden="true"
+        />
+      </span>
+    </Link>
+  );
+}
+
+const eyebrow = "Início";
+const title = "Bem-vindo ao seu Universo.";
+const description = "Tudo o que você precisa, organizado para encontrar com facilidade.";
+
 export default function Inicio() {
-  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const dashboard = trpc.community.memberDashboard.useQuery();
   const taxonomy = trpc.community.taxonomy.useQuery();
   const data = dashboard.data;
 
-  const firstName = (user?.name || "").split(" ")[0] || "por aqui";
-  const eyebrow = "Início";
-  const title = `Olá, ${firstName}.`;
-  const description = "Continue explorando o seu Universo.";
-
   if (dashboard.isLoading) {
     return (
       <MemberShell eyebrow={eyebrow} title={title} description={description}>
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {[1, 2, 3].map((item) => (
-            <div key={item} className="h-72 animate-pulse rounded-3xl bg-[var(--linen)]" />
-          ))}
+        <div className="min-w-0 pb-20 lg:pb-0" aria-busy="true" aria-label="Carregando início">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {[1, 2, 3, 4].map((item) => (
+              <div
+                key={item}
+                className="h-36 animate-pulse rounded-3xl bg-[var(--linen)] sm:h-40"
+              />
+            ))}
+          </div>
+          <div className="mt-10 h-8 w-64 max-w-full animate-pulse rounded-xl bg-[var(--linen)]" />
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="h-64 animate-pulse rounded-3xl bg-[var(--linen)]" />
+            ))}
+          </div>
         </div>
       </MemberShell>
     );
@@ -118,245 +162,158 @@ export default function Inicio() {
 
   if (dashboard.isError) {
     const restricted = dashboard.error?.message?.startsWith("ACESSO_RESTRITO");
+
     return (
       <MemberShell eyebrow={eyebrow} title={title} description={description}>
-        <ContentEmpty
-          icon={BookOpen}
-          title={
-            restricted
-              ? "Seu acesso ainda não está ativo"
-              : "Não conseguimos abrir seu início agora"
-          }
-          text={
-            restricted
-              ? "A assinatura de R$ 49,90/mês libera todo o Universo Atípico. Verifique o status em Minha assinatura."
-              : "Tente atualizar a página em alguns instantes."
-          }
-        />
-        {restricted ? (
-          <div className="mt-6 flex justify-center">
-            <Button
-              onClick={() => setLocation("/minha-assinatura")}
-              className="pressable h-12 rounded-xl bg-[var(--sage-deep)] px-6 font-bold text-white hover:bg-[var(--ink)]"
-            >
-              Ver minha assinatura <ArrowRight size={16} className="ml-2" />
-            </Button>
-          </div>
-        ) : null}
+        <div className="pb-20 lg:pb-0">
+          <ContentEmpty
+            icon={BookOpen}
+            title={
+              restricted
+                ? "Seu acesso ainda não está ativo"
+                : "Não conseguimos abrir seu início agora"
+            }
+            text={
+              restricted
+                ? "A assinatura de R$ 49,90/mês libera todo o Universo Atípico. Verifique o status em Minha assinatura."
+                : "Tente atualizar a página em alguns instantes."
+            }
+          />
+          {restricted ? (
+            <div className="mt-6 flex justify-center">
+              <Button
+                onClick={() => setLocation("/minha-assinatura")}
+                className="pressable h-12 w-full rounded-xl bg-[var(--sage-deep)] px-6 font-bold text-white hover:bg-[var(--ink)] sm:w-auto"
+              >
+                Ver minha assinatura <ArrowRight size={16} className="ml-2" />
+              </Button>
+            </div>
+          ) : null}
+        </div>
       </MemberShell>
     );
   }
 
-  const progress = data?.progress ?? [];
-  const guides = (data?.guides ?? []).slice(0, 3);
-  const recipes = (data?.recipes ?? []).slice(0, 3);
-  const videos = data?.videos ?? [];
+  const progress = (data?.progress ?? []).slice(0, 3);
 
   const openGuide = (id: number) => {
     const guide = data?.guides?.find((item) => item.id === id);
-    const module = taxonomy.data?.academyModules?.find((item: any) => item.id === guide?.moduleId);
+    const module = taxonomy.data?.academyModules?.find((item) => item.id === guide?.moduleId);
     setLocation(module ? `/academia/${module.slug}?guide=${id}` : "/academia");
   };
+
   const openRecipe = (id: number) => setLocation(`/receitas?guide=${id}`);
 
   return (
     <MemberShell eyebrow={eyebrow} title={title} description={description}>
-      <section className="overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white shadow-[0_24px_60px_rgba(8,31,77,.1)]">
-        <div className="relative aspect-[4/3] overflow-hidden bg-[var(--linen)] sm:aspect-[16/7] lg:aspect-[16/6]">
-          <PlatformBanner
-            slot="inicio"
-            base="/home-membros-universo-atipico"
-            alt="Universo Atípico — uma vida mais leve, juntos"
-            priority
-            className="h-full w-full object-cover object-top"
-          />
-        </div>
-        <div className="grid gap-4 border-t border-[var(--line)] p-4 sm:p-5 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button
-              onClick={() => setLocation("/academia")}
-              className="h-11 rounded-xl bg-[#fdbb2d] px-5 font-extrabold text-[var(--ink)] hover:bg-[#efaa16]"
-            >
-              Explorar Academia <ArrowRight size={15} className="ml-2" />
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setLocation("/comunidade")}
-              className="h-11 rounded-xl border-[var(--line)] bg-white px-5 font-extrabold text-[var(--ink)] hover:bg-[var(--linen)]"
-            >
-              <MessageCircleMore size={15} className="mr-2" />
-              Ir para a comunidade
-            </Button>
-          </div>
-          <div className="grid grid-cols-3 gap-2 lg:w-72">
-            {[
-              [progress.length, "em andamento"],
-              [data?.guides?.length ?? 0, "guias"],
-              [data?.recipes?.length ?? 0, "receitas"],
-            ].map(([value, label]) => (
-              <div key={label} className="rounded-xl bg-[var(--linen)] px-3 py-2.5 text-center">
-                <strong className="display-font block text-xl font-semibold text-[var(--ink)]">
-                  {value}
-                </strong>
-                <span className="mt-1 block text-[8px] font-extrabold uppercase tracking-[0.1em] text-[var(--ink-soft)]">
-                  {label}
-                </span>
-              </div>
+      <div className="min-w-0 pb-20 lg:pb-0">
+        <ResponsiveVisualAsset
+          slot="inicio"
+          fallback={{
+            desktopImageUrl: "/home-membros-universo-atipico-desktop.webp",
+            tabletImageUrl: "/home-membros-universo-atipico-tablet.webp",
+            mobileImageUrl: "/home-membros-universo-atipico-mobile.webp",
+            altText: "Uma vida mais leve, juntos — Universo Atípico",
+          }}
+          defaultAlt="Imagem de apoio da área de membros"
+          pictureClassName="mb-8 aspect-video overflow-hidden rounded-3xl border border-[var(--line)] bg-white shadow-[0_14px_38px_rgba(8,31,77,.08)]"
+          className="h-full w-full object-contain"
+          sizes="(max-width: 639px) calc(100vw - 40px), (max-width: 1023px) calc(100vw - 64px), 1200px"
+        />
+        <section aria-label="Atalhos principais">
+          <SectionHeading label="Comece por aqui" title="Encontre o que precisa" />
+          <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {shortcuts.map((shortcut) => (
+              <ShortcutCard key={shortcut.href} shortcut={shortcut} />
             ))}
           </div>
-        </div>
-      </section>
-      {progress.length ? (
+        </section>
+
         <SectionShell
           label="Continuar"
           title="Continue de onde parou"
           actionLabel="Ver biblioteca"
           actionHref="/biblioteca"
         >
-          <CardRail>
-            {progress.map((item) => (
-              <ContentCard
-                key={`${item.sourceType}-${item.documentId}`}
-                title={item.title}
-                category={item.category}
-                coverImageUrl={item.coverImageUrl}
-                accentColor={item.accentColor}
-                progress={{
-                  percent: item.percent,
-                  currentPage: item.currentPage,
-                  pageCount: item.pageCount,
-                }}
-                ctaLabel={`Continuar da página ${item.currentPage}`}
-                onClick={() =>
-                  item.sourceType === "testGuide"
-                    ? openRecipe(item.documentId)
-                    : openGuide(item.documentId)
-                }
-              />
-            ))}
-          </CardRail>
+          {progress.length ? (
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {progress.map((item) => {
+                const percent = Math.min(100, Math.max(0, item.percent));
+                const continueLabel = `Continuar da página ${item.currentPage}`;
+
+                return (
+                  <button
+                    key={`${item.sourceType}-${item.documentId}`}
+                    type="button"
+                    onClick={() =>
+                      item.sourceType === "testGuide"
+                        ? openRecipe(item.documentId)
+                        : openGuide(item.documentId)
+                    }
+                    aria-label={`${continueLabel}: ${item.title}`}
+                    className="group flex min-w-0 flex-col overflow-hidden rounded-3xl border border-[var(--line)] bg-white text-left shadow-[0_10px_26px_rgba(8,31,77,.055)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[var(--sage)] hover:shadow-[0_16px_34px_rgba(8,31,77,.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sage)] focus-visible:ring-offset-2"
+                  >
+                    <span
+                      className="grid aspect-[16/9] w-full place-items-center overflow-hidden border-b border-[var(--line)] bg-[var(--linen)]"
+                      style={{ backgroundColor: item.accentColor || "var(--linen)" }}
+                    >
+                      {item.coverImageUrl ? (
+                        <img
+                          src={item.coverImageUrl}
+                          alt={`Capa de ${item.title}`}
+                          loading="lazy"
+                          decoding="async"
+                          className="h-full w-full object-contain"
+                        />
+                      ) : (
+                        <BookOpen
+                          size={32}
+                          className="text-[var(--sage-deep)]"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </span>
+                    <span className="flex min-w-0 flex-1 flex-col p-5">
+                      {item.category ? (
+                        <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[var(--sage)]">
+                          {item.category}
+                        </span>
+                      ) : null}
+                      <strong className="display-font mt-2 line-clamp-2 text-xl font-semibold leading-tight text-[var(--ink)]">
+                        {item.title}
+                      </strong>
+                      <span className="mt-5 h-1.5 w-full overflow-hidden rounded-full bg-[var(--linen)]">
+                        <span
+                          className="progress-shimmer block h-full rounded-full bg-[var(--sage-deep)]"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </span>
+                      <span className="mt-2 text-[11px] font-bold text-[var(--ink-soft)]">
+                        {percent}% · página {item.currentPage}
+                        {item.pageCount ? ` de ${item.pageCount}` : ""}
+                      </span>
+                      <span className="mt-4 inline-flex items-center gap-2 border-t border-[var(--line)] pt-3 text-[11px] font-extrabold uppercase tracking-[0.06em] text-[var(--sage-deep)]">
+                        {continueLabel}
+                        <ArrowRight
+                          size={14}
+                          className="transition-transform duration-200 group-hover:translate-x-1"
+                          aria-hidden="true"
+                        />
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <ContentEmpty
+              icon={BookOpen}
+              title="Nenhuma leitura em andamento"
+              text="Quando você abrir um guia ou receita, ele aparecerá aqui para continuar depois."
+            />
+          )}
         </SectionShell>
-      ) : null}
-
-      <SectionShell
-        label="Descobrir"
-        title="Guias em destaque"
-        actionLabel="Ver todos"
-        actionHref="/academia"
-      >
-        {guides.length ? (
-          <CardRail>
-            {guides.map((guide) => (
-              <ContentCard
-                key={guide.id}
-                title={guide.title}
-                category={guide.category}
-                summary={guide.summary}
-                coverImageUrl={guide.coverImageUrl}
-                ctaLabel="Abrir guia"
-                onClick={() => openGuide(guide.id)}
-              />
-            ))}
-          </CardRail>
-        ) : (
-          <ContentEmpty
-            icon={BookOpen}
-            title="Nenhum guia publicado ainda"
-            text="Assim que novos guias forem publicados, eles aparecem aqui."
-          />
-        )}
-      </SectionShell>
-
-      <SectionShell
-        label="Explorar"
-        title="Receitas para a rotina real"
-        actionLabel="Ver todas"
-        actionHref="/receitas"
-      >
-        {recipes.length ? (
-          <CardRail>
-            {recipes.map((recipe) => (
-              <ContentCard
-                key={recipe.id}
-                title={recipe.title}
-                category={recipe.category}
-                summary={recipe.summary}
-                coverImageUrl={recipe.coverImageUrl}
-                accentColor={recipe.accentColor}
-                ctaLabel="Abrir receita"
-                onClick={() => openRecipe(recipe.id)}
-              />
-            ))}
-          </CardRail>
-        ) : (
-          <ContentEmpty
-            icon={ChefHat}
-            title="Nenhuma receita publicada ainda"
-            text="As receitas do Universo aparecem aqui assim que forem publicadas."
-          />
-        )}
-      </SectionShell>
-
-      <SectionShell label="Assistir" title="Vídeos">
-        {videos.length ? (
-          <CardRail>
-            {videos.map((video) => (
-              <ContentCard
-                key={video.id}
-                title={video.title}
-                summary={video.description}
-                coverImageUrl={video.coverImageUrl}
-                ctaLabel="Assistir"
-                onClick={() => window.open(video.url, "_blank", "noopener")}
-              />
-            ))}
-          </CardRail>
-        ) : (
-          <ContentEmpty
-            icon={PlayCircle}
-            title="Ainda não há vídeos por aqui"
-            text="Novos vídeos serão reunidos aqui quando estiverem disponíveis."
-          />
-        )}
-      </SectionShell>
-
-      <SectionShell label="Tirar dúvidas" title="Perguntas frequentes">
-        <div className="rounded-3xl border border-[var(--line)] bg-white px-5 py-2 sm:px-7">
-          <Accordion type="single" collapsible>
-            {faq.map((item, index) => (
-              <AccordionItem
-                key={item.question}
-                value={`faq-${index}`}
-                className="border-[var(--line)]"
-              >
-                <AccordionTrigger className="text-left text-sm font-extrabold text-[var(--ink)]">
-                  {item.question}
-                </AccordionTrigger>
-                <AccordionContent className="text-sm leading-6 text-[var(--ink-soft)]">
-                  {item.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
-        <div className="mt-5 flex flex-wrap gap-4 text-xs font-bold text-[var(--sage-deep)]">
-          <Link
-            href="/ajuda"
-            className="inline-flex items-center gap-1.5 underline underline-offset-4"
-          >
-            <CircleHelp size={14} /> Ajuda e segurança
-          </Link>
-          <Link href="/minha-assinatura" className="underline underline-offset-4">
-            Minha assinatura
-          </Link>
-          <Link href="/termos" className="underline underline-offset-4">
-            Termos de uso
-          </Link>
-          <Link href="/privacidade" className="underline underline-offset-4">
-            Política de privacidade
-          </Link>
-        </div>
-      </SectionShell>
+      </div>
     </MemberShell>
   );
 }

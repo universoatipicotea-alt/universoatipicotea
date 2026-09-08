@@ -37,7 +37,9 @@ export function CategoryHub({
                   src={item.coverImageUrl}
                   alt={item.name}
                   loading="lazy"
-                  className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                  decoding="async"
+                  sizes="(max-width: 639px) calc(100vw - 40px), (max-width: 1279px) 50vw, 33vw"
+                  className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.03]"
                 />
               ) : (
                 <div className="grid h-full w-full place-items-center px-6 text-center">

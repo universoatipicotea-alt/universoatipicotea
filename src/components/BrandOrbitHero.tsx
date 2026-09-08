@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 const LOGO_URL = "/manus-storage/universo-atipico-logo-oficial_05f4c9c6.png";
 
 const orbitDots = ["blue", "gold", "red", "green", "blue", "gold"] as const;
@@ -29,10 +31,10 @@ export function BrandOrbitHero() {
           className="brand-orbit-logo"
           loading="eager"
           decoding="async"
+          fetchPriority="high"
         />
       </div>
       <p className="brand-orbit-caption">Conhecimento que conecta. Apoio que transforma.</p>
     </div>
   );
 }
-import type { CSSProperties } from "react";

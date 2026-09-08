@@ -41,7 +41,9 @@ export function ContentCard({
             src={coverImageUrl}
             alt={`Capa de ${title}`}
             loading="lazy"
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+            decoding="async"
+            sizes="(max-width: 639px) 86vw, (max-width: 1279px) 50vw, 33vw"
+            className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.02]"
           />
         ) : (
           <RecipeCover title={title} accentColor={accentColor || "#0b2b26"} />

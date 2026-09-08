@@ -17,10 +17,15 @@ import {
   type AccessRole,
 } from "@shared/access";
 import { driveRollbackDecision, type DriveFile, type DriveImportCandidate } from "./drive-import";
+import { isVisualAssetSlot } from "./visual-assets";
 
 const PDF_BUCKET = "guias-pdf";
 const IMAGE_BUCKET = "guias-capas";
 const VIDEO_BUCKET = "funil-video";
+const BANNER_PUBLIC_COLUMNS = "slot,desktop_url,tablet_url,mobile_url,alt_text";
+const VISUAL_ASSET_PUBLIC_COLUMNS =
+  "slot,desktop_image_url:desktop_url,tablet_image_url:tablet_url,mobile_image_url:mobile_url,alt_text";
+const LEGACY_BANNER_SLOTS = new Set(["inicio", "receitas", "academia", "plano"]);
 
 type UaUser = {
   id: number;
@@ -33,6 +38,27 @@ type UaUser = {
   membershipStatus: "member" | "free" | "canceled";
   createdAt: string | null;
   lastSignedIn: string | null;
+};
+
+type UaBannerRow = {
+  slot: string;
+  name?: string | null;
+  internal_title?: string | null;
+  desktop_key?: string | null;
+  desktop_url?: string | null;
+  desktop_image_url?: string | null;
+  tablet_key?: string | null;
+  tablet_url?: string | null;
+  tablet_image_url?: string | null;
+  mobile_key?: string | null;
+  mobile_url?: string | null;
+  mobile_image_url?: string | null;
+  alt_text?: string | null;
+  is_active?: boolean | null;
+  created_at?: string | null;
+  created_by?: string | null;
+  updated_at?: string | null;
+  updated_by?: string | null;
 };
 
 const db = () => supabaseAdmin as any;
@@ -208,6 +234,120 @@ async function getCommunityMetrics() {
     countRows("ua_guides", { status: "published" }),
   ]);
   return { members, topics, guides };
+}
+
+function bannerTableMissing(error: { code?: string; message?: string } | null) {
+  const message = error?.message?.toLowerCase() ?? "";
+  return Boolean(
+    error &&
+    (error.code === "42P01" ||
+      error.code === "PGRST205" ||
+      (message.includes("ua_banners") && message.includes("schema cache"))),
+  );
+}
+
+function bannerSchemaOutdated(error: { code?: string; message?: string } | null) {
+  const message = error?.message?.toLowerCase() ?? "";
+  return Boolean(
+    error &&
+    (error.code === "42703" ||
+      error.code === "PGRST204" ||
+      (message.includes("is_active") && message.includes("schema cache"))),
+  );
+}
+
+async function listBannerRows(activeOnly: boolean, columns = BANNER_PUBLIC_COLUMNS) {
+  let query = db()
+    .from("ua_banners")
+    .select(activeOnly ? columns : "*")
+    .order("slot", { ascending: true });
+  if (activeOnly) query = query.eq("is_active", true);
+
+  let { data, error } = await query;
+  // Compatibilidade durante a janela entre o deploy do código e a migration aditiva.
+  if (activeOnly && bannerSchemaOutdated(error)) {
+    const fallback = await db()
+      .from("ua_banners")
+      .select(columns)
+      .order("slot", { ascending: true });
+    data = fallback.data;
+    error = fallback.error;
+  }
+  if (bannerTableMissing(error)) return [];
+  if (error) fail("Não foi possível carregar a configuração visual.");
+  return (data ?? []) as UaBannerRow[];
+}
+
+function visualAssetFromBanner(row: UaBannerRow, publicOnly: boolean) {
+  const base = {
+    slot: row.slot,
+    desktopImageUrl: row.desktop_image_url ?? row.desktop_url ?? "",
+    tabletImageUrl: row.tablet_image_url ?? row.tablet_url ?? null,
+    mobileImageUrl: row.mobile_image_url ?? row.mobile_url ?? null,
+    altText: row.alt_text ?? "",
+  };
+  if (publicOnly) return base;
+  const defaultName = String(row.slot ?? "Banner").replace(/[_-]+/g, " ");
+  return {
+    ...base,
+    name: row.name ?? defaultName,
+    internalTitle: row.internal_title ?? row.name ?? defaultName,
+    desktopImageKey: row.desktop_key ?? null,
+    tabletImageKey: row.tablet_key ?? null,
+    mobileImageKey: row.mobile_key ?? null,
+    isActive: row.is_active !== false,
+    createdAt: row.created_at ?? null,
+    createdBy: row.created_by ?? null,
+    updatedAt: row.updated_at ?? null,
+    updatedBy: row.updated_by ?? null,
+  };
+}
+
+async function listVisualAssets(activeOnly: boolean) {
+  const rows = await listBannerRows(activeOnly, VISUAL_ASSET_PUBLIC_COLUMNS);
+  return rows.map((row) => visualAssetFromBanner(row, activeOnly));
+}
+
+async function listBanners() {
+  const rows = await listBannerRows(true);
+  return rows.map((row) => ({
+    slot: row.slot,
+    desktopUrl: row.desktop_url ?? null,
+    tabletUrl: row.tablet_url ?? null,
+    mobileUrl: row.mobile_url ?? null,
+    altText: row.alt_text ?? null,
+  }));
+}
+
+function requiredVisualText(value: unknown, label: string, maxLength: number) {
+  const text = String(value ?? "").trim();
+  if (text.length < 2 || text.length > maxLength)
+    fail(`${label} deve ter entre 2 e ${maxLength} caracteres.`);
+  return text;
+}
+
+function optionalVisualText(value: unknown, maxLength: number) {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  if (text.length > maxLength) fail("Um dos campos da imagem excede o limite permitido.");
+  return text;
+}
+
+function visualImageUrl(value: unknown, required: boolean) {
+  const url = optionalVisualText(value, 2048);
+  if (!url) {
+    if (required) fail("Envie a imagem desktop antes de salvar.");
+    return null;
+  }
+  const isLocal = url.startsWith("/") && !url.startsWith("//");
+  let isHttps = false;
+  try {
+    isHttps = new URL(url).protocol === "https:";
+  } catch {
+    // Uma URL local válida não precisa ser absoluta.
+  }
+  if (!isLocal && !isHttps) fail("A URL da imagem não é segura.");
+  return url;
 }
 
 export function slugifyPt(value: string) {
@@ -610,13 +750,56 @@ async function listMemberVideos() {
 
 /* -------------------------------- uploads -------------------------------- */
 
-function decodeDataUrl(dataUrl: string) {
+const IMAGE_UPLOAD_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const PDF_UPLOAD_MIME_TYPES = new Set(["application/pdf"]);
+const MAX_IMAGE_UPLOAD_BYTES = 6 * 1024 * 1024;
+const MAX_PDF_UPLOAD_BYTES = 50 * 1024 * 1024;
+
+function startsWithBytes(bytes: Uint8Array, signature: number[]) {
+  return signature.every((byte, index) => bytes[index] === byte);
+}
+
+function hasExpectedFileSignature(bytes: Uint8Array, mimeType: string) {
+  if (mimeType === "image/jpeg") return startsWithBytes(bytes, [0xff, 0xd8, 0xff]);
+  if (mimeType === "image/png") {
+    return startsWithBytes(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  }
+  if (mimeType === "image/webp") {
+    return (
+      startsWithBytes(bytes, [0x52, 0x49, 0x46, 0x46]) &&
+      bytes[8] === 0x57 &&
+      bytes[9] === 0x45 &&
+      bytes[10] === 0x42 &&
+      bytes[11] === 0x50
+    );
+  }
+  if (mimeType === "application/pdf") {
+    return startsWithBytes(bytes, [0x25, 0x50, 0x44, 0x46, 0x2d]);
+  }
+  return false;
+}
+
+function decodeDataUrl(
+  dataUrl: string,
+  policy: { allowedMimeTypes: Set<string>; maxBytes: number },
+) {
+  const maxEncodedLength = Math.ceil((policy.maxBytes * 4) / 3) + 512;
+  if (dataUrl.length > maxEncodedLength) fail("O arquivo excede o limite permitido.");
   const match = /^data:([^;,]+);base64,(.+)$/s.exec(dataUrl);
   if (!match) fail("Arquivo inválido.");
-  const mimeType = match[1]!;
-  const binary = atob(match[2]!);
+  const mimeType = match[1]!.toLowerCase();
+  if (!policy.allowedMimeTypes.has(mimeType)) fail("Tipo de arquivo não permitido.");
+  let binary = "";
+  try {
+    binary = atob(match[2]!);
+  } catch {
+    fail("Arquivo inválido.");
+  }
+  if (binary.length > policy.maxBytes) fail("O arquivo excede o limite permitido.");
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  if (!hasExpectedFileSignature(bytes, mimeType))
+    fail("O conteúdo do arquivo não corresponde ao tipo informado.");
   return { bytes, mimeType };
 }
 
@@ -643,11 +826,16 @@ async function saveUpload(
   bucket: string,
   folder: string,
 ) {
-  const { bytes, mimeType } = decodeDataUrl(input.dataUrl);
+  if (!input.fileName || input.fileName.length > 255) fail("Nome de arquivo inválido.");
+  const policy =
+    bucket === IMAGE_BUCKET
+      ? { allowedMimeTypes: IMAGE_UPLOAD_MIME_TYPES, maxBytes: MAX_IMAGE_UPLOAD_BYTES }
+      : { allowedMimeTypes: PDF_UPLOAD_MIME_TYPES, maxBytes: MAX_PDF_UPLOAD_BYTES };
+  const { bytes, mimeType } = decodeDataUrl(input.dataUrl, policy);
   const key = `${folder}/${safeName(input.fileName, mimeType)}`;
   const { error } = await db()
     .storage.from(bucket)
-    .upload(key, bytes, { contentType: mimeType, upsert: true });
+    .upload(key, bytes, { contentType: mimeType, upsert: false });
   if (error) fail(error.message);
   if (bucket === IMAGE_BUCKET) {
     return { key, url: `/api/public/ua-image/${key}`, fileName: input.fileName };
@@ -1153,31 +1341,39 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       };
     }
 
-    case "community.banners": {
-      const { data } = await db().from("ua_banners").select("*");
-      return camel(data ?? []);
-    }
+    case "community.visualAssets.active":
+      // Endpoint público somente-leitura: não devolve chaves, títulos internos ou auditoria.
+      return listVisualAssets(true);
+    case "community.banners":
+      return listBanners();
     case "community.master.saveBanner": {
       const master = await requireMaster();
       const slot = String(input.slot || "").trim();
-      if (!slot) fail("Informe o espaço da imagem.");
-      await db()
+      if (!isVisualAssetSlot(slot) && !LEGACY_BANNER_SLOTS.has(slot))
+        fail("Informe um espaço de imagem válido.");
+      const values = {
+        slot,
+        desktop_url: visualImageUrl(input.desktopUrl, false),
+        tablet_url: visualImageUrl(input.tabletUrl, false),
+        mobile_url: visualImageUrl(input.mobileUrl, false),
+        alt_text: optionalVisualText(input.altText, 240),
+        updated_by: master.authId,
+        updated_at: new Date().toISOString(),
+      };
+      const saved = await db()
         .from("ua_banners")
-        .upsert(
-          {
-            slot,
-            desktop_url: input.desktopUrl || null,
-            tablet_url: input.tabletUrl || null,
-            mobile_url: input.mobileUrl || null,
-            alt_text: input.altText || null,
-            updated_by: master.id,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "slot" },
-        );
+        .upsert(values, { onConflict: "slot" })
+        .select("slot")
+        .single();
+      if (saved.error) {
+        await auditEvent(master, "banner.save", "banner", slot, "failure", {
+          reason: "database_write_failed",
+        });
+        fail("Não foi possível salvar a configuração visual.");
+      }
+      await auditEvent(master, "banner.save", "banner", slot, "success");
       return { success: true };
     }
-
 
     case "community.funnel.get":
       return getFunnelSettings();
@@ -2069,6 +2265,58 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         campaigns,
         landingSettings,
       };
+    }
+    case "community.master.visualAssets": {
+      await requireMaster();
+      return listVisualAssets(false);
+    }
+    case "community.master.saveVisualAsset": {
+      const masterUser = await requireMaster();
+      if (!isVisualAssetSlot(input.slot)) fail("Slot visual inválido.");
+
+      const slot = input.slot;
+      const values = {
+        slot,
+        name: requiredVisualText(input.name, "Nome", 120),
+        internal_title: requiredVisualText(input.internalTitle, "Título interno", 160),
+        desktop_key: optionalVisualText(input.desktopImageKey, 500),
+        desktop_url: visualImageUrl(input.desktopImageUrl, true),
+        tablet_key: optionalVisualText(input.tabletImageKey, 500),
+        tablet_url: visualImageUrl(input.tabletImageUrl, false),
+        mobile_key: optionalVisualText(input.mobileImageKey, 500),
+        mobile_url: visualImageUrl(input.mobileImageUrl, false),
+        alt_text: requiredVisualText(input.altText, "Texto alternativo", 240),
+        is_active: input.isActive !== false,
+        updated_by: masterUser.authId,
+        updated_at: new Date().toISOString(),
+      };
+      const existing = await db().from("ua_banners").select("slot").eq("slot", slot).maybeSingle();
+      if (bannerTableMissing(existing.error) || bannerSchemaOutdated(existing.error))
+        fail("A configuração visual ainda não está disponível no banco de dados.");
+      if (existing.error) fail("Não foi possível verificar este slot visual.");
+
+      const saved = existing.data
+        ? await db().from("ua_banners").update(values).eq("slot", slot).select("slot").single()
+        : await db()
+            .from("ua_banners")
+            .insert({ ...values, created_by: masterUser.authId })
+            .select("slot")
+            .single();
+
+      if (saved.error) {
+        await auditEvent(masterUser, "visual_asset.save", "visual_asset", slot, "failure", {
+          slot,
+          reason: "database_write_failed",
+        });
+        fail("Não foi possível salvar a configuração visual.");
+      }
+
+      await auditEvent(masterUser, "visual_asset.save", "visual_asset", slot, "success", {
+        slot,
+        isActive: values.is_active,
+        operation: existing.data ? "update" : "create",
+      });
+      return { success: true, id: saved.data.slot };
     }
     case "community.master.drive.defaults": {
       await requireMaster();

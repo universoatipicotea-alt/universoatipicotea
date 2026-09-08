@@ -42,7 +42,7 @@ export function PublicLinkCard({
 
       <span className="col-span-2 flex min-h-10 items-center pl-1 sm:col-span-1">
         {brand === "universo" ? (
-          <Brand compact />
+          <Brand compact linked={false} />
         ) : (
           <span className="inline-flex rounded-full border border-dashed border-[#9bacbf] bg-white/70 px-3 py-2 text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#6b7d93]">
             Logo pendente

@@ -3,6 +3,7 @@ import { BrandOrbitHero } from "@/components/BrandOrbitHero";
 import { PublicHeader } from "@/components/PublicHeader";
 import { InstitutionalFooter } from "@/components/InstitutionalFooter";
 import { CountUp, Reveal } from "@/components/Motion";
+import ResponsiveVisualAsset from "@/components/ResponsiveVisualAsset";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -64,7 +65,9 @@ function PreviewCard({ item, badge }: { item: PreviewItem; badge: string }) {
             src={item.coverImageUrl}
             alt={`Capa de ${item.title}`}
             loading="lazy"
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+            decoding="async"
+            sizes="(max-width: 639px) calc(100vw - 40px), (max-width: 1279px) 50vw, 33vw"
+            className="h-full w-full object-contain transition duration-500 group-hover:scale-[1.03]"
           />
         ) : (
           <BookOpen size={26} className="text-[var(--sage-deep)]" />
@@ -239,6 +242,20 @@ export default function Home() {
             ))}
           </div>
         </section>
+
+        <ResponsiveVisualAsset
+          slot="public_home"
+          fallback={{
+            desktopImageUrl: "/home-membros-universo-atipico-desktop.webp",
+            tabletImageUrl: "/home-membros-universo-atipico-tablet.webp",
+            mobileImageUrl: "/home-membros-universo-atipico-mobile.webp",
+            altText: "Uma vida mais leve, juntos — Universo Atípico",
+          }}
+          defaultAlt="Imagem de apoio do Universo Atípico"
+          pictureClassName="mx-auto mt-8 block aspect-video w-[calc(100%-2.5rem)] max-w-[1200px] overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white shadow-[0_18px_48px_rgba(8,31,77,.08)] sm:w-[calc(100%-4rem)]"
+          className="h-full w-full object-contain"
+          sizes="(max-width: 639px) calc(100vw - 40px), (max-width: 1023px) calc(100vw - 64px), 1200px"
+        />
 
         {/* SOBRE */}
         <section id="sobre" className="relative scroll-mt-24 overflow-hidden bg-[var(--linen)]">

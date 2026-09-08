@@ -2,6 +2,7 @@ import { Brand } from "@/components/Brand";
 import { PublicLinkCard } from "@/components/camila/PublicLinkCard";
 import { PublicProfileHeader } from "@/components/camila/PublicProfileHeader";
 import { SocialLinks } from "@/components/camila/SocialLinks";
+import ResponsiveVisualAsset from "@/components/ResponsiveVisualAsset";
 import { camilaPrimaryLinks, camilaProfile, camilaSocialLinks } from "@/config/camilaPublicLinks";
 
 export default function CamilaRibeiroAutismo() {
@@ -23,12 +24,26 @@ export default function CamilaRibeiroAutismo() {
             aria-label="Ir para a página inicial do Universo Atípico"
             className="rounded-2xl bg-white px-4 py-3 shadow-[0_8px_22px_rgba(8,31,77,.07)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#69bce6]/35"
           >
-            <Brand compact />
+            <Brand compact linked={false} priority />
           </a>
         </div>
 
         <PublicProfileHeader {...camilaProfile} />
         <SocialLinks links={camilaSocialLinks} />
+
+        <ResponsiveVisualAsset
+          slot="public_camila"
+          fallback={{
+            desktopImageUrl: "/camila-public-universo-atipico-desktop.webp",
+            tabletImageUrl: "/camila-public-universo-atipico-tablet.webp",
+            mobileImageUrl: "/camila-public-universo-atipico-mobile.webp",
+            altText: "Universo Atípico — chegue como você está",
+          }}
+          defaultAlt="Imagem de apoio da página Camila Ribeiro Autismo"
+          pictureClassName="mt-8 block aspect-[3/4] max-h-[520px] overflow-hidden rounded-3xl border border-[#dfe6ee] bg-white shadow-[0_12px_30px_rgba(8,31,77,.07)]"
+          className="h-full w-full object-contain"
+          sizes="(max-width: 639px) calc(100vw - 40px), 720px"
+        />
 
         <section aria-labelledby="camila-links-title" className="mt-10">
           <h1 id="camila-links-title" className="sr-only">

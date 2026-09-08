@@ -1,5 +1,5 @@
-import { PlatformBanner } from "@/components/PlatformBanner";
 import { MemberShell } from "@/components/MemberShell";
+import ResponsiveVisualAsset from "@/components/ResponsiveVisualAsset";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BookOpen, ChefHat, Compass, ShieldCheck, UsersRound } from "lucide-react";
 import { useLocation } from "wouter";
@@ -129,12 +129,18 @@ export default function Assinatura() {
           </div>
 
           <figure className="min-w-0 overflow-hidden rounded-[1.75rem] border border-white/80 bg-white shadow-[0_22px_55px_rgba(8,31,77,.14)]">
-            <PlatformBanner
+            <ResponsiveVisualAsset
               slot="plano"
-              base="/plano-universo-oferta"
-              alt="Apresentação visual do Plano Universo com receitas, Academia Atípica, guias e comunidade"
-              priority
-              className="aspect-[4/5] h-full w-full object-contain object-top sm:aspect-[3/4] lg:max-h-[760px]"
+              fallback={{
+                desktopImageUrl: "/plano-universo-oferta-desktop.webp",
+                tabletImageUrl: "/plano-universo-oferta-tablet.webp",
+                mobileImageUrl: "/plano-universo-oferta-mobile.webp",
+              }}
+              defaultAlt="Apresentação visual do Plano Universo com receitas, Academia Atípica, guias e comunidade"
+              className="block h-auto w-full object-contain"
+              pictureClassName="block w-full"
+              sizes="(max-width: 639px) calc(100vw - 40px), (max-width: 1023px) calc(100vw - 64px), 520px"
+              eager
             />
           </figure>
         </div>

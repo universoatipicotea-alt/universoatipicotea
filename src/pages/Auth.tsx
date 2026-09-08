@@ -1,8 +1,8 @@
-import { PlatformBanner } from "@/components/PlatformBanner";
 import { Brand } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useVisualAsset } from "@/hooks/useVisualAsset";
 import { call, trpc } from "@/lib/trpc";
 import {
   ArrowLeft,
@@ -26,6 +26,12 @@ export default function Auth() {
   const [recovering, setRecovering] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { sources: loginVisual } = useVisualAsset("login", {
+    desktopImageUrl: "/login-universo-atipico-desktop.webp",
+    tabletImageUrl: "/login-universo-atipico-tablet.webp",
+    mobileImageUrl: "/login-universo-atipico-mobile.webp",
+    altText: "Universo Atípico — um espaço para você chegar como está",
+  });
   const utils = trpc.useUtils();
   const login = trpc.auth.login.useMutation({
     onSuccess: async () => {
@@ -55,7 +61,7 @@ export default function Auth() {
   };
 
   return (
-    <main className="page-texture relative flex min-h-screen items-center overflow-hidden bg-[var(--paper)] px-4 py-5 sm:px-8 sm:py-12">
+    <main className="page-texture relative flex min-h-[100dvh] items-center overflow-x-hidden bg-[var(--paper)] px-3 py-3 min-[360px]:px-4 min-[360px]:py-5 sm:px-8 sm:py-12">
       <div
         className="aurora-float pointer-events-none absolute -left-24 top-16 h-72 w-72 rounded-full bg-[var(--sage-pale)]/70 blur-3xl"
         aria-hidden="true"
@@ -64,43 +70,37 @@ export default function Auth() {
         className="aurora-float pointer-events-none absolute -right-28 bottom-10 h-80 w-80 rounded-full bg-[#efd4a2]/35 blur-3xl"
         aria-hidden="true"
       />
-      <div className="relative mx-auto grid w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/80 bg-white/90 shadow-[0_32px_90px_rgba(8,31,77,.14)] backdrop-blur lg:grid-cols-[1.05fr_.95fr]">
+      <div className="relative mx-auto grid w-full min-w-0 max-w-7xl overflow-hidden rounded-[1.5rem] border border-white/80 bg-white/90 shadow-[0_32px_90px_rgba(8,31,77,.14)] backdrop-blur sm:rounded-[2rem] xl:grid-cols-[minmax(0,1.45fr)_minmax(430px,.85fr)]">
         {/* Formulário primeiro no mobile */}
-        <section className="order-1 p-5 sm:p-10 lg:order-2 lg:p-14">
-          <div className="mb-8 flex items-center justify-between">
+        <section className="order-1 min-w-0 p-4 min-[360px]:p-5 sm:p-10 xl:order-2 xl:p-12">
+          <div className="mb-6 flex min-w-0 items-center justify-between gap-3 sm:mb-8">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-sm font-bold text-[var(--ink-soft)] hover:text-[var(--ink)]"
+              className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg pr-2 text-sm font-bold text-[var(--ink-soft)] transition hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sage)]"
             >
               <ArrowLeft size={16} /> Voltar
             </Link>
-            <div className="rounded-xl bg-white px-2 py-1 shadow-sm lg:hidden">
-              <Brand compact />
+            <div className="min-w-0 overflow-hidden rounded-xl bg-white px-2 py-1 shadow-sm [&_img]:!h-10 [&_img]:!max-w-[8.5rem] xl:hidden">
+              <Brand compact priority />
             </div>
           </div>
 
-          <div className="mb-7 overflow-hidden rounded-2xl border border-[var(--line)] bg-[#123064] shadow-[0_14px_34px_rgba(8,31,77,.1)] lg:hidden">
-            <PlatformBanner
-              slot="login"
-              base="/login-universo-atipico"
-              alt="Universo Atípico — chegue como você está"
-              priority
-              className="block h-auto w-full object-contain"
-            />
-          </div>
-
-          <div className="max-w-md">
+          <div className="mx-auto w-full min-w-0 max-w-md">
             <span className="inline-flex items-center gap-2 rounded-full bg-[var(--sage-pale)] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--sage-deep)]">
               <Sparkles size={13} /> Área de membros
             </span>
-            <h1 className="display-font mt-3 text-4xl font-semibold leading-[1.02] tracking-[-.04em] sm:text-5xl">
+            <h1 className="display-font mt-3 text-[2rem] font-semibold leading-[1.02] tracking-[-.04em] min-[360px]:text-4xl sm:text-5xl">
               Que bom ter você de volta.
             </h1>
             <p className="mt-4 text-sm leading-7 text-[var(--ink-soft)]">
               Entre com seu e-mail e senha para acessar o Universo Atípico.
             </p>
 
-            <form onSubmit={submit} className="mt-8 space-y-5" aria-label="Entrar na conta">
+            <form
+              onSubmit={submit}
+              className="mt-6 space-y-4 sm:mt-8 sm:space-y-5"
+              aria-label="Entrar na conta"
+            >
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-extrabold">
                   E-mail
@@ -119,7 +119,7 @@ export default function Auth() {
                     onChange={(event) => setEmail(event.target.value)}
                     placeholder="voce@email.com"
                     required
-                    className="h-12 rounded-xl border-[var(--line)] bg-[var(--paper)] pl-11 transition focus:bg-white"
+                    className="h-12 min-w-0 rounded-xl border-[var(--line)] bg-[var(--paper)] pl-11 transition focus:bg-white"
                   />
                 </div>
               </div>
@@ -140,7 +140,7 @@ export default function Auth() {
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="Sua senha"
                     required
-                    className="h-12 rounded-xl border-[var(--line)] bg-[var(--paper)] px-11 transition focus:bg-white"
+                    className="h-12 min-w-0 rounded-xl border-[var(--line)] bg-[var(--paper)] px-11 transition focus:bg-white"
                   />
                   <button
                     type="button"
@@ -163,7 +163,8 @@ export default function Auth() {
               <Button
                 type="submit"
                 disabled={login.isPending}
-                className="pressable h-13 w-full rounded-xl bg-[var(--sage-deep)] text-sm font-extrabold uppercase tracking-[0.08em] text-white shadow-[0_12px_26px_rgba(55,95,74,.24)] hover:bg-[var(--ink)]"
+                className="pressable min-h-12 w-full min-w-0 rounded-xl bg-[var(--sage-deep)] px-4 text-sm font-extrabold uppercase tracking-[0.08em] text-white shadow-[0_12px_26px_rgba(55,95,74,.24)] hover:bg-[var(--ink)] min-[360px]:h-13"
+                aria-busy={login.isPending}
               >
                 {login.isPending ? (
                   <Loader2 className="mr-2 animate-spin" size={17} />
@@ -227,15 +228,18 @@ export default function Auth() {
           </div>
         </section>
 
-        {/* A arte fornecida ocupa o painel editorial sem textos sobrepostos. */}
-        <section className="relative order-2 hidden overflow-hidden bg-[#123064] lg:order-1 lg:flex lg:items-center">
-          <PlatformBanner
-            slot="login"
-            base="/login-universo-atipico"
-            alt="Universo Atípico — um espaço para você chegar como está"
-            priority
-            className="h-auto max-h-full w-full object-contain"
-          />
+        {/* A arte completa só é requisitada quando o painel desktop realmente é exibido. */}
+        <section className="relative order-2 hidden min-h-[700px] overflow-hidden bg-[#082c62] xl:order-1 xl:block">
+          <picture>
+            <source media="(min-width: 1280px)" srcSet={loginVisual.desktop} />
+            <img
+              src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
+              alt="Universo Atípico — um espaço para você chegar como está"
+              className="absolute inset-0 h-full w-full object-contain object-center"
+              decoding="async"
+              fetchPriority="high"
+            />
+          </picture>
           <div
             className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/15"
             aria-hidden="true"
