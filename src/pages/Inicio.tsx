@@ -208,7 +208,7 @@ export default function Inicio() {
     <MemberShell eyebrow={eyebrow} title={title} description={description}>
       <div className="min-w-0 pb-20 lg:pb-0">
         <ResponsiveVisualAsset
-          slot="home"
+          slot="inicio"
           fallback={{
             desktopImageUrl: "/home-membros-universo-atipico-desktop.webp",
             tabletImageUrl: "/home-membros-universo-atipico-tablet.webp",

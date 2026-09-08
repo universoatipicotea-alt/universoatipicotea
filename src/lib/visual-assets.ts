@@ -1,5 +1,5 @@
 export const VISUAL_ASSET_SLOT_DEFINITIONS = {
-  home: {
+  inicio: {
     label: "Home da área de membros",
     route: "/inicio",
     description: "Apoio visual da abertura da área de membros.",
@@ -7,6 +7,36 @@ export const VISUAL_ASSET_SLOT_DEFINITIONS = {
       desktop: "1600 × 900 px",
       tablet: "1200 × 900 px",
       mobile: "750 × 1000 px",
+    },
+  },
+  receitas: {
+    label: "Receitas",
+    route: "/receitas",
+    description: "Capa principal do hub de receitas.",
+    recommended: {
+      desktop: "1600 × 900 px",
+      tablet: "1200 × 900 px",
+      mobile: "750 × 1000 px",
+    },
+  },
+  academia: {
+    label: "Academia Atípica",
+    route: "/academia",
+    description: "Capa principal do hub da Academia Atípica.",
+    recommended: {
+      desktop: "1600 × 900 px",
+      tablet: "1200 × 900 px",
+      mobile: "750 × 1000 px",
+    },
+  },
+  plano: {
+    label: "Página da assinatura",
+    route: "/assinatura",
+    description: "Arte de apoio do Plano Universo. Preço e CTA permanecem em HTML.",
+    recommended: {
+      desktop: "1200 × 1500 px",
+      tablet: "900 × 1200 px",
+      mobile: "750 × 1200 px",
     },
   },
   public_home: {

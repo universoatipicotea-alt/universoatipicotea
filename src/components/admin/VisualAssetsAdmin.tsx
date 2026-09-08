@@ -110,11 +110,11 @@ export default function VisualAssetsAdmin() {
   const query = trpc.community.master.visualAssets.useQuery();
   const upload = trpc.community.files.uploadContentImage.useMutation();
   const save = trpc.community.master.saveVisualAsset.useMutation();
-  const [slot, setSlot] = useState<VisualAssetSlot>("home");
+  const [slot, setSlot] = useState<VisualAssetSlot>("inicio");
   const [uploadingVariant, setUploadingVariant] = useState<ImageVariant | null>(null);
   const records = (query.data ?? []) as VisualAssetRecord[];
   const currentRecord = records.find((item) => item.slot === slot);
-  const [form, setForm] = useState<VisualAssetForm>(() => emptyForm("home"));
+  const [form, setForm] = useState<VisualAssetForm>(() => emptyForm("inicio"));
 
   useEffect(() => {
     setForm(currentRecord ? { ...currentRecord } : emptyForm(slot));

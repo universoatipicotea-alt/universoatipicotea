@@ -1,5 +1,5 @@
 import { MemberShell } from "@/components/MemberShell";
-import { ResponsiveImage } from "@/components/ResponsiveImage";
+import ResponsiveVisualAsset from "@/components/ResponsiveVisualAsset";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BookOpen, ChefHat, Compass, ShieldCheck, UsersRound } from "lucide-react";
 import { useLocation } from "wouter";
@@ -129,14 +129,14 @@ export default function Assinatura() {
           </div>
 
           <figure className="min-w-0 overflow-hidden rounded-[1.75rem] border border-white/80 bg-white shadow-[0_22px_55px_rgba(8,31,77,.14)]">
-            <ResponsiveImage
-              sources={{
-                desktop: "/plano-universo-oferta-desktop.webp",
-                tablet: "/plano-universo-oferta-tablet.webp",
-                mobile: "/plano-universo-oferta-mobile.webp",
+            <ResponsiveVisualAsset
+              slot="plano"
+              fallback={{
+                desktopImageUrl: "/plano-universo-oferta-desktop.webp",
+                tabletImageUrl: "/plano-universo-oferta-tablet.webp",
+                mobileImageUrl: "/plano-universo-oferta-mobile.webp",
               }}
-              fallback="/plano-universo-oferta.png"
-              alt="Apresentação visual do Plano Universo com receitas, Academia Atípica, guias e comunidade"
+              defaultAlt="Apresentação visual do Plano Universo com receitas, Academia Atípica, guias e comunidade"
               className="block h-auto w-full object-contain"
               pictureClassName="block w-full"
               sizes="(max-width: 639px) calc(100vw - 40px), (max-width: 1023px) calc(100vw - 64px), 520px"

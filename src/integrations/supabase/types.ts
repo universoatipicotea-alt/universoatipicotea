@@ -341,6 +341,60 @@ export type Database = {
         }
         Relationships: []
       }
+      ua_banners: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          created_by: string | null
+          desktop_key: string | null
+          desktop_url: string | null
+          internal_title: string
+          is_active: boolean
+          mobile_key: string | null
+          mobile_url: string | null
+          name: string
+          slot: string
+          tablet_key: string | null
+          tablet_url: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          desktop_key?: string | null
+          desktop_url?: string | null
+          internal_title?: string
+          is_active?: boolean
+          mobile_key?: string | null
+          mobile_url?: string | null
+          name?: string
+          slot: string
+          tablet_key?: string | null
+          tablet_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          desktop_key?: string | null
+          desktop_url?: string | null
+          internal_title?: string
+          is_active?: boolean
+          mobile_key?: string | null
+          mobile_url?: string | null
+          name?: string
+          slot?: string
+          tablet_key?: string | null
+          tablet_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       ua_campaigns: {
         Row: {
           created_at: string
@@ -1386,78 +1440,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      ua_visual_assets: {
-        Row: {
-          alt_text: string
-          created_at: string
-          created_by: number | null
-          desktop_image_key: string | null
-          desktop_image_url: string
-          id: number
-          internal_title: string
-          is_active: boolean
-          mobile_image_key: string | null
-          mobile_image_url: string | null
-          name: string
-          slot: string
-          tablet_image_key: string | null
-          tablet_image_url: string | null
-          updated_at: string
-          updated_by: number | null
-        }
-        Insert: {
-          alt_text: string
-          created_at?: string
-          created_by?: number | null
-          desktop_image_key?: string | null
-          desktop_image_url: string
-          id?: number
-          internal_title: string
-          is_active?: boolean
-          mobile_image_key?: string | null
-          mobile_image_url?: string | null
-          name: string
-          slot: string
-          tablet_image_key?: string | null
-          tablet_image_url?: string | null
-          updated_at?: string
-          updated_by?: number | null
-        }
-        Update: {
-          alt_text?: string
-          created_at?: string
-          created_by?: number | null
-          desktop_image_key?: string | null
-          desktop_image_url?: string
-          id?: number
-          internal_title?: string
-          is_active?: boolean
-          mobile_image_key?: string | null
-          mobile_image_url?: string | null
-          name?: string
-          slot?: string
-          tablet_image_key?: string | null
-          tablet_image_url?: string | null
-          updated_at?: string
-          updated_by?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ua_visual_assets_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "ua_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ua_visual_assets_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "ua_users"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       user_roles: {
         Row: {

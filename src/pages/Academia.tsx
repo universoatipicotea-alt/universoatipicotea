@@ -17,7 +17,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { CategoryHub } from "@/components/CategoryHub";
 import { PdfReaderDialog, type ReaderDocument } from "@/components/PdfReaderDialog";
-import { ResponsiveImage } from "@/components/ResponsiveImage";
+import ResponsiveVisualAsset from "@/components/ResponsiveVisualAsset";
 
 type AcademiaGuide = {
   id: number;
@@ -250,14 +250,14 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
       >
         <section className="mb-8 overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white shadow-[0_22px_54px_rgba(8,31,77,.08)]">
           <div className="relative aspect-video overflow-hidden bg-[var(--linen)]">
-            <ResponsiveImage
-              sources={{
-                desktop: "/academia-universo-atipico-desktop.webp",
-                tablet: "/academia-universo-atipico-tablet.webp",
-                mobile: "/academia-universo-atipico-mobile.webp",
+            <ResponsiveVisualAsset
+              slot="academia"
+              fallback={{
+                desktopImageUrl: "/academia-universo-atipico-desktop.webp",
+                tabletImageUrl: "/academia-universo-atipico-tablet.webp",
+                mobileImageUrl: "/academia-universo-atipico-mobile.webp",
               }}
-              fallback="/academia-universo-atipico.png"
-              alt="Academia Atípica — conhecimento que abre novos mundos"
+              defaultAlt="Academia Atípica — conhecimento que abre novos mundos"
               className="h-full w-full object-contain object-center"
               pictureClassName="block h-full w-full"
               sizes="(max-width: 639px) calc(100vw - 40px), (max-width: 1023px) calc(100vw - 64px), 1200px"

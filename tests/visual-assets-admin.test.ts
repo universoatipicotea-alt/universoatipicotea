@@ -39,16 +39,17 @@ test("variantes responsivas aplicam mobile para tablet para desktop", () => {
   );
 });
 
-test("migration é aditiva e bloqueia acesso SQL direto do navegador", () => {
-  const migration = read("supabase/migrations/20260907230000_add_visual_asset_slots.sql");
-  assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.ua_visual_assets/);
+test("migration evolui a infraestrutura existente sem criar tabela paralela", () => {
+  const migration = read("supabase/migrations/20260908030000_enhance_ua_banners.sql");
+  assert.match(migration, /ALTER TABLE public\.ua_banners/);
   assert.match(migration, /ENABLE ROW LEVEL SECURITY/);
-  assert.match(migration, /REVOKE ALL ON TABLE public\.ua_visual_assets FROM anon, authenticated/);
-  assert.match(migration, /GRANT ALL ON TABLE public\.ua_visual_assets TO service_role/);
-  assert.match(migration, /UNIQUE[\s\S]*slot|slot text NOT NULL UNIQUE/);
-  assert.match(migration, /ua_visual_assets_touch_updated_at/);
-  assert.match(migration, /DROP TRIGGER IF EXISTS ua_visual_assets_touch/);
+  assert.match(migration, /REVOKE ALL ON TABLE public\.ua_banners FROM anon, authenticated/);
+  assert.match(migration, /GRANT ALL ON TABLE public\.ua_banners TO service_role/);
+  assert.match(migration, /ADD COLUMN IF NOT EXISTS is_active/);
+  assert.match(migration, /ua_banners_touch_updated_at/);
+  assert.match(migration, /DROP TRIGGER IF EXISTS ua_banners_touch/);
   assert.doesNotMatch(migration, /EXECUTE FUNCTION public\.touch_updated_at/);
+  assert.doesNotMatch(migration, /CREATE TABLE[^;]*ua_visual_assets/i);
   assert.doesNotMatch(migration, /^(?!\s*--).*\b(?:TRUNCATE|DROP\s+TABLE)\b/im);
 });
 
@@ -59,7 +60,7 @@ test("backend expõe leitura pública mínima e restringe escrita ao Admin Maste
   assert.match(server.slice(publicStart, publicStart + 260), /listVisualAssets\(true\)/);
   assert.match(
     server,
-    /VISUAL_ASSET_PUBLIC_COLUMNS\s*=\s*[\s\S]*slot,desktop_image_url,tablet_image_url,mobile_image_url,alt_text/,
+    /VISUAL_ASSET_PUBLIC_COLUMNS\s*=\s*[\s\S]*slot,desktop_image_url:desktop_url,tablet_image_url:tablet_url,mobile_image_url:mobile_url,alt_text/,
   );
   assert.match(server, /\.eq\("is_active", true\)/);
 
@@ -104,10 +105,13 @@ test("componente responsivo usa picture, source e carregamento apropriado", () =
 
 test("slots visuais estão conectados às páginas sem substituir copy em HTML", () => {
   for (const [page, slot] of [
-    ["Inicio", "home"],
+    ["Inicio", "inicio"],
     ["Home", "public_home"],
     ["Checkout", "checkout"],
     ["CamilaRibeiroAutismo", "public_camila"],
+    ["Receitas", "receitas"],
+    ["Academia", "academia"],
+    ["Assinatura", "plano"],
   ]) {
     assert.match(read(`src/pages/${page}.tsx`), new RegExp(`slot="${slot}"`));
   }

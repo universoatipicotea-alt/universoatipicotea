@@ -51,7 +51,8 @@ test("página de assinatura apresenta o Plano Universo e preserva o checkout", (
   assert.match(subscription, /Menos de R\$ 1,67 por dia/);
   assert.match(subscription, /QUERO FAZER PARTE/);
   assert.match(subscription, /setLocation\("\/checkout"\)/);
-  assert.match(subscription, /\/plano-universo-oferta\.png/);
+  assert.match(subscription, /\/plano-universo-oferta-mobile\.webp/);
+  assert.match(subscription, /slot="plano"/);
   assert.match(subscription, /whitespace-nowrap/);
   assert.doesNotMatch(subscription, /Cobrança ainda não ativada/i);
 });
