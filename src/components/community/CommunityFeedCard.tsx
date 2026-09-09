@@ -6,19 +6,18 @@ import type { CommunityTopic } from "./types";
 
 type CommunityFeedCardProps = {
   topic: CommunityTopic;
-  onOpen: () => void;
   onReact: () => void;
   reactionPending?: boolean;
 };
 
 export function CommunityFeedCard({
   topic,
-  onOpen,
   onReact,
   reactionPending = false,
 }: CommunityFeedCardProps) {
   const author = authorLabel(topic);
   const activity = topic.lastActivityAt || topic.updatedAt || topic.createdAt;
+  const topicHref = `/comunidade?topic=${encodeURIComponent(String(topic.id))}`;
   const reactionClass = topic.viewerReacted
     ? "bg-[var(--sage-deep)] text-white"
     : "bg-[var(--sage-pale)] text-[var(--sage-deep)] hover:-translate-y-0.5";
@@ -48,9 +47,8 @@ export function CommunityFeedCard({
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={onOpen}
+      <a
+        href={topicHref}
         className="mt-5 block w-full min-w-0 rounded-lg text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sage)]/30"
         aria-label={`Abrir conversa: ${topic.title}`}
       >
@@ -60,7 +58,7 @@ export function CommunityFeedCard({
         <p className="mt-2 line-clamp-3 break-words whitespace-pre-wrap text-sm leading-6 text-[var(--ink-soft)]">
           {topic.body}
         </p>
-      </button>
+      </a>
 
       <CommunityImageGallery attachments={topic.attachments ?? []} title={topic.title} compact />
 
@@ -75,16 +73,15 @@ export function CommunityFeedCard({
           <HeartHandshake size={16} aria-hidden="true" />
           Acolher{topic.reactionCount ? ` · ${topic.reactionCount}` : ""}
         </button>
-        <button
-          type="button"
-          onClick={onOpen}
+        <a
+          href={topicHref}
           aria-label={`Abrir conversa e responder. ${topic.commentCount ?? 0} respostas atuais.`}
           className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--ink)] bg-white px-4 text-xs font-extrabold text-[var(--ink)] transition hover:-translate-y-0.5 hover:bg-[var(--ink)] hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sage)]/30"
         >
           <MessageCircleMore size={16} aria-hidden="true" />
           Responder
           <span aria-hidden="true">· {topic.commentCount ?? 0}</span>
-        </button>
+        </a>
       </div>
     </article>
   );

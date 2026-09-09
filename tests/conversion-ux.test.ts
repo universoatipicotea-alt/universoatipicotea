@@ -79,9 +79,11 @@ test("página pública da Camila preserva destinos oficiais e não exige autenti
     /ResponsiveVisualAsset|slot="public_camila"|camila-public-universo-atipico/,
   );
   assert.match(links, /https:\/\/universoatipico\.app/);
-  assert.match(links, /chat\.whatsapp\.com/);
+  assert.match(links, /chat\.whatsapp\.com\/IWStSJt769GJDWYHqCMsJp/);
   assert.match(links, /https:\/\/t\.me\//);
   assert.match(links, /https:\/\/tr\.ee\/oROBENGyFa/);
+  assert.match(links, /https:\/\/vt\.tiktok\.com\/ZS9jh9ggHCF3M-BfaeN/);
+  assert.match(links, /href: camilaExternalDestinations\.mundoAzulTikTok/);
   assert.match(links, /camila-lacos-do-espectro\.png/);
   assert.match(links, /camila-atualizatea\.webp/);
   assert.match(links, /camila-mundo-azul\.png/);

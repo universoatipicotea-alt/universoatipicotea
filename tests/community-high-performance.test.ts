@@ -92,6 +92,10 @@ test("respostas aparecem inline e fotos salvas são exibidas no feed", () => {
   assert.match(forum, /submitReply\(event, comment\.id\)/);
   assert.match(feedCard, /Abrir conversa e responder/);
   assert.match(feedCard, />\s*Responder\s*</);
+  assert.match(feedCard, /href=\{topicHref\}/);
+  assert.match(feedCard, /\/comunidade\?topic=/);
+  assert.doesNotMatch(feedCard, /onClick=\{onOpen\}/);
+  assert.match(forum, /window\.location\.assign\(`\/comunidade\?topic=/);
   assert.match(server, /select\("user_id,display_name,avatar_url,avatar_key"\)/);
   assert.match(server, /`\/api\/public\/ua-image\/\$\{profile\.avatar_key\}`/);
   assert.match(server, /avatarKey\.startsWith\(`members\/\$\{user\.id\}\/avatars\/`\)/);

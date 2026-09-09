@@ -458,7 +458,6 @@ export default function Forum() {
           <CommunityFeedCard
             key={topic.id}
             topic={topic}
-            onOpen={() => setLocation(`/comunidade?topic=${topic.id}`)}
             onReact={() => topicReaction.mutate({ topicId: topic.id })}
             reactionPending={topicReaction.isPending}
           />
@@ -495,7 +494,7 @@ export default function Forum() {
         onOpenChange={setComposerOpen}
         onCreated={async (id) => {
           await refresh();
-          setLocation(`/comunidade?topic=${id}`);
+          window.location.assign(`/comunidade?topic=${encodeURIComponent(String(id))}`);
         }}
       />
     </MemberShell>

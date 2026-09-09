@@ -4,6 +4,12 @@ export const camilaProfile = {
   supportText: "Tudo que faz parte da minha jornada, reunido em um só lugar.",
 };
 
+export const camilaExternalDestinations = {
+  lacosDoEspectro: "https://chat.whatsapp.com/IWStSJt769GJDWYHqCMsJp?s=cl&p=i&mlu=4&ilr=4",
+  mundoAzulTikTok: "https://vt.tiktok.com/ZS9jh9ggHCF3M-BfaeN",
+  mundoAzulAlternative: "https://tr.ee/oROBENGyFa",
+} as const;
+
 export const camilaSocialLinks = [
   {
     label: "Instagram",
@@ -39,7 +45,7 @@ export const camilaPrimaryLinks = [
   {
     title: "Laços do Espectro",
     description: "Comunidade no WhatsApp para troca, apoio e conexão.",
-    href: "https://chat.whatsapp.com/CNHZqNXDmbZDAsmbWuRh6G?s=cl&p=i&ilr=0",
+    href: camilaExternalDestinations.lacosDoEspectro,
     event: "camila_lacos_espectro",
     accent: "green",
     brand: "image",
@@ -59,7 +65,7 @@ export const camilaPrimaryLinks = [
   {
     title: "Mundo Azul — Loja",
     description: "Produtos e recursos selecionados para famílias atípicas.",
-    href: "https://tr.ee/oROBENGyFa",
+    href: camilaExternalDestinations.mundoAzulTikTok,
     event: "camila_mundo_azul",
     accent: "yellow",
     brand: "image",
