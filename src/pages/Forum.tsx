@@ -379,7 +379,7 @@ export default function Forum() {
           </p>
         </div>
         <Button
-          className="min-h-12 bg-[var(--sun)] text-[var(--ink)]"
+          className="min-h-12 shrink-0 border border-[#f4c96b] bg-[#f4c96b] px-6 font-extrabold !text-[#071f4d] shadow-lg hover:bg-[#f8d88f] hover:!text-[#071f4d] focus-visible:ring-[#f4c96b]"
           onClick={() => setComposerOpen(true)}
         >
           <Plus className="mr-2" size={18} />

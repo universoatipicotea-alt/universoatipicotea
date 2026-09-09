@@ -626,6 +626,19 @@ function forumDatabaseError(error: { code?: string; message?: string } | null, f
   fail(fallback);
 }
 
+function forumUpgradeMissing(error: { code?: string; message?: string } | null) {
+  const text = error?.message?.toLowerCase() ?? "";
+  return Boolean(
+    error &&
+    (error.code === "PGRST202" ||
+      error.code === "PGRST205" ||
+      error.code === "42P01" ||
+      error.code === "42883" ||
+      text.includes("could not find the function") ||
+      text.includes("schema cache")),
+  );
+}
+
 async function loadForumAttachmentMap(topicIds: number[]) {
   const result = new Map<number, any[]>();
   if (!topicIds.length) return result;
@@ -635,6 +648,7 @@ async function loadForumAttachmentMap(topicIds: number[]) {
     .in("topic_id", topicIds)
     .eq("status", "attached")
     .order("position", { ascending: true });
+  if (forumUpgradeMissing(error)) return result;
   forumDatabaseError(error, "Não foi possível carregar as imagens da comunidade.");
   const rows = data ?? [];
   if (!rows.length) return result;
@@ -693,7 +707,8 @@ async function decorateForumTopics(rows: any[], viewerUserId?: number, truncateB
           .in("topic_id", topicIds)
       : Promise.resolve({ data: [] as any[], error: null }),
   ]);
-  forumDatabaseError(reactions.error, "Não foi possível carregar as reações da comunidade.");
+  if (!forumUpgradeMissing(reactions.error))
+    forumDatabaseError(reactions.error, "Não foi possível carregar as reações da comunidade.");
   const reacted = new Set((reactions.data ?? []).map((row: any) => Number(row.topic_id)));
   return authors.map((topic: any) => {
     const {
@@ -728,7 +743,7 @@ async function listForumFeed(user: UaUser, rawInput: any, includeHidden = false)
   const sort = parseCommunitySort(input.sort);
   const limit = boundedCommunityLimit(input.limit, COMMUNITY_FEED_PAGE_SIZE, 30);
   const cursor = decodeTopicCursor(input.cursor);
-  const { data, error } = await db().rpc("ua_list_forum_topics", {
+  const rpcResult = await db().rpc("ua_list_forum_topics", {
     p_query: query || null,
     p_category: category,
     p_sort: sort,
@@ -739,8 +754,34 @@ async function listForumFeed(user: UaUser, rawInput: any, includeHidden = false)
     p_limit: limit + 1,
     p_include_hidden: includeHidden,
   });
-  forumDatabaseError(error, "Não foi possível carregar as conversas.");
-  const pageRows = (data ?? []) as any[];
+  let pageRows: any[];
+  if (forumUpgradeMissing(rpcResult.error)) {
+    let legacyQuery = db().from("ua_forum_topics").select("*");
+    if (!includeHidden) legacyQuery = legacyQuery.eq("status", "visible");
+    if (category) legacyQuery = legacyQuery.eq("category", category);
+    const legacy = await legacyQuery
+      .order("is_pinned", { ascending: false })
+      .order("last_activity_at", { ascending: false })
+      .limit(100);
+    forumDatabaseError(legacy.error, "Não foi possível carregar as conversas.");
+    const term = query.toLocaleLowerCase("pt-BR");
+    pageRows = (legacy.data ?? []).filter(
+      (row: any) =>
+        !term || `${row.title ?? ""} ${row.body ?? ""}`.toLocaleLowerCase("pt-BR").includes(term),
+    );
+    if (sort === "respondidas")
+      pageRows.sort((a, b) => Number(b.comment_count ?? 0) - Number(a.comment_count ?? 0));
+    if (sort === "sem-resposta")
+      pageRows.sort((a, b) => Number(a.comment_count ?? 0) - Number(b.comment_count ?? 0));
+    if (cursor) {
+      const index = pageRows.findIndex((row) => Number(row.id) === cursor.id);
+      pageRows = index >= 0 ? pageRows.slice(index + 1) : [];
+    }
+    pageRows = pageRows.slice(0, limit + 1);
+  } else {
+    forumDatabaseError(rpcResult.error, "Não foi possível carregar as conversas.");
+    pageRows = (rpcResult.data ?? []) as any[];
+  }
   const hasNextPage = pageRows.length > limit;
   const rows = pageRows.slice(0, limit);
   const items = await decorateForumTopics(rows, user.id, true);
@@ -801,15 +842,36 @@ async function listForumCommentsPage(
 ) {
   const limit = boundedCommunityLimit(rawInput?.limit, COMMUNITY_COMMENT_PAGE_SIZE, 30);
   const cursor = decodeCommentCursor(rawInput?.cursor);
-  const { data, error } = await db().rpc("ua_list_forum_root_comments", {
+  const rpcResult = await db().rpc("ua_list_forum_root_comments", {
     p_topic_id: topicId,
     p_cursor_time: cursor?.createdAt ?? null,
     p_cursor_id: cursor?.id ?? null,
     p_limit: limit + 1,
     p_include_hidden: includeHidden,
   });
-  forumDatabaseError(error, "Não foi possível carregar as respostas.");
-  const pageRows = (data ?? []) as any[];
+  let pageRows: any[];
+  if (forumUpgradeMissing(rpcResult.error)) {
+    let legacyQuery = db()
+      .from("ua_forum_comments")
+      .select("*")
+      .eq("topic_id", topicId)
+      .is("parent_comment_id", null)
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(100);
+    if (!includeHidden) legacyQuery = legacyQuery.eq("status", "visible");
+    const legacy = await legacyQuery;
+    forumDatabaseError(legacy.error, "Não foi possível carregar as respostas.");
+    pageRows = legacy.data ?? [];
+    if (cursor) {
+      const index = pageRows.findIndex((row) => Number(row.id) === cursor.id);
+      pageRows = index >= 0 ? pageRows.slice(index + 1) : [];
+    }
+    pageRows = pageRows.slice(0, limit + 1);
+  } else {
+    forumDatabaseError(rpcResult.error, "Não foi possível carregar as respostas.");
+    pageRows = (rpcResult.data ?? []) as any[];
+  }
   const hasNextPage = pageRows.length > limit;
   const rootRows = pageRows.slice(0, limit);
   const rootIds = rootRows.map((row) => Number(row.id));
@@ -1164,6 +1226,8 @@ async function consumeForumRateLimit(
     p_limit: limit,
     p_window_seconds: windowSeconds,
   });
+  // Compatibilidade temporária durante a janela entre deploy e migration.
+  if (forumUpgradeMissing(error)) return;
   forumDatabaseError(error, "Não foi possível validar esta ação com segurança.");
   if (data !== true) fail("Muitas ações em pouco tempo. Aguarde alguns minutos e tente novamente.");
 }
@@ -2084,7 +2148,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       const category = parseCommunityCategory(input.category);
       const clientRequestId = parseClientRequestId(input.clientRequestId);
       const attachmentIds = forumAttachmentIds(input.attachmentIds);
-      const created = await db().rpc("ua_create_forum_topic", {
+      let created = await db().rpc("ua_create_forum_topic", {
         p_author_id: user.id,
         p_title: title,
         p_body: body,
@@ -2092,6 +2156,14 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         p_client_request_id: clientRequestId,
         p_attachment_ids: attachmentIds,
       });
+      if (forumUpgradeMissing(created.error) && attachmentIds.length === 0) {
+        const legacy = await db()
+          .from("ua_forum_topics")
+          .insert({ author_id: user.id, title, body, category, status: "visible" })
+          .select("id")
+          .single();
+        created = { data: legacy.data?.id ?? null, error: legacy.error };
+      }
       forumDatabaseError(created.error, "Não foi possível publicar esta conversa.");
       const topicId = Number(created.data);
       if (!Number.isSafeInteger(topicId) || topicId < 1)

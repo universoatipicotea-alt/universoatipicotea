@@ -70,3 +70,14 @@ test("interface tem estados reais, anexos, carregamento incremental e confirmaç
   assert.match(gallery, /aria-label/);
   assert.doesNotMatch(forum, /fixture|mockTopic|fakePost/i);
 });
+
+test("feed mantém compatibilidade durante a janela antes da migration", () => {
+  const server = read("src/lib/community.server.ts");
+  const forum = read("src/pages/Forum.tsx");
+  assert.match(server, /forumUpgradeMissing/);
+  assert.match(server, /from\("ua_forum_topics"\)\.select\("\*"\)/);
+  assert.match(server, /from\("ua_forum_comments"\)/);
+  assert.match(server, /Compatibilidade temporária durante a janela entre deploy e migration/);
+  assert.match(forum, /bg-\[#f4c96b\]/);
+  assert.match(forum, /!text-\[#071f4d\]/);
+});
