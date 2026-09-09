@@ -78,10 +78,12 @@ export function CommunityFeedCard({
         <button
           type="button"
           onClick={onOpen}
-          className="inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-xs font-extrabold text-[var(--ink-soft)] transition hover:bg-[var(--linen)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sage)]/30"
+          aria-label={`Abrir conversa e responder. ${topic.commentCount ?? 0} respostas atuais.`}
+          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--ink)] bg-white px-4 text-xs font-extrabold text-[var(--ink)] transition hover:-translate-y-0.5 hover:bg-[var(--ink)] hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sage)]/30"
         >
           <MessageCircleMore size={16} aria-hidden="true" />
-          {topic.commentCount === 1 ? "1 resposta" : `${topic.commentCount ?? 0} respostas`}
+          Responder
+          <span aria-hidden="true">· {topic.commentCount ?? 0}</span>
         </button>
       </div>
     </article>
