@@ -344,51 +344,27 @@ export type Database = {
       ua_banners: {
         Row: {
           alt_text: string | null
-          created_at: string
-          created_by: string | null
-          desktop_key: string | null
           desktop_url: string | null
-          internal_title: string
-          is_active: boolean
-          mobile_key: string | null
           mobile_url: string | null
-          name: string
           slot: string
-          tablet_key: string | null
           tablet_url: string | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           alt_text?: string | null
-          created_at?: string
-          created_by?: string | null
-          desktop_key?: string | null
           desktop_url?: string | null
-          internal_title?: string
-          is_active?: boolean
-          mobile_key?: string | null
           mobile_url?: string | null
-          name?: string
           slot: string
-          tablet_key?: string | null
           tablet_url?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           alt_text?: string | null
-          created_at?: string
-          created_by?: string | null
-          desktop_key?: string | null
           desktop_url?: string | null
-          internal_title?: string
-          is_active?: boolean
-          mobile_key?: string | null
           mobile_url?: string | null
-          name?: string
           slot?: string
-          tablet_key?: string | null
           tablet_url?: string | null
           updated_at?: string
           updated_by?: string | null
