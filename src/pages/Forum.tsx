@@ -163,12 +163,12 @@ export default function Forum() {
     },
     onError: (error) => toast.error(error.message),
   });
-  const submitReply = async (event: FormEvent<HTMLFormElement>) => {
+  const submitReply = async (event: FormEvent<HTMLFormElement>, parentCommentId: number | null) => {
     event.preventDefault();
     if (topicId)
       await addComment.mutateAsync({
         topicId,
-        parentCommentId: replyTo,
+        parentCommentId,
         body: replyBody,
         clientRequestId: crypto.randomUUID(),
       });
@@ -244,33 +244,27 @@ export default function Forum() {
               <p className="mt-1 text-sm text-[var(--ink-soft)]">
                 Responda com respeito e evite compartilhar dados pessoais.
               </p>
-              <form onSubmit={submitReply} className="mt-5 space-y-3">
-                {replyTo ? (
-                  <p className="rounded-xl bg-[var(--linen)] p-3 text-sm">
-                    Respondendo a uma mensagem.{" "}
-                    <button
-                      type="button"
-                      className="font-bold underline"
-                      onClick={() => setReplyTo(null)}
-                    >
-                      Cancelar
-                    </button>
-                  </p>
-                ) : null}
-                <Textarea
-                  value={replyBody}
-                  onChange={(event) => setReplyBody(event.target.value)}
-                  minLength={2}
-                  maxLength={5000}
-                  required
-                  placeholder="Escreva sua resposta…"
-                  className="min-h-28"
-                />
-                <Button disabled={addComment.isPending}>
-                  <Send className="mr-2" size={16} />
-                  {addComment.isPending ? "Publicando…" : "Publicar resposta"}
-                </Button>
-              </form>
+              {!replyTo ? (
+                <form onSubmit={(event) => submitReply(event, null)} className="mt-5 space-y-3">
+                  <Label htmlFor="topic-reply" className="sr-only">
+                    Responder à conversa
+                  </Label>
+                  <Textarea
+                    id="topic-reply"
+                    value={replyBody}
+                    onChange={(event) => setReplyBody(event.target.value)}
+                    minLength={2}
+                    maxLength={5000}
+                    required
+                    placeholder="Escreva sua resposta…"
+                    className="min-h-28"
+                  />
+                  <Button type="submit" disabled={addComment.isPending}>
+                    <Send className="mr-2" size={16} />
+                    {addComment.isPending ? "Publicando…" : "Publicar resposta"}
+                  </Button>
+                </form>
+              ) : null}
               <div className="mt-7 space-y-3">
                 {comments.map((comment) => (
                   <article
@@ -308,7 +302,10 @@ export default function Forum() {
                           size="sm"
                           variant="ghost"
                           aria-label="Responder a esta mensagem"
-                          onClick={() => setReplyTo(comment.id)}
+                          onClick={() => {
+                            setReplyBody("");
+                            setReplyTo(comment.id);
+                          }}
                         >
                           Responder
                         </Button>
@@ -321,6 +318,44 @@ export default function Forum() {
                         Denunciar
                       </Button>
                     </div>
+                    {replyTo === comment.id ? (
+                      <form
+                        onSubmit={(event) => submitReply(event, comment.id)}
+                        className="mt-4 space-y-3 rounded-2xl bg-[var(--linen)] p-4"
+                      >
+                        <Label htmlFor={`comment-reply-${comment.id}`} className="font-extrabold">
+                          Responder para {authorLabel(comment)}
+                        </Label>
+                        <Textarea
+                          id={`comment-reply-${comment.id}`}
+                          autoFocus
+                          value={replyBody}
+                          onChange={(event) => setReplyBody(event.target.value)}
+                          minLength={2}
+                          maxLength={5000}
+                          required
+                          placeholder="Escreva sua resposta…"
+                          className="min-h-24 bg-white"
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          <Button type="submit" size="sm" disabled={addComment.isPending}>
+                            <Send className="mr-2" size={15} />
+                            {addComment.isPending ? "Publicando…" : "Publicar resposta"}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setReplyBody("");
+                              setReplyTo(null);
+                            }}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </form>
+                    ) : null}
                   </article>
                 ))}
                 {commentQuery.isLoading ? <LoadingCards /> : null}

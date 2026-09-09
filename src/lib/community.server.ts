@@ -541,7 +541,10 @@ async function decorateAuthors(rows: any[]) {
     }));
   const [{ data: users }, { data: profiles }] = await Promise.all([
     db().from("ua_users").select("id,name").in("id", authorIds),
-    db().from("ua_profiles").select("user_id,display_name,avatar_url").in("user_id", authorIds),
+    db()
+      .from("ua_profiles")
+      .select("user_id,display_name,avatar_url,avatar_key")
+      .in("user_id", authorIds),
   ]);
   const nameById = new Map((users ?? []).map((user: any) => [user.id, user.name]));
   const profileById = new Map((profiles ?? []).map((profile: any) => [profile.user_id, profile]));
@@ -553,7 +556,9 @@ async function decorateAuthors(rows: any[]) {
       authorId: author_id,
       authorName: nameById.get(author_id) ?? null,
       authorDisplayName: profile?.display_name ?? null,
-      authorAvatarUrl: profile?.avatar_url ?? null,
+      authorAvatarUrl:
+        profile?.avatar_url ??
+        (profile?.avatar_key ? `/api/public/ua-image/${profile.avatar_key}` : null),
     };
   });
 }
@@ -2059,14 +2064,23 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       return ensureMemberProfile(await requireUser());
     case "community.profile.update": {
       const user = await requireUser();
-      await ensureMemberProfile(user);
+      const { profile: currentProfile } = await ensureMemberProfile(user);
+      const avatarKey = input.avatarKey
+        ? String(input.avatarKey)
+        : currentProfile.avatarKey
+          ? String(currentProfile.avatarKey)
+          : null;
+      if (avatarKey && !avatarKey.startsWith(`members/${user.id}/avatars/`))
+        fail("A foto de perfil selecionada é inválida.");
       const { data } = await db()
         .from("ua_profiles")
         .update({
           display_name: input.displayName,
           bio: input.bio ?? null,
-          avatar_key: input.avatarKey ?? null,
-          avatar_url: input.avatarUrl ?? null,
+          avatar_key: avatarKey,
+          avatar_url: avatarKey
+            ? `/api/public/ua-image/${avatarKey}`
+            : (currentProfile.avatarUrl ?? null),
         })
         .eq("user_id", user.id)
         .select("*")

@@ -81,3 +81,18 @@ test("feed mantém compatibilidade durante a janela antes da migration", () => {
   assert.match(forum, /bg-\[#f4c96b\]/);
   assert.match(forum, /!text-\[#071f4d\]/);
 });
+
+test("respostas aparecem inline e fotos salvas são exibidas no feed", () => {
+  const server = read("src/lib/community.server.ts");
+  const forum = read("src/pages/Forum.tsx");
+  const feedCard = read("src/components/community/CommunityFeedCard.tsx");
+  assert.match(forum, /replyTo === comment\.id/);
+  assert.match(forum, /Responder para/);
+  assert.match(forum, /autoFocus/);
+  assert.match(forum, /submitReply\(event, comment\.id\)/);
+  assert.match(feedCard, /Abrir conversa e responder/);
+  assert.match(feedCard, />\s*Responder\s*</);
+  assert.match(server, /select\("user_id,display_name,avatar_url,avatar_key"\)/);
+  assert.match(server, /`\/api\/public\/ua-image\/\$\{profile\.avatar_key\}`/);
+  assert.match(server, /avatarKey\.startsWith\(`members\/\$\{user\.id\}\/avatars\/`\)/);
+});
