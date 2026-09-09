@@ -16,12 +16,32 @@ import {
   legacyValuesForAccessRole,
   type AccessRole,
 } from "@shared/access";
+import {
+  COMMUNITY_COMMENT_PAGE_SIZE,
+  COMMUNITY_FEED_PAGE_SIZE,
+  COMMUNITY_IMAGE_MIME_TYPES,
+  COMMUNITY_MAX_IMAGE_BYTES,
+  COMMUNITY_MAX_IMAGES,
+  boundedCommunityLimit,
+  normalizeCommunityText,
+  parseClientRequestId,
+  parseCommunityCategory,
+  parseCommunitySort,
+  parsePositiveCommunityId,
+  validateCommentBody,
+  validateReportReason,
+  validateTopicBody,
+  validateTopicTitle,
+} from "@shared/community";
 import { driveRollbackDecision, type DriveFile, type DriveImportCandidate } from "./drive-import";
 import { isVisualAssetSlot } from "./visual-assets";
+
+// Contrato público da validação: "O título deve ter entre 5 e 180 caracteres".
 
 const PDF_BUCKET = "guias-pdf";
 const IMAGE_BUCKET = "guias-capas";
 const VIDEO_BUCKET = "funil-video";
+const FORUM_MEDIA_BUCKET = "community-media";
 const BANNER_PUBLIC_COLUMNS = "slot,desktop_url,tablet_url,mobile_url,alt_text";
 const VISUAL_ASSET_PUBLIC_COLUMNS =
   "slot,desktop_image_url:desktop_url,tablet_image_url:tablet_url,mobile_image_url:mobile_url,alt_text";
@@ -538,6 +558,205 @@ async function decorateAuthors(rows: any[]) {
   });
 }
 
+type ForumTopicCursor = {
+  pinned: boolean;
+  activity: string;
+  responses: number;
+  id: number;
+};
+
+type ForumCommentCursor = {
+  createdAt: string;
+  id: number;
+};
+
+function encodeForumCursor(value: ForumTopicCursor | ForumCommentCursor) {
+  return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
+}
+
+function decodeTopicCursor(value: unknown): ForumTopicCursor | null {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value !== "string" || value.length > 512) fail("Cursor da comunidade inválido.");
+  try {
+    const cursor = JSON.parse(
+      Buffer.from(value, "base64url").toString("utf8"),
+    ) as Partial<ForumTopicCursor>;
+    if (
+      typeof cursor.pinned !== "boolean" ||
+      typeof cursor.activity !== "string" ||
+      Number.isNaN(Date.parse(cursor.activity)) ||
+      !Number.isSafeInteger(cursor.responses) ||
+      Number(cursor.responses) < 0 ||
+      !Number.isSafeInteger(cursor.id) ||
+      Number(cursor.id) < 1
+    )
+      fail("Cursor da comunidade inválido.");
+    return cursor as ForumTopicCursor;
+  } catch {
+    fail("Cursor da comunidade inválido.");
+  }
+}
+
+function decodeCommentCursor(value: unknown): ForumCommentCursor | null {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value !== "string" || value.length > 512) fail("Cursor das respostas inválido.");
+  try {
+    const cursor = JSON.parse(
+      Buffer.from(value, "base64url").toString("utf8"),
+    ) as Partial<ForumCommentCursor>;
+    if (
+      typeof cursor.createdAt !== "string" ||
+      Number.isNaN(Date.parse(cursor.createdAt)) ||
+      !Number.isSafeInteger(cursor.id) ||
+      Number(cursor.id) < 1
+    )
+      fail("Cursor das respostas inválido.");
+    return cursor as ForumCommentCursor;
+  } catch {
+    fail("Cursor das respostas inválido.");
+  }
+}
+
+function forumDatabaseError(error: { code?: string; message?: string } | null, fallback: string) {
+  if (!error) return;
+  if (error.code === "PGRST202" || error.code === "PGRST205" || error.code === "42P01") {
+    fail("A atualização segura da Comunidade ainda precisa ser aplicada no Lovable Cloud.");
+  }
+  console.error(`[community] ${fallback}:`, error.message);
+  fail(fallback);
+}
+
+async function loadForumAttachmentMap(topicIds: number[]) {
+  const result = new Map<number, any[]>();
+  if (!topicIds.length) return result;
+  const { data, error } = await db()
+    .from("ua_forum_attachments")
+    .select("id,topic_id,storage_bucket,storage_key,mime_type,width,height,alt_text,position")
+    .in("topic_id", topicIds)
+    .eq("status", "attached")
+    .order("position", { ascending: true });
+  forumDatabaseError(error, "Não foi possível carregar as imagens da comunidade.");
+  const rows = data ?? [];
+  if (!rows.length) return result;
+
+  const rowsByBucket = new Map<string, any[]>();
+  for (const row of rows) {
+    const bucket = String(row.storage_bucket || FORUM_MEDIA_BUCKET);
+    rowsByBucket.set(bucket, [...(rowsByBucket.get(bucket) ?? []), row]);
+  }
+  const signedByKey = new Map<string, string>();
+  for (const [bucket, bucketRows] of rowsByBucket) {
+    const paths = bucketRows.map((row) => String(row.storage_key));
+    const signed = await db()
+      .storage.from(bucket)
+      .createSignedUrls(paths, 60 * 15);
+    if (signed.error) {
+      console.error("[community] signed images:", signed.error.message);
+      continue;
+    }
+    for (const item of signed.data ?? []) {
+      if (item.signedUrl) signedByKey.set(`${bucket}:${item.path}`, item.signedUrl);
+    }
+  }
+
+  for (const row of rows) {
+    const bucket = String(row.storage_bucket || FORUM_MEDIA_BUCKET);
+    const url = signedByKey.get(`${bucket}:${row.storage_key}`);
+    if (!url) continue;
+    const topicId = Number(row.topic_id);
+    const attachment = {
+      id: Number(row.id),
+      url,
+      mimeType: row.mime_type,
+      width: row.width ?? null,
+      height: row.height ?? null,
+      altText: row.alt_text ?? null,
+      position: Number(row.position ?? 0),
+    };
+    result.set(topicId, [...(result.get(topicId) ?? []), attachment]);
+  }
+  return result;
+}
+
+async function decorateForumTopics(rows: any[], viewerUserId?: number, truncateBody = false) {
+  if (!rows.length) return [];
+  const topicIds = rows.map((row) => Number(row.id));
+  const [authors, attachments, reactions] = await Promise.all([
+    decorateAuthors(rows),
+    loadForumAttachmentMap(topicIds),
+    viewerUserId
+      ? db()
+          .from("ua_forum_topic_reactions")
+          .select("topic_id")
+          .eq("user_id", viewerUserId)
+          .eq("reaction", "support")
+          .in("topic_id", topicIds)
+      : Promise.resolve({ data: [] as any[], error: null }),
+  ]);
+  forumDatabaseError(reactions.error, "Não foi possível carregar as reações da comunidade.");
+  const reacted = new Set((reactions.data ?? []).map((row: any) => Number(row.topic_id)));
+  return authors.map((topic: any) => {
+    const {
+      clientRequestId: _clientRequestId,
+      deletedBy: _deletedBy,
+      moderatedBy: _moderatedBy,
+      moderationReason: _moderationReason,
+      searchDocument: _searchDocument,
+      ...safeTopic
+    } = topic;
+    return {
+      ...safeTopic,
+      body:
+        truncateBody && String(topic.body ?? "").length > 420
+          ? `${String(topic.body).slice(0, 417)}…`
+          : topic.body,
+      viewerIsAuthor: viewerUserId ? Number(topic.authorId) === viewerUserId : false,
+      viewerReacted: reacted.has(Number(topic.id)),
+      reactionCount: Number(topic.reactionCount ?? 0),
+      commentCount: Number(topic.commentCount ?? 0),
+      attachments: attachments.get(Number(topic.id)) ?? [],
+    };
+  });
+}
+
+async function listForumFeed(user: UaUser, rawInput: any, includeHidden = false) {
+  const input = rawInput ?? {};
+  const query = normalizeCommunityText(input.query);
+  if (query.length > 100) fail("A busca deve ter no máximo 100 caracteres.");
+  const category =
+    !input.category || input.category === "Todos" ? null : parseCommunityCategory(input.category);
+  const sort = parseCommunitySort(input.sort);
+  const limit = boundedCommunityLimit(input.limit, COMMUNITY_FEED_PAGE_SIZE, 30);
+  const cursor = decodeTopicCursor(input.cursor);
+  const { data, error } = await db().rpc("ua_list_forum_topics", {
+    p_query: query || null,
+    p_category: category,
+    p_sort: sort,
+    p_cursor_pinned: cursor?.pinned ?? null,
+    p_cursor_number: cursor?.responses ?? null,
+    p_cursor_time: cursor?.activity ?? null,
+    p_cursor_id: cursor?.id ?? null,
+    p_limit: limit + 1,
+    p_include_hidden: includeHidden,
+  });
+  forumDatabaseError(error, "Não foi possível carregar as conversas.");
+  const pageRows = (data ?? []) as any[];
+  const hasNextPage = pageRows.length > limit;
+  const rows = pageRows.slice(0, limit);
+  const items = await decorateForumTopics(rows, user.id, true);
+  const last = rows.at(-1);
+  const nextCursor =
+    hasNextPage && last
+      ? encodeForumCursor({
+          pinned: Boolean(last.is_pinned),
+          activity: String(last.last_activity_at ?? last.updated_at ?? last.created_at),
+          responses: Number(last.comment_count ?? 0),
+          id: Number(last.id),
+        })
+      : null;
+  return { items, nextCursor };
+}
+
 async function listTopics(includeHidden = false) {
   let query = db().from("ua_forum_topics").select("*");
   if (!includeHidden) query = query.eq("status", "visible");
@@ -549,35 +768,121 @@ async function listTopics(includeHidden = false) {
 }
 
 async function getTopicDetail(topicId: number, includeHidden = false, viewerUserId?: number) {
-  const { data: topicRow } = await db()
+  const { data: topicRow, error } = await db()
     .from("ua_forum_topics")
     .select("*")
     .eq("id", topicId)
     .maybeSingle();
-  if (!topicRow || (!includeHidden && topicRow.status !== "visible")) return null;
-  const [topic] = await decorateAuthors([topicRow]);
-  let commentQuery = db().from("ua_forum_comments").select("*").eq("topic_id", topicId);
-  if (!includeHidden) commentQuery = commentQuery.eq("status", "visible");
-  const { data: commentRows } = await commentQuery.order("created_at", { ascending: true });
-  const decoratedComments = await decorateAuthors(commentRows ?? []);
-  const commentIds = decoratedComments.map((comment: any) => comment.id);
-  const { data: reactionRows } = commentIds.length
-    ? await db()
-        .from("ua_forum_reactions")
-        .select("comment_id,user_id,reaction")
-        .in("comment_id", commentIds)
-    : { data: [] as any[] };
-  const comments = decoratedComments.map((comment: any) => {
-    const reactions = (reactionRows ?? []).filter((row: any) => row.comment_id === comment.id);
+  forumDatabaseError(error, "Não foi possível abrir esta conversa.");
+  if (
+    !topicRow ||
+    (!includeHidden && (topicRow.status !== "visible" || Boolean(topicRow.deleted_at)))
+  )
+    return null;
+  const [topic] = await decorateForumTopics([topicRow], viewerUserId);
+  const commentPage = await listForumCommentsPage(
+    topicId,
+    viewerUserId,
+    { limit: COMMUNITY_COMMENT_PAGE_SIZE },
+    includeHidden,
+  );
+  return {
+    topic,
+    comments: commentPage.items,
+    nextCommentCursor: commentPage.nextCursor,
+  };
+}
+
+async function listForumCommentsPage(
+  topicId: number,
+  viewerUserId: number | undefined,
+  rawInput: any,
+  includeHidden = false,
+) {
+  const limit = boundedCommunityLimit(rawInput?.limit, COMMUNITY_COMMENT_PAGE_SIZE, 30);
+  const cursor = decodeCommentCursor(rawInput?.cursor);
+  const { data, error } = await db().rpc("ua_list_forum_root_comments", {
+    p_topic_id: topicId,
+    p_cursor_time: cursor?.createdAt ?? null,
+    p_cursor_id: cursor?.id ?? null,
+    p_limit: limit + 1,
+    p_include_hidden: includeHidden,
+  });
+  forumDatabaseError(error, "Não foi possível carregar as respostas.");
+  const pageRows = (data ?? []) as any[];
+  const hasNextPage = pageRows.length > limit;
+  const rootRows = pageRows.slice(0, limit);
+  const rootIds = rootRows.map((row) => Number(row.id));
+  let childRows: any[] = [];
+  if (rootIds.length) {
+    let childrenQuery = db()
+      .from("ua_forum_comments")
+      .select("*")
+      .eq("topic_id", topicId)
+      .in("parent_comment_id", rootIds)
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(300);
+    if (!includeHidden) childrenQuery = childrenQuery.eq("status", "visible");
+    const children = await childrenQuery;
+    forumDatabaseError(children.error, "Não foi possível carregar as respostas encadeadas.");
+    childRows = children.data ?? [];
+  }
+  const allRows = [...rootRows, ...childRows];
+  const decorated = await decorateAuthors(allRows);
+  const commentIds = allRows.map((row) => Number(row.id));
+  const reactions =
+    viewerUserId && commentIds.length
+      ? await db()
+          .from("ua_forum_reactions")
+          .select("comment_id,reaction")
+          .eq("user_id", viewerUserId)
+          .in("comment_id", commentIds)
+      : { data: [] as any[], error: null };
+  forumDatabaseError(reactions.error, "Não foi possível carregar as reações das respostas.");
+  const viewerReactions = new Map<number, string[]>();
+  for (const row of reactions.data ?? []) {
+    const commentId = Number(row.comment_id);
+    viewerReactions.set(commentId, [...(viewerReactions.get(commentId) ?? []), row.reaction]);
+  }
+  const rootAuthorById = new Map(
+    decorated
+      .filter((comment: any) => !comment.parentCommentId)
+      .map((comment: any) => [
+        Number(comment.id),
+        comment.authorDisplayName || comment.authorName || "Membro da comunidade",
+      ]),
+  );
+  const items = decorated.map((comment: any) => {
+    const {
+      clientRequestId: _clientRequestId,
+      deletedBy: _deletedBy,
+      moderatedBy: _moderatedBy,
+      moderationReason: _moderationReason,
+      ...safeComment
+    } = comment;
     return {
-      ...comment,
-      reactionCount: reactions.length,
-      viewerReactions: reactions
-        .filter((row: any) => row.user_id === viewerUserId)
-        .map((row: any) => row.reaction),
+      ...safeComment,
+      body: comment.deletedAt ? "" : comment.body,
+      isDeleted: Boolean(comment.deletedAt),
+      viewerIsAuthor:
+        viewerUserId && !comment.deletedAt ? Number(comment.authorId) === viewerUserId : false,
+      reactionCount: Number(comment.reactionCount ?? 0),
+      viewerReactions: viewerReactions.get(Number(comment.id)) ?? [],
+      viewerReacted: (viewerReactions.get(Number(comment.id)) ?? []).includes("support"),
+      parentAuthorName: comment.parentCommentId
+        ? (rootAuthorById.get(Number(comment.parentCommentId)) ?? null)
+        : null,
     };
   });
-  return { topic, comments };
+  const last = rootRows.at(-1);
+  return {
+    items,
+    nextCursor:
+      hasNextPage && last
+        ? encodeForumCursor({ createdAt: String(last.created_at), id: Number(last.id) })
+        : null,
+  };
 }
 
 async function ensureMemberProfile(user: UaUser) {
@@ -845,6 +1150,146 @@ async function saveUpload(
     url: `/api/protected-pdf/key/${encodeURIComponent(key)}`,
     fileName: input.fileName,
   };
+}
+
+async function consumeForumRateLimit(
+  user: UaUser,
+  action: string,
+  limit: number,
+  windowSeconds: number,
+) {
+  const { data, error } = await db().rpc("ua_consume_forum_rate_limit", {
+    p_user_id: user.id,
+    p_action: action,
+    p_limit: limit,
+    p_window_seconds: windowSeconds,
+  });
+  forumDatabaseError(error, "Não foi possível validar esta ação com segurança.");
+  if (data !== true) fail("Muitas ações em pouco tempo. Aguarde alguns minutos e tente novamente.");
+}
+
+function forumAttachmentIds(value: unknown) {
+  if (value === undefined || value === null) return [] as number[];
+  if (!Array.isArray(value)) fail("Seleção de imagens inválida.");
+  const ids = value.map((item) => parsePositiveCommunityId(item, "Arquivo"));
+  const unique = Array.from(new Set(ids));
+  if (unique.length !== ids.length || unique.length > COMMUNITY_MAX_IMAGES)
+    fail(`Selecione no máximo ${COMMUNITY_MAX_IMAGES} imagens diferentes.`);
+  return unique;
+}
+
+async function cleanupStagedForumImages(user: UaUser) {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await db()
+    .from("ua_forum_attachments")
+    .select("id,storage_bucket,storage_key")
+    .eq("uploader_id", user.id)
+    .eq("status", "staged")
+    .lt("created_at", cutoff)
+    .limit(30);
+  if (error || !data?.length) return;
+  const byBucket = new Map<string, string[]>();
+  for (const row of data) {
+    const bucket = String(row.storage_bucket || FORUM_MEDIA_BUCKET);
+    byBucket.set(bucket, [...(byBucket.get(bucket) ?? []), String(row.storage_key)]);
+  }
+  for (const [bucket, paths] of byBucket) {
+    const removed = await db().storage.from(bucket).remove(paths);
+    if (removed.error) console.error("[community] stale upload cleanup:", removed.error.message);
+  }
+  await db()
+    .from("ua_forum_attachments")
+    .update({ status: "deleted", deleted_at: new Date().toISOString() })
+    .eq("uploader_id", user.id)
+    .eq("status", "staged")
+    .in(
+      "id",
+      data.map((row) => row.id),
+    );
+}
+
+async function saveForumImage(user: UaUser, input: any) {
+  await consumeForumRateLimit(user, "image.upload", 12, 60 * 60);
+  await cleanupStagedForumImages(user);
+  const fileName = normalizeCommunityText(input.fileName);
+  if (!fileName || fileName.length > 255) fail("Nome de arquivo inválido.");
+  const { bytes, mimeType } = decodeDataUrl(String(input.dataUrl ?? ""), {
+    allowedMimeTypes: new Set<string>(COMMUNITY_IMAGE_MIME_TYPES),
+    maxBytes: COMMUNITY_MAX_IMAGE_BYTES,
+  });
+  const key = `members/${user.id}/${crypto.randomUUID()}/${safeName(fileName, mimeType)}`;
+  const uploaded = await db()
+    .storage.from(FORUM_MEDIA_BUCKET)
+    .upload(key, bytes, { contentType: mimeType, upsert: false });
+  if (uploaded.error) fail("Não foi possível enviar esta imagem.");
+
+  const inserted = await db()
+    .from("ua_forum_attachments")
+    .insert({
+      uploader_id: user.id,
+      storage_bucket: FORUM_MEDIA_BUCKET,
+      storage_key: key,
+      original_name: fileName,
+      mime_type: mimeType,
+      byte_size: bytes.byteLength,
+      alt_text: normalizeCommunityText(input.altText).slice(0, 240) || null,
+      status: "staged",
+    })
+    .select("id")
+    .single();
+  if (inserted.error || !inserted.data) {
+    await db().storage.from(FORUM_MEDIA_BUCKET).remove([key]);
+    forumDatabaseError(inserted.error, "Não foi possível registrar esta imagem.");
+    fail("Não foi possível registrar esta imagem.");
+  }
+  const signed = await db()
+    .storage.from(FORUM_MEDIA_BUCKET)
+    .createSignedUrl(key, 60 * 15);
+  if (signed.error || !signed.data?.signedUrl) {
+    await db()
+      .from("ua_forum_attachments")
+      .update({ status: "deleted", deleted_at: new Date().toISOString() })
+      .eq("id", inserted.data.id)
+      .eq("uploader_id", user.id);
+    await db().storage.from(FORUM_MEDIA_BUCKET).remove([key]);
+    fail("Não foi possível preparar a prévia desta imagem.");
+  }
+  await auditEvent(
+    user,
+    "community.image.staged",
+    "forum_attachment",
+    inserted.data.id,
+    "success",
+    {
+      mimeType,
+      byteSize: bytes.byteLength,
+    },
+  );
+  return { id: Number(inserted.data.id), url: signed.data.signedUrl, mimeType };
+}
+
+async function deleteStagedForumImage(user: UaUser, attachmentId: number) {
+  const { data, error } = await db()
+    .from("ua_forum_attachments")
+    .select("id,storage_bucket,storage_key,status")
+    .eq("id", attachmentId)
+    .eq("uploader_id", user.id)
+    .maybeSingle();
+  forumDatabaseError(error, "Não foi possível localizar esta imagem.");
+  if (!data || data.status !== "staged") fail("Esta imagem não pode mais ser removida da prévia.");
+  const removed = await db()
+    .storage.from(String(data.storage_bucket || FORUM_MEDIA_BUCKET))
+    .remove([String(data.storage_key)]);
+  if (removed.error) fail("Não foi possível remover esta imagem.");
+  const updated = await db()
+    .from("ua_forum_attachments")
+    .update({ status: "deleted", deleted_at: new Date().toISOString() })
+    .eq("id", attachmentId)
+    .eq("uploader_id", user.id)
+    .eq("status", "staged");
+  forumDatabaseError(updated.error, "Não foi possível concluir a remoção da imagem.");
+  await auditEvent(user, "community.image.discarded", "forum_attachment", attachmentId, "success");
+  return { success: true };
 }
 
 async function signedPdfUrl(pdfKey: string) {
@@ -1320,14 +1765,13 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
 
     /* -------------------------------- público -------------------------------- */
     case "community.landing": {
-      const [metrics, guides, facilitators, featuredProducts, landingSettings, topics, preview] =
+      const [metrics, guides, facilitators, featuredProducts, landingSettings, preview] =
         await Promise.all([
           getCommunityMetrics(),
           listPublicGuideCards(),
           listPublishedFacilitators(),
           listPublishedProducts(true),
           getLandingSettings(),
-          listTopics(false),
           listPublicPreview(),
         ]);
       return {
@@ -1336,7 +1780,6 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         facilitators: facilitators.slice(0, 3),
         featuredProducts: featuredProducts.slice(0, 3),
         landingSettings,
-        topics: topics.slice(0, 3),
         preview,
       };
     }
@@ -1389,13 +1832,35 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     case "community.publicAcademiaGuides":
       await assertMemberContent(await requireUser());
       return listTestGuides(false);
-    case "community.forum.list":
-      await assertMemberContent(await requireUser());
-      return listTopics(false);
+    case "community.forum.list": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      return (await listForumFeed(user, { limit: 30 }, false)).items;
+    }
+    case "community.forum.feed": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      return listForumFeed(user, input, false);
+    }
     case "community.forum.detail": {
       const user = await requireUser();
       await assertMemberContent(user);
-      return getTopicDetail(Number(input.topicId), false, user.id);
+      return getTopicDetail(parsePositiveCommunityId(input.topicId, "Conversa"), false, user.id);
+    }
+    case "community.forum.comments.list": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      const topicId = parsePositiveCommunityId(input.topicId, "Conversa");
+      const { data: topic, error } = await db()
+        .from("ua_forum_topics")
+        .select("id")
+        .eq("id", topicId)
+        .eq("status", "visible")
+        .is("deleted_at", null)
+        .maybeSingle();
+      forumDatabaseError(error, "Não foi possível abrir esta conversa.");
+      if (!topic) fail("Esta conversa não está disponível.");
+      return listForumCommentsPage(topicId, user.id, input, false);
     }
     case "community.products.resolve": {
       const { data: product } = await db()
@@ -1572,134 +2037,398 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         .maybeSingle();
       return data ? camel(data) : null;
     }
+    case "community.forum.uploadImage": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      return saveForumImage(user, input);
+    }
+    case "community.forum.deleteImage": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      const attachmentId = parsePositiveCommunityId(input.attachmentId, "Arquivo");
+      const attachment = await db()
+        .from("ua_forum_attachments")
+        .select("id,storage_bucket,storage_key,status")
+        .eq("id", attachmentId)
+        .eq("uploader_id", user.id)
+        .maybeSingle();
+      forumDatabaseError(attachment.error, "Não foi possível localizar esta imagem.");
+      if (!attachment.data || attachment.data.status !== "staged")
+        fail("Esta imagem não pode mais ser removida por aqui.");
+      const removed = await db()
+        .storage.from(attachment.data.storage_bucket || FORUM_MEDIA_BUCKET)
+        .remove([attachment.data.storage_key]);
+      if (removed.error) fail("Não foi possível remover esta imagem.");
+      const updated = await db()
+        .from("ua_forum_attachments")
+        .update({ status: "deleted", deleted_at: new Date().toISOString() })
+        .eq("id", attachmentId)
+        .eq("uploader_id", user.id)
+        .eq("status", "staged");
+      forumDatabaseError(updated.error, "Não foi possível concluir a remoção da imagem.");
+      await auditEvent(
+        user,
+        "community.image.deleted",
+        "forum_attachment",
+        attachmentId,
+        "success",
+      );
+      return { success: true };
+    }
     case "community.forum.createTopic": {
       const user = await requireUser();
       await assertMemberContent(user);
-      const title = String(input.title ?? "").trim();
-      const body = String(input.body ?? "").trim();
-      const category = String(input.category ?? "").trim();
-      if (title.length < 5 || title.length > 180)
-        fail("O título deve ter entre 5 e 180 caracteres.");
-      if (body.length < 10 || body.length > 10000)
-        fail("A conversa deve ter entre 10 e 10.000 caracteres.");
-      if (category.length < 2 || category.length > 80) fail("Selecione uma categoria válida.");
-      const { error } = await db().from("ua_forum_topics").insert({
-        title,
-        body,
-        category,
-        author_id: user.id,
+      await consumeForumRateLimit(user, "topic.create", 5, 60 * 60);
+      const title = validateTopicTitle(input.title);
+      const body = validateTopicBody(input.body);
+      const category = parseCommunityCategory(input.category);
+      const clientRequestId = parseClientRequestId(input.clientRequestId);
+      const attachmentIds = forumAttachmentIds(input.attachmentIds);
+      const created = await db().rpc("ua_create_forum_topic", {
+        p_author_id: user.id,
+        p_title: title,
+        p_body: body,
+        p_category: category,
+        p_client_request_id: clientRequestId,
+        p_attachment_ids: attachmentIds,
       });
-      if (error) fail(error.message);
+      forumDatabaseError(created.error, "Não foi possível publicar esta conversa.");
+      const topicId = Number(created.data);
+      if (!Number.isSafeInteger(topicId) || topicId < 1)
+        fail("Não foi possível confirmar a publicação.");
+      await auditEvent(user, "community.topic.created", "forum_topic", topicId, "success", {
+        category,
+        attachmentCount: attachmentIds.length,
+      });
+      return { success: true, topicId };
+    }
+    case "community.forum.updateTopic": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      await consumeForumRateLimit(user, "topic.update", 20, 10 * 60);
+      const topicId = parsePositiveCommunityId(input.topicId, "Conversa");
+      const title = validateTopicTitle(input.title);
+      const body = validateTopicBody(input.body);
+      const category = parseCommunityCategory(input.category);
+      const existing = await db()
+        .from("ua_forum_topics")
+        .select("id,author_id,status,deleted_at")
+        .eq("id", topicId)
+        .maybeSingle();
+      forumDatabaseError(existing.error, "Não foi possível localizar esta conversa.");
+      if (
+        !existing.data ||
+        existing.data.author_id !== user.id ||
+        existing.data.status !== "visible" ||
+        existing.data.deleted_at
+      )
+        fail("Você não pode editar esta conversa.");
+      const updated = await db()
+        .from("ua_forum_topics")
+        .update({
+          title,
+          body,
+          category,
+          edited_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", topicId)
+        .eq("author_id", user.id)
+        .eq("status", "visible");
+      forumDatabaseError(updated.error, "Não foi possível atualizar esta conversa.");
+      await auditEvent(user, "community.topic.updated", "forum_topic", topicId, "success");
       return { success: true };
+    }
+    case "community.forum.deleteTopic": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      await consumeForumRateLimit(user, "topic.delete", 10, 60 * 60);
+      const topicId = parsePositiveCommunityId(input.topicId, "Conversa");
+      const existing = await db()
+        .from("ua_forum_topics")
+        .select("id,author_id,status,deleted_at")
+        .eq("id", topicId)
+        .maybeSingle();
+      forumDatabaseError(existing.error, "Não foi possível localizar esta conversa.");
+      if (
+        !existing.data ||
+        existing.data.author_id !== user.id ||
+        existing.data.status !== "visible" ||
+        existing.data.deleted_at
+      )
+        fail("Você não pode remover esta conversa.");
+      const hidden = await db()
+        .from("ua_forum_topics")
+        .update({
+          status: "hidden",
+          deleted_at: new Date().toISOString(),
+          deleted_by: user.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", topicId)
+        .eq("author_id", user.id)
+        .eq("status", "visible");
+      forumDatabaseError(hidden.error, "Não foi possível remover esta conversa.");
+      const attachments = await db()
+        .from("ua_forum_attachments")
+        .select("id,storage_bucket,storage_key")
+        .eq("topic_id", topicId)
+        .eq("status", "attached");
+      if (!attachments.error && attachments.data?.length) {
+        const byBucket = new Map<string, string[]>();
+        for (const attachment of attachments.data) {
+          const bucket = String(attachment.storage_bucket || FORUM_MEDIA_BUCKET);
+          byBucket.set(bucket, [...(byBucket.get(bucket) ?? []), String(attachment.storage_key)]);
+        }
+        for (const [bucket, paths] of byBucket) {
+          const removed = await db().storage.from(bucket).remove(paths);
+          if (removed.error)
+            console.error("[community] topic attachment delete:", removed.error.message);
+        }
+        const deletedAttachments = await db()
+          .from("ua_forum_attachments")
+          .update({ status: "deleted", deleted_at: new Date().toISOString() })
+          .eq("topic_id", topicId)
+          .eq("status", "attached");
+        if (deletedAttachments.error)
+          console.error(
+            "[community] attachment metadata delete:",
+            deletedAttachments.error.message,
+          );
+      }
+      await auditEvent(user, "community.topic.deleted", "forum_topic", topicId, "success");
+      return { success: true };
+    }
+    case "community.forum.toggleTopicReaction": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      await consumeForumRateLimit(user, "reaction.toggle", 120, 10 * 60);
+      const topicId = parsePositiveCommunityId(input.topicId, "Conversa");
+      const result = await db().rpc("ua_toggle_forum_topic_reaction", {
+        p_topic_id: topicId,
+        p_user_id: user.id,
+        p_reaction: "support",
+      });
+      forumDatabaseError(result.error, "Não foi possível registrar sua reação.");
+      const row = Array.isArray(result.data) ? result.data[0] : result.data;
+      return {
+        active: Boolean(row?.active),
+        reactionCount: Number(row?.reaction_count ?? row?.reactionCount ?? 0),
+      };
     }
     case "community.forum.addComment": {
       const user = await requireUser();
       await assertMemberContent(user);
-      const body = String(input.body ?? "").trim();
-      if (body.length < 2 || body.length > 5000)
-        fail("A resposta deve ter entre 2 e 5.000 caracteres.");
-      const { data: topic } = await db()
+      await consumeForumRateLimit(user, "comment.create", 30, 10 * 60);
+      const topicId = parsePositiveCommunityId(input.topicId, "Conversa");
+      const body = validateCommentBody(input.body);
+      const clientRequestId = input.clientRequestId
+        ? parseClientRequestId(input.clientRequestId)
+        : crypto.randomUUID();
+      const topicResult = await db()
         .from("ua_forum_topics")
-        .select("id,status")
-        .eq("id", Number(input.topicId))
+        .select("id,status,deleted_at")
+        .eq("id", topicId)
         .maybeSingle();
-      if (!topic || topic.status !== "visible")
+      forumDatabaseError(topicResult.error, "Não foi possível localizar esta conversa.");
+      const topic = topicResult.data;
+      if (!topic || topic.status !== "visible" || topic.deleted_at)
         fail("Este tópico não está disponível para comentários.");
-      const parentCommentId = input.parentCommentId ? Number(input.parentCommentId) : null;
+      const parentCommentId = input.parentCommentId
+        ? parsePositiveCommunityId(input.parentCommentId, "Resposta")
+        : null;
       if (parentCommentId) {
-        const { data: parent } = await db()
+        const parentResult = await db()
           .from("ua_forum_comments")
-          .select("id,topic_id,status")
+          .select("id,topic_id,parent_comment_id,status,deleted_at")
           .eq("id", parentCommentId)
           .maybeSingle();
-        if (!parent || parent.topic_id !== topic.id || parent.status !== "visible")
+        forumDatabaseError(
+          parentResult.error,
+          "Não foi possível localizar a resposta selecionada.",
+        );
+        const parent = parentResult.data;
+        if (
+          !parent ||
+          parent.topic_id !== topic.id ||
+          parent.parent_comment_id ||
+          parent.status !== "visible" ||
+          parent.deleted_at
+        )
           fail("A resposta selecionada não está mais disponível.");
       }
-      const { error } = await db().from("ua_forum_comments").insert({
-        topic_id: topic.id,
-        parent_comment_id: parentCommentId,
-        body,
-        author_id: user.id,
+      const existing = await db()
+        .from("ua_forum_comments")
+        .select("id")
+        .eq("author_id", user.id)
+        .eq("client_request_id", clientRequestId)
+        .maybeSingle();
+      if (existing.data) return { success: true, commentId: Number(existing.data.id) };
+      const inserted = await db()
+        .from("ua_forum_comments")
+        .insert({
+          topic_id: topic.id,
+          parent_comment_id: parentCommentId,
+          body,
+          author_id: user.id,
+          client_request_id: clientRequestId,
+        })
+        .select("id")
+        .single();
+      if (inserted.error?.code === "23505") {
+        const duplicate = await db()
+          .from("ua_forum_comments")
+          .select("id")
+          .eq("author_id", user.id)
+          .eq("client_request_id", clientRequestId)
+          .maybeSingle();
+        if (duplicate.data) return { success: true, commentId: Number(duplicate.data.id) };
+      }
+      forumDatabaseError(inserted.error, "Não foi possível publicar sua resposta.");
+      const commentId = Number(inserted.data?.id);
+      await auditEvent(user, "community.comment.created", "forum_comment", commentId, "success", {
+        topicId,
+        parentCommentId,
       });
-      if (error) fail(error.message);
-      return { success: true };
+      return { success: true, commentId };
     }
     case "community.forum.toggleReaction": {
       const user = await requireUser();
       await assertMemberContent(user);
-      const commentId = Number(input.commentId);
+      await consumeForumRateLimit(user, "reaction.toggle", 120, 10 * 60);
+      const commentId = parsePositiveCommunityId(input.commentId, "Resposta");
       const reaction = ["support", "helpful", "heart"].includes(String(input.reaction))
         ? String(input.reaction)
         : "support";
-      const { data: comment } = await db()
-        .from("ua_forum_comments")
-        .select("id,status")
-        .eq("id", commentId)
-        .maybeSingle();
-      if (!comment || comment.status !== "visible") fail("Esta resposta não está disponível.");
-      const existing = await db()
-        .from("ua_forum_reactions")
-        .select("id")
-        .eq("comment_id", commentId)
-        .eq("user_id", user.id)
-        .eq("reaction", reaction)
-        .maybeSingle();
-      if (existing.data) await db().from("ua_forum_reactions").delete().eq("id", existing.data.id);
-      else
-        await db()
-          .from("ua_forum_reactions")
-          .insert({ comment_id: commentId, user_id: user.id, reaction });
-      return { active: !existing.data };
+      const result = await db().rpc("ua_toggle_forum_comment_reaction", {
+        p_comment_id: commentId,
+        p_user_id: user.id,
+        p_reaction: reaction,
+      });
+      forumDatabaseError(result.error, "Não foi possível registrar sua reação.");
+      const row = Array.isArray(result.data) ? result.data[0] : result.data;
+      return {
+        active: Boolean(row?.active),
+        reactionCount: Number(row?.reaction_count ?? row?.reactionCount ?? 0),
+      };
     }
     case "community.forum.updateComment": {
       const user = await requireUser();
       await assertMemberContent(user);
-      const body = String(input.body ?? "").trim();
-      if (body.length < 2 || body.length > 5000)
-        fail("A resposta deve ter entre 2 e 5.000 caracteres.");
-      const { data: comment } = await db()
+      await consumeForumRateLimit(user, "comment.update", 30, 10 * 60);
+      const commentId = parsePositiveCommunityId(input.commentId, "Resposta");
+      const body = validateCommentBody(input.body);
+      const existing = await db()
         .from("ua_forum_comments")
-        .select("id,author_id,status")
-        .eq("id", Number(input.commentId))
+        .select("id,author_id,status,deleted_at")
+        .eq("id", commentId)
         .maybeSingle();
-      if (!comment || comment.status !== "visible" || comment.author_id !== user.id)
+      forumDatabaseError(existing.error, "Não foi possível localizar esta resposta.");
+      const comment = existing.data;
+      if (
+        !comment ||
+        comment.status !== "visible" ||
+        comment.deleted_at ||
+        comment.author_id !== user.id
+      )
         fail("Você não pode editar esta resposta.");
-      await db()
+      const updated = await db()
         .from("ua_forum_comments")
-        .update({ body, edited_at: new Date().toISOString() })
-        .eq("id", comment.id);
+        .update({ body, edited_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq("id", comment.id)
+        .eq("author_id", user.id)
+        .eq("status", "visible");
+      forumDatabaseError(updated.error, "Não foi possível atualizar esta resposta.");
+      await auditEvent(user, "community.comment.updated", "forum_comment", commentId, "success");
       return { success: true };
     }
     case "community.forum.deleteComment": {
       const user = await requireUser();
       await assertMemberContent(user);
-      const { data: comment } = await db()
+      await consumeForumRateLimit(user, "comment.delete", 20, 60 * 60);
+      const commentId = parsePositiveCommunityId(input.commentId, "Resposta");
+      const existing = await db()
         .from("ua_forum_comments")
-        .select("id,author_id,status")
-        .eq("id", Number(input.commentId))
+        .select("id,author_id,status,parent_comment_id,deleted_at,body")
+        .eq("id", commentId)
         .maybeSingle();
-      if (!comment || comment.status !== "visible" || comment.author_id !== user.id)
+      forumDatabaseError(existing.error, "Não foi possível localizar esta resposta.");
+      const comment = existing.data;
+      if (
+        !comment ||
+        comment.status !== "visible" ||
+        comment.deleted_at ||
+        comment.author_id !== user.id
+      )
         fail("Você não pode remover esta resposta.");
-      await db().from("ua_forum_comments").update({ status: "hidden" }).eq("id", comment.id);
+      const children = await db()
+        .from("ua_forum_comments")
+        .select("id", { count: "exact", head: true })
+        .eq("parent_comment_id", commentId)
+        .eq("status", "visible");
+      forumDatabaseError(children.error, "Não foi possível verificar as respostas relacionadas.");
+      const keepPlaceholder = !comment.parent_comment_id && Number(children.count ?? 0) > 0;
+      const deleted = await db()
+        .from("ua_forum_comments")
+        .update({
+          body: keepPlaceholder ? "[Resposta removida pelo autor]" : comment.body,
+          status: keepPlaceholder ? "visible" : "hidden",
+          deleted_at: new Date().toISOString(),
+          deleted_by: user.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", commentId)
+        .eq("author_id", user.id)
+        .eq("status", "visible");
+      forumDatabaseError(deleted.error, "Não foi possível remover esta resposta.");
+      await auditEvent(user, "community.comment.deleted", "forum_comment", commentId, "success", {
+        keptReplyContext: keepPlaceholder,
+      });
       return { success: true };
     }
     case "community.forum.report": {
       const user = await requireUser();
       await assertMemberContent(user);
-      const reason = String(input.reason ?? "").trim();
-      if (reason.length < 3 || reason.length > 1000)
-        fail("Explique brevemente o motivo da denúncia.");
-      const values = {
-        reporter_id: user.id,
-        topic_id: input.topicId ? Number(input.topicId) : null,
-        comment_id: input.commentId ? Number(input.commentId) : null,
-        reason,
-      };
-      if (Boolean(values.topic_id) === Boolean(values.comment_id))
+      await consumeForumRateLimit(user, "report.create", 10, 60 * 60);
+      const reason = validateReportReason(input.reason);
+      const topicId = input.topicId ? parsePositiveCommunityId(input.topicId, "Conversa") : null;
+      const commentId = input.commentId
+        ? parsePositiveCommunityId(input.commentId, "Resposta")
+        : null;
+      if (Boolean(topicId) === Boolean(commentId))
         fail("Selecione apenas um conteúdo para denunciar.");
-      const { error } = await db().from("ua_forum_reports").insert(values);
-      if (error && error.code !== "23505") fail(error.message);
-      return { success: true };
+      const target = topicId
+        ? await db()
+            .from("ua_forum_topics")
+            .select("id,author_id,status,deleted_at")
+            .eq("id", topicId)
+            .maybeSingle()
+        : await db()
+            .from("ua_forum_comments")
+            .select("id,author_id,status,deleted_at")
+            .eq("id", commentId)
+            .maybeSingle();
+      forumDatabaseError(target.error, "Não foi possível localizar o conteúdo denunciado.");
+      if (!target.data || target.data.status !== "visible" || target.data.deleted_at)
+        fail("Este conteúdo não está mais disponível.");
+      if (target.data.author_id === user.id)
+        fail("Você não precisa denunciar seu próprio conteúdo.");
+      const inserted = await db().from("ua_forum_reports").insert({
+        reporter_id: user.id,
+        topic_id: topicId,
+        comment_id: commentId,
+        reason,
+      });
+      if (inserted.error && inserted.error.code !== "23505")
+        forumDatabaseError(inserted.error, "Não foi possível enviar a denúncia.");
+      await auditEvent(
+        user,
+        "community.report.created",
+        topicId ? "forum_topic" : "forum_comment",
+        topicId ?? commentId,
+        inserted.error?.code === "23505" ? "noop" : "success",
+      );
+      return { success: true, duplicate: inserted.error?.code === "23505" };
     }
     case "community.forum.downloadGuide": {
       const user = await requireUser();

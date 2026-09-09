@@ -1,5 +1,17 @@
-import { useAuth } from "@/_core/hooks/useAuth";
-import { ContentEmpty, MemberShell, SectionHeading } from "@/components/MemberShell";
+import { ContentEmpty, MemberShell } from "@/components/MemberShell";
+import { CommunityAvatar } from "@/components/community/CommunityAvatar";
+import { CommunityComposer } from "@/components/community/CommunityComposer";
+import { CommunityFeedCard } from "@/components/community/CommunityFeedCard";
+import { ConfirmCommunityAction } from "@/components/community/ConfirmCommunityAction";
+import {
+  authorLabel,
+  mergeById,
+  normalizeCommentPage,
+  normalizeFeedPage,
+  normalizeTopicDetail,
+  relativeCommunityDate,
+} from "@/components/community/community-utils";
+import type { CommunityComment, CommunityTopic } from "@/components/community/types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -7,154 +19,141 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
+import { COMMUNITY_CATEGORIES } from "@shared/community";
 import {
   ArrowLeft,
-  ChevronRight,
   Flag,
   HeartHandshake,
+  Loader2,
   MessageCircleMore,
-  Pencil,
-  Pin,
   Plus,
   Search,
   Send,
   Trash2,
   UsersRound,
 } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useLocation, useSearch } from "wouter";
 
-const categories = [
-  "Todos",
-  "Rotina",
-  "Escola",
-  "Comunicação",
-  "Comportamento",
-  "Autocuidado",
-  "Outros",
-];
+type SortOption = "recentes" | "respondidas" | "sem-resposta";
+type ReportTarget = { topicId?: number; commentId?: number };
+const categories = ["Todos", ...COMMUNITY_CATEGORIES] as const;
 
-type ForumComment = {
-  id: number;
-  parentCommentId?: number | null;
-  authorId: number;
-  authorName?: string | null;
-  authorDisplayName?: string | null;
-  body: string;
-  createdAt: string;
-  editedAt?: string | null;
-  reactionCount?: number;
-  viewerReactions?: string[];
-};
-
-function initials(name?: string | null) {
-  return (name || "UA")
-    .split(" ")
-    .map((value) => value[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-function relativeDate(value: Date | string) {
-  const delta = Math.max(0, Date.now() - new Date(value).getTime());
-  const minutes = Math.floor(delta / 60_000);
-  if (minutes < 1) return "agora";
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  return days === 1 ? "ontem" : `${days} dias`;
-}
-
-function Avatar({ name, image }: { name?: string | null; image?: string | null }) {
-  return image ? (
-    <img
-      src={image}
-      alt=""
-      loading="lazy"
-      decoding="async"
-      className="h-10 w-10 shrink-0 rounded-full object-cover"
-    />
-  ) : (
-    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--sage-pale)] text-xs font-extrabold text-[var(--sage-deep)]">
-      {initials(name)}
-    </span>
+function LoadingCards() {
+  return (
+    <div className="space-y-4" aria-busy="true" aria-label="Carregando conteúdo">
+      {[1, 2, 3].map((id) => (
+        <div key={id} className="h-40 animate-pulse rounded-3xl bg-[var(--linen)]" />
+      ))}
+    </div>
   );
 }
 
 export default function Forum() {
-  const { user } = useAuth();
   const [, setLocation] = useLocation();
-  const searchParams = useSearch();
+  const search = useSearch();
   const topicId = useMemo(() => {
-    const value = Number(new URLSearchParams(searchParams).get("topic"));
-    return Number.isInteger(value) && value > 0 ? value : null;
-  }, [searchParams]);
-  const topics = trpc.community.forum.list.useQuery();
-  const detail = trpc.community.forum.detail.useQuery(
+    const value = Number(new URLSearchParams(search).get("topic"));
+    return Number.isSafeInteger(value) && value > 0 ? value : null;
+  }, [search]);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [category, setCategory] = useState("Todos");
+  const [sort, setSort] = useState<SortOption>("recentes");
+  const [feedCursor, setFeedCursor] = useState<string | null>(null);
+  const [topics, setTopics] = useState<CommunityTopic[]>([]);
+  const [commentCursor, setCommentCursor] = useState<string | null>(null);
+  const [comments, setComments] = useState<CommunityComment[]>([]);
+  const [replyBody, setReplyBody] = useState("");
+  const [replyTo, setReplyTo] = useState<number | null>(null);
+  const [reporting, setReporting] = useState<ReportTarget | null>(null);
+  const [reportReason, setReportReason] = useState("");
+  const [deleteTopicOpen, setDeleteTopicOpen] = useState(false);
+  const utils = trpc.useUtils();
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+  useEffect(() => {
+    setFeedCursor(null);
+    setTopics([]);
+  }, [debouncedQuery, category, sort]);
+  useEffect(() => {
+    setCommentCursor(null);
+    setComments([]);
+    setReplyTo(null);
+  }, [topicId]);
+
+  const feed = trpc.community.forum.feed.useQuery({
+    query: debouncedQuery || undefined,
+    category: category === "Todos" ? undefined : category,
+    sort,
+    cursor: feedCursor || undefined,
+    limit: 12,
+  });
+  const feedPage = useMemo(() => normalizeFeedPage(feed.data), [feed.data]);
+  useEffect(() => {
+    if (feed.data)
+      setTopics((current) => (feedCursor ? mergeById(current, feedPage.items) : feedPage.items));
+  }, [feed.data, feedCursor, feedPage]);
+  const detailQuery = trpc.community.forum.detail.useQuery(
     { topicId: topicId ?? 1 },
     { enabled: Boolean(topicId) },
   );
-  const utils = trpc.useUtils();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newTopic, setNewTopic] = useState({ title: "", body: "", category: "Rotina" });
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("Todos");
-  const [sort, setSort] = useState("recentes");
-  const [replyTo, setReplyTo] = useState<number | null>(null);
-  const [replyBody, setReplyBody] = useState("");
-  const [editing, setEditing] = useState<{ id: number; body: string } | null>(null);
-  const [reporting, setReporting] = useState<{ topicId?: number; commentId?: number } | null>(null);
-  const [reportReason, setReportReason] = useState("");
+  const detail = useMemo(() => normalizeTopicDetail(detailQuery.data), [detailQuery.data]);
+  const commentQuery = trpc.community.forum.comments.list.useQuery(
+    { topicId: topicId ?? 1, cursor: commentCursor || undefined, limit: 20 },
+    { enabled: Boolean(topicId) },
+  );
+  const commentPage = useMemo(() => normalizeCommentPage(commentQuery.data), [commentQuery.data]);
+  useEffect(() => {
+    if (commentQuery.data)
+      setComments((current) =>
+        commentCursor ? mergeById(current, commentPage.items) : commentPage.items,
+      );
+  }, [commentCursor, commentPage, commentQuery.data]);
 
-  const refresh = async () => {
-    if (topicId) await utils.community.forum.detail.invalidate({ topicId });
-    await Promise.all([
-      utils.community.forum.list.invalidate(),
+  const refresh = async () =>
+    Promise.all([
+      utils.community.forum.feed.invalidate(),
+      utils.community.forum.detail.invalidate(),
+      utils.community.forum.comments.list.invalidate(),
       utils.community.memberDashboard.invalidate(),
     ]);
-  };
-  const createTopic = trpc.community.forum.createTopic.useMutation({
-    onSuccess: async () => {
-      await refresh();
-      setDialogOpen(false);
-      setNewTopic({ title: "", body: "", category: "Rotina" });
-      toast.success("Conversa publicada.");
-    },
-    onError: (error: Error) => toast.error(error.message),
+  const topicReaction = trpc.community.forum.toggleTopicReaction.useMutation({
+    onSuccess: refresh,
+    onError: (error) => toast.error(error.message),
   });
   const addComment = trpc.community.forum.addComment.useMutation({
     onSuccess: async () => {
-      await refresh();
       setReplyBody("");
       setReplyTo(null);
+      setCommentCursor(null);
+      await refresh();
       toast.success("Resposta publicada.");
     },
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error) => toast.error(error.message),
   });
-  const toggleReaction = trpc.community.forum.toggleReaction.useMutation({
+  const commentReaction = trpc.community.forum.toggleReaction.useMutation({
     onSuccess: refresh,
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error) => toast.error(error.message),
   });
-  const updateComment = trpc.community.forum.updateComment.useMutation({
+  const deleteTopic = trpc.community.forum.deleteTopic.useMutation({
     onSuccess: async () => {
+      setDeleteTopicOpen(false);
+      setLocation("/comunidade");
       await refresh();
-      setEditing(null);
-      toast.success("Resposta atualizada.");
+      toast.success("Conversa removida.");
     },
-    onError: (error: Error) => toast.error(error.message),
-  });
-  const deleteComment = trpc.community.forum.deleteComment.useMutation({
-    onSuccess: refresh,
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error) => toast.error(error.message),
   });
   const report = trpc.community.forum.report.useMutation({
     onSuccess: () => {
@@ -162,515 +161,354 @@ export default function Forum() {
       setReportReason("");
       toast.success("Denúncia enviada para a moderação.");
     },
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error) => toast.error(error.message),
   });
-
-  const filteredTopics = useMemo(() => {
-    const term = query.trim().toLocaleLowerCase("pt-BR");
-    const rows = (topics.data || []).filter((topic: any) => {
-      const matchesCategory = category === "Todos" || topic.category === category;
-      const matchesTerm =
-        !term || `${topic.title} ${topic.body}`.toLocaleLowerCase("pt-BR").includes(term);
-      return matchesCategory && matchesTerm;
-    });
-    return [...rows].sort((a: any, b: any) => {
-      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
-      if (sort === "respondidas") return Number(b.commentCount || 0) - Number(a.commentCount || 0);
-      if (sort === "sem-resposta") return Number(a.commentCount || 0) - Number(b.commentCount || 0);
-      return (
-        new Date(b.lastActivityAt || b.updatedAt).getTime() -
-        new Date(a.lastActivityAt || a.updatedAt).getTime()
-      );
-    });
-  }, [topics.data, category, query, sort]);
-
-  const submitTopic = async (event: FormEvent<HTMLFormElement>) => {
+  const submitReply = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await createTopic.mutateAsync(newTopic);
-  };
-  const submitReply = async (event: FormEvent<HTMLFormElement>, parentCommentId?: number) => {
-    event.preventDefault();
-    if (!topicId) return;
-    await addComment.mutateAsync({
-      topicId,
-      parentCommentId: parentCommentId || null,
-      body: replyBody,
-    });
+    if (topicId)
+      await addComment.mutateAsync({
+        topicId,
+        parentCommentId: replyTo,
+        body: replyBody,
+        clientRequestId: crypto.randomUUID(),
+      });
   };
 
-  if (topicId && detail.isLoading)
+  if (topicId)
     return (
       <MemberShell
         eyebrow="Comunidade"
-        title="Abrindo conversa…"
-        description="Carregando respostas e participantes."
+        title="Conversa"
+        description="Trocas cuidadosas entre membros do Universo Atípico."
       >
-        <div className="space-y-5">
-          <div className="h-64 animate-pulse rounded-3xl bg-[var(--linen)]" />
-          <div className="h-36 animate-pulse rounded-3xl bg-[var(--linen)]" />
-        </div>
-      </MemberShell>
-    );
-
-  if (topicId && (detail.isError || !detail.data))
-    return (
-      <MemberShell
-        eyebrow="Comunidade"
-        title="Conversa indisponível"
-        description="Ela pode ter sido removida ou estar temporariamente indisponível."
-      >
-        <Button variant="outline" onClick={() => setLocation("/comunidade")}>
-          <ArrowLeft size={16} className="mr-2" />
-          Voltar à comunidade
-        </Button>
-      </MemberShell>
-    );
-
-  if (topicId && detail.data) {
-    const { topic, comments } = detail.data as { topic: any; comments: ForumComment[] };
-    const roots = comments.filter((comment) => !comment.parentCommentId);
-    const children = (parentId: number) =>
-      comments.filter((comment) => comment.parentCommentId === parentId);
-    const replyForm = (parentCommentId?: number) => (
-      <form
-        onSubmit={(event) => submitReply(event, parentCommentId)}
-        className="mt-4 rounded-2xl border border-[var(--line)] bg-[var(--paper)] p-4"
-      >
-        <Label htmlFor={`reply-${parentCommentId || "topic"}`} className="text-xs font-extrabold">
-          {parentCommentId ? "Responder a esta mensagem" : "Responder à conversa"}
-        </Label>
-        <Textarea
-          id={`reply-${parentCommentId || "topic"}`}
-          value={replyBody}
-          onChange={(event) => setReplyBody(event.target.value)}
-          minLength={2}
-          maxLength={5000}
-          placeholder="Escreva com respeito e cuidado…"
-          className="mt-2 min-h-28 rounded-xl border-[var(--line)] bg-white"
-          required
-        />
-        <div className="mt-3 flex justify-end gap-2">
-          {parentCommentId ? (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setReplyTo(null);
-                setReplyBody("");
-              }}
-            >
-              Cancelar
-            </Button>
-          ) : null}
-          <Button disabled={addComment.isPending}>
-            <Send size={15} className="mr-2" />
-            Publicar resposta
-          </Button>
-        </div>
-      </form>
-    );
-    const commentCard = (comment: ForumComment, nested = false) => {
-      const author = comment.authorDisplayName || comment.authorName || "Membro da comunidade";
-      const liked = comment.viewerReactions?.includes("support");
-      return (
-        <article
-          key={comment.id}
-          className={`rounded-2xl border border-[var(--line)] bg-white p-5 ${nested ? "ml-6 border-l-4 border-l-[var(--sage-pale)] sm:ml-14" : ""}`}
+        <Button
+          variant="ghost"
+          className="mb-5 min-h-11"
+          onClick={() => setLocation("/comunidade")}
         >
-          <div className="flex items-start gap-3">
-            <Avatar name={author} />
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm font-extrabold">{author}</p>
+          <ArrowLeft className="mr-2" size={17} />
+          Voltar para a comunidade
+        </Button>
+        {detailQuery.isLoading ? (
+          <LoadingCards />
+        ) : detailQuery.isError || !detail ? (
+          <ContentEmpty
+            title="Conversa indisponível"
+            text="Ela pode ter sido removida ou estar temporariamente indisponível."
+          />
+        ) : (
+          <div className="space-y-5">
+            <article className="rounded-3xl border border-[var(--line)] bg-white p-5 sm:p-7">
+              <div className="flex items-start gap-3">
+                <CommunityAvatar
+                  name={authorLabel(detail.topic)}
+                  image={detail.topic.authorAvatarUrl}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-extrabold">{authorLabel(detail.topic)}</p>
                   <p className="text-xs text-[var(--ink-soft)]">
-                    {relativeDate(comment.createdAt)}
-                    {comment.editedAt ? " · editado" : ""}
+                    {relativeCommunityDate(detail.topic.createdAt)}
+                    {detail.topic.editedAt ? " · editado" : ""}
                   </p>
                 </div>
               </div>
-              {editing?.id === comment.id ? (
-                <div className="mt-4">
-                  <Textarea
-                    value={editing.body}
-                    onChange={(event) => setEditing({ id: comment.id, body: event.target.value })}
-                    className="min-h-28"
-                  />
-                  <div className="mt-2 flex justify-end gap-2">
-                    <Button variant="ghost" onClick={() => setEditing(null)}>
-                      Cancelar
-                    </Button>
-                    <Button
-                      onClick={() =>
-                        updateComment.mutate({ commentId: comment.id, body: editing.body })
-                      }
-                    >
-                      Salvar
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-[var(--ink-soft)]">
-                  {comment.body}
-                </p>
-              )}
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    toggleReaction.mutate({ commentId: comment.id, reaction: "support" })
-                  }
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-extrabold ${liked ? "bg-[var(--sage-deep)] text-white" : "bg-[var(--sage-pale)] text-[var(--sage-deep)]"}`}
-                >
-                  <HeartHandshake size={14} />
-                  Acolher {comment.reactionCount ? `· ${comment.reactionCount}` : ""}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setReplyTo(comment.parentCommentId || comment.id);
-                    setReplyBody("");
-                  }}
-                  className="rounded-full px-3 py-1.5 text-xs font-extrabold text-[var(--sage-deep)] hover:bg-[var(--linen)]"
-                >
-                  Responder
-                </button>
-                {comment.authorId === user?.id ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setEditing({ id: comment.id, body: comment.body })}
-                      className="rounded-full p-2 text-[var(--ink-soft)] hover:bg-[var(--linen)]"
-                      aria-label="Editar resposta"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => deleteComment.mutate({ commentId: comment.id })}
-                      className="rounded-full p-2 text-[var(--ink-soft)] hover:bg-red-50 hover:text-red-700"
-                      aria-label="Remover resposta"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setReporting({ commentId: comment.id })}
-                    className="rounded-full p-2 text-[var(--ink-soft)] hover:bg-[var(--linen)]"
-                    aria-label="Denunciar resposta"
-                  >
-                    <Flag size={14} />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-          {replyTo === (comment.parentCommentId || comment.id) && !nested
-            ? replyForm(comment.id)
-            : null}
-        </article>
-      );
-    };
-
-    return (
-      <MemberShell
-        eyebrow="Comunidade"
-        title="Uma conversa de cada vez."
-        description="Pergunte, responda e compartilhe experiências com cuidado."
-      >
-        <button
-          type="button"
-          onClick={() => setLocation("/comunidade")}
-          className="mb-6 inline-flex items-center gap-2 text-sm font-extrabold text-[var(--sage-deep)]"
-        >
-          <ArrowLeft size={16} />
-          Todas as conversas
-        </button>
-        <article className="overflow-hidden rounded-3xl border border-[var(--line)] bg-white p-6 shadow-[0_18px_50px_rgba(8,31,77,.06)] sm:p-9">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-[var(--sage-pale)] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.15em] text-[var(--sage-deep)]">
-              {topic.category}
-            </span>
-            {topic.isPinned ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#fff4dc] px-3 py-1 text-[10px] font-extrabold text-[#8b631d]">
-                <Pin size={11} />
-                Fixado
-              </span>
-            ) : null}
-          </div>
-          <h2 className="display-font mt-5 max-w-4xl text-4xl font-semibold leading-[1.02] sm:text-5xl">
-            {topic.title}
-          </h2>
-          <div className="mt-6 flex items-center gap-3">
-            <Avatar
-              name={topic.authorDisplayName || topic.authorName}
-              image={topic.authorAvatarUrl}
-            />
-            <div>
-              <p className="text-sm font-extrabold">
-                {topic.authorDisplayName || topic.authorName || "Membro da comunidade"}
+              <h1 className="mt-5 break-words text-2xl font-extrabold sm:text-3xl">
+                {detail.topic.title}
+              </h1>
+              <p className="mt-3 whitespace-pre-wrap break-words leading-7 text-[var(--ink-soft)]">
+                {detail.topic.body}
               </p>
-              <p className="text-xs text-[var(--ink-soft)]">{relativeDate(topic.createdAt)}</p>
-            </div>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Button variant="outline" onClick={() => topicReaction.mutate({ topicId })}>
+                  <HeartHandshake className="mr-2" size={17} />
+                  Acolher · {detail.topic.reactionCount ?? 0}
+                </Button>
+                <Button variant="ghost" onClick={() => setReporting({ topicId })}>
+                  <Flag className="mr-2" size={16} />
+                  Denunciar conteúdo
+                </Button>
+                {detail.topic.viewerIsAuthor ? (
+                  <Button
+                    variant="ghost"
+                    className="text-red-700"
+                    onClick={() => setDeleteTopicOpen(true)}
+                  >
+                    <Trash2 className="mr-2" size={16} />
+                    Remover
+                  </Button>
+                ) : null}
+              </div>
+            </article>
+            <section className="rounded-3xl border border-[var(--line)] bg-white p-5 sm:p-7">
+              <h2 className="text-2xl font-extrabold">Participe da conversa</h2>
+              <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                Responda com respeito e evite compartilhar dados pessoais.
+              </p>
+              <form onSubmit={submitReply} className="mt-5 space-y-3">
+                {replyTo ? (
+                  <p className="rounded-xl bg-[var(--linen)] p-3 text-sm">
+                    Respondendo a uma mensagem.{" "}
+                    <button
+                      type="button"
+                      className="font-bold underline"
+                      onClick={() => setReplyTo(null)}
+                    >
+                      Cancelar
+                    </button>
+                  </p>
+                ) : null}
+                <Textarea
+                  value={replyBody}
+                  onChange={(event) => setReplyBody(event.target.value)}
+                  minLength={2}
+                  maxLength={5000}
+                  required
+                  placeholder="Escreva sua resposta…"
+                  className="min-h-28"
+                />
+                <Button disabled={addComment.isPending}>
+                  <Send className="mr-2" size={16} />
+                  {addComment.isPending ? "Publicando…" : "Publicar resposta"}
+                </Button>
+              </form>
+              <div className="mt-7 space-y-3">
+                {comments.map((comment) => (
+                  <article
+                    key={comment.id}
+                    className={`rounded-2xl border border-[var(--line)] p-4 ${comment.parentCommentId ? "ml-5 bg-[var(--linen)]/40 sm:ml-10" : "bg-white"}`}
+                  >
+                    <div className="flex gap-3">
+                      <CommunityAvatar
+                        name={authorLabel(comment)}
+                        image={comment.authorAvatarUrl}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-extrabold">{authorLabel(comment)}</p>
+                        <p className="text-xs text-[var(--ink-soft)]">
+                          {relativeCommunityDate(comment.createdAt)}
+                          {comment.editedAt ? " · editado" : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">
+                      {comment.body}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          commentReaction.mutate({ commentId: comment.id, reaction: "support" })
+                        }
+                      >
+                        Acolher · {comment.reactionCount ?? 0}
+                      </Button>
+                      {!comment.parentCommentId ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          aria-label="Responder a esta mensagem"
+                          onClick={() => setReplyTo(comment.id)}
+                        >
+                          Responder
+                        </Button>
+                      ) : null}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setReporting({ commentId: comment.id })}
+                      >
+                        Denunciar
+                      </Button>
+                    </div>
+                  </article>
+                ))}
+                {commentQuery.isLoading ? <LoadingCards /> : null}
+                {!commentQuery.isLoading && comments.length === 0 ? (
+                  <ContentEmpty
+                    title="Ainda não há respostas"
+                    text="Você pode iniciar esta troca com uma resposta acolhedora."
+                  />
+                ) : null}
+                {commentPage.nextCursor ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => setCommentCursor(commentPage.nextCursor)}
+                  >
+                    Carregar mais respostas
+                  </Button>
+                ) : null}
+              </div>
+            </section>
           </div>
-          <p className="mt-7 max-w-4xl whitespace-pre-wrap text-base leading-8 text-[var(--ink-soft)]">
-            {topic.body}
-          </p>
-          <button
-            type="button"
-            onClick={() => setReporting({ topicId: topic.id })}
-            className="mt-6 inline-flex items-center gap-2 text-xs font-bold text-[var(--ink-soft)] hover:text-[var(--ink)]"
-          >
-            <Flag size={13} />
-            Denunciar conversa
-          </button>
-        </article>
-        <section className="mt-10">
-          <SectionHeading
-            label={`${comments.length} ${comments.length === 1 ? "resposta" : "respostas"}`}
-            title="A conversa continua"
-          />
-          {roots.length ? (
-            <div className="space-y-4">
-              {roots.map((root) => (
-                <div key={root.id} className="space-y-3">
-                  {commentCard(root)}
-                  {children(root.id).map((child) => commentCard(child, true))}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <ContentEmpty
-              icon={MessageCircleMore}
-              title="Seja a primeira pessoa a responder"
-              text="Uma resposta cuidadosa pode abrir um caminho importante."
-            />
-          )}
-          {replyTo === null ? replyForm() : null}
-        </section>
-        <Dialog open={Boolean(reporting)} onOpenChange={(open) => !open && setReporting(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Denunciar conteúdo</DialogTitle>
-              <DialogDescription>
-                A moderação analisará a situação sem identificar você publicamente.
-              </DialogDescription>
-            </DialogHeader>
-            <Textarea
-              value={reportReason}
-              onChange={(event) => setReportReason(event.target.value)}
-              placeholder="Conte brevemente o que aconteceu"
-              maxLength={1000}
-            />
-            <Button
-              disabled={report.isPending || reportReason.trim().length < 3}
-              onClick={() => report.mutate({ ...reporting, reason: reportReason })}
-            >
-              Enviar para moderação
-            </Button>
-          </DialogContent>
-        </Dialog>
+        )}
+        <ConfirmCommunityAction
+          open={deleteTopicOpen}
+          onOpenChange={setDeleteTopicOpen}
+          title="Remover conversa?"
+          description="A conversa deixará de aparecer para os membros."
+          confirmLabel="Remover conversa"
+          pending={deleteTopic.isPending}
+          onConfirm={() => deleteTopic.mutate({ topicId })}
+        />
+        <ReportDialog
+          target={reporting}
+          reason={reportReason}
+          setReason={setReportReason}
+          pending={report.isPending}
+          onClose={() => setReporting(null)}
+          onSubmit={() => reporting && report.mutate({ ...reporting, reason: reportReason })}
+        />
       </MemberShell>
     );
-  }
 
   return (
     <MemberShell
       eyebrow="Comunidade"
-      title="Conversas que acolhem e aproximam."
-      description="Um espaço seguro para perguntar, compartilhar experiências e encontrar outras famílias."
+      title="Conversas que acolhem"
+      description="Pergunte, compartilhe experiências e encontre outras famílias."
     >
-      <section className="relative mb-8 overflow-hidden rounded-3xl bg-[var(--ink)] p-6 text-white sm:p-8">
-        <div className="absolute -right-20 -top-20 h-60 w-60 rounded-full border border-white/10" />
-        <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
-          <div>
-            <UsersRound size={22} className="text-[#efd4a2]" />
-            <h2 className="display-font mt-5 max-w-2xl text-3xl font-semibold sm:text-4xl">
-              Toda experiência pode ajudar alguém.
-            </h2>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-white/70">
-              Abra uma conversa ou participe de uma troca que já começou.
-            </p>
+      <div className="mb-6 flex flex-col gap-4 rounded-3xl bg-[var(--ink)] p-5 text-white sm:flex-row sm:items-center sm:justify-between sm:p-7">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-extrabold">
+            <UsersRound size={18} />
+            Comunidade Universo Atípico
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="shrink-0 bg-[#efd4a2] text-[var(--ink)] hover:bg-white">
-                <Plus size={16} className="mr-2" />
-                Nova conversa
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-              <DialogHeader>
-                <DialogTitle className="display-font text-3xl">Abrir uma conversa</DialogTitle>
-                <DialogDescription>
-                  Evite expor dados pessoais de crianças ou de terceiros.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={submitTopic} className="space-y-5">
-                <div>
-                  <Label htmlFor="topic-title">Título</Label>
-                  <Input
-                    id="topic-title"
-                    value={newTopic.title}
-                    onChange={(event) =>
-                      setNewTopic((current) => ({ ...current, title: event.target.value }))
-                    }
-                    minLength={6}
-                    maxLength={180}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="topic-category">Tema</Label>
-                  <select
-                    id="topic-category"
-                    value={newTopic.category}
-                    onChange={(event) =>
-                      setNewTopic((current) => ({ ...current, category: event.target.value }))
-                    }
-                    className="mt-2 h-11 w-full rounded-xl border border-[var(--line)] bg-white px-3 text-sm"
-                  >
-                    {categories.slice(1).map((item) => (
-                      <option key={item}>{item}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="topic-body">Mensagem</Label>
-                  <Textarea
-                    id="topic-body"
-                    value={newTopic.body}
-                    onChange={(event) =>
-                      setNewTopic((current) => ({ ...current, body: event.target.value }))
-                    }
-                    minLength={20}
-                    maxLength={8000}
-                    className="min-h-40"
-                    required
-                  />
-                </div>
-                <Button className="w-full" disabled={createTopic.isPending}>
-                  {createTopic.isPending ? "Publicando…" : "Publicar conversa"}
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-white/75">
+            Um espaço moderado. Preserve sua privacidade e a das crianças.
+          </p>
         </div>
-      </section>
-      <ToolbarCommunity
-        query={query}
-        setQuery={setQuery}
-        category={category}
-        setCategory={setCategory}
-        sort={sort}
-        setSort={setSort}
-      />
-      <section className="mt-7">
-        {topics.isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="h-32 animate-pulse rounded-2xl bg-[var(--linen)]" />
-            ))}
-          </div>
-        ) : filteredTopics.length ? (
-          <div className="space-y-3">
-            {filteredTopics.map((topic: any) => (
-              <button
-                key={topic.id}
-                type="button"
-                onClick={() => setLocation(`/comunidade?topic=${topic.id}`)}
-                className="group flex w-full items-center gap-4 rounded-2xl border border-[var(--line)] bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-[var(--sage)] hover:shadow-[0_14px_34px_rgba(8,31,77,.07)] sm:p-6"
-              >
-                <Avatar
-                  name={topic.authorDisplayName || topic.authorName}
-                  image={topic.authorAvatarUrl}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {topic.isPinned ? <Pin size={13} className="text-[#a87522]" /> : null}
-                    <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[var(--sage)]">
-                      {topic.category}
-                    </span>
-                    <span className="text-xs text-[var(--ink-soft)]">
-                      · {relativeDate(topic.lastActivityAt || topic.updatedAt)}
-                    </span>
-                  </div>
-                  <h3 className="mt-2 text-base font-extrabold text-[var(--ink)] sm:text-lg">
-                    {topic.title}
-                  </h3>
-                  <p className="mt-1 line-clamp-1 text-sm text-[var(--ink-soft)]">{topic.body}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-3 text-xs font-extrabold text-[var(--ink-soft)]">
-                  <span className="inline-flex items-center gap-1">
-                    <MessageCircleMore size={16} />
-                    {topic.commentCount}
-                  </span>
-                  <ChevronRight size={18} className="transition group-hover:translate-x-1" />
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <ContentEmpty
-            icon={Search}
-            title="Nenhuma conversa encontrada"
-            text="Tente outro termo ou abra uma nova conversa."
+        <Button
+          className="min-h-12 bg-[var(--sun)] text-[var(--ink)]"
+          onClick={() => setComposerOpen(true)}
+        >
+          <Plus className="mr-2" size={18} />
+          Nova conversa
+        </Button>
+      </div>
+      <div className="grid gap-3 rounded-2xl border border-[var(--line)] bg-white p-3 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
+        <Label className="relative">
+          <span className="sr-only">Buscar conversas</span>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2" size={17} />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar conversas"
+            className="h-12 pl-10"
           />
-        )}
-      </section>
+        </Label>
+        <select
+          aria-label="Filtrar por tema"
+          value={category}
+          onChange={(event) => setCategory(event.target.value)}
+          className="h-12 rounded-xl border px-3"
+        >
+          {categories.map((item) => (
+            <option key={item}>{item}</option>
+          ))}
+        </select>
+        <select
+          aria-label="Ordenar conversas"
+          value={sort}
+          onChange={(event) => setSort(event.target.value as SortOption)}
+          className="h-12 rounded-xl border px-3"
+        >
+          <option value="recentes">Mais recentes</option>
+          <option value="respondidas">Mais respondidas</option>
+          <option value="sem-resposta">Sem resposta</option>
+        </select>
+      </div>
+      <div className="mt-6 space-y-4">
+        {topics.map((topic) => (
+          <CommunityFeedCard
+            key={topic.id}
+            topic={topic}
+            onOpen={() => setLocation(`/comunidade?topic=${topic.id}`)}
+            onReact={() => topicReaction.mutate({ topicId: topic.id })}
+            reactionPending={topicReaction.isPending}
+          />
+        ))}
+        {feed.isLoading ? <LoadingCards /> : null}
+        {feed.isError ? (
+          <div className="space-y-3 text-center">
+            <ContentEmpty title="Não foi possível carregar" text="Tente novamente em instantes." />
+            <Button onClick={() => feed.refetch()}>Tentar novamente</Button>
+          </div>
+        ) : null}
+        {!feed.isLoading && !feed.isError && topics.length === 0 ? (
+          <div className="space-y-3 text-center">
+            <ContentEmpty
+              title="Nenhuma conversa encontrada"
+              text="Ajuste os filtros ou abra a primeira conversa deste tema."
+            />
+            <Button onClick={() => setComposerOpen(true)}>Nova conversa</Button>
+          </div>
+        ) : null}
+        {feedPage.nextCursor ? (
+          <Button
+            variant="outline"
+            className="min-h-12 w-full"
+            onClick={() => setFeedCursor(feedPage.nextCursor)}
+          >
+            <MessageCircleMore className="mr-2" size={17} />
+            Carregar mais conversas
+          </Button>
+        ) : null}
+      </div>
+      <CommunityComposer
+        open={composerOpen}
+        onOpenChange={setComposerOpen}
+        onCreated={async (id) => {
+          await refresh();
+          setLocation(`/comunidade?topic=${id}`);
+        }}
+      />
     </MemberShell>
   );
 }
 
-function ToolbarCommunity({
-  query,
-  setQuery,
-  category,
-  setCategory,
-  sort,
-  setSort,
+function ReportDialog({
+  target,
+  reason,
+  setReason,
+  pending,
+  onClose,
+  onSubmit,
 }: {
-  query: string;
-  setQuery: (value: string) => void;
-  category: string;
-  setCategory: (value: string) => void;
-  sort: string;
-  setSort: (value: string) => void;
+  target: ReportTarget | null;
+  reason: string;
+  setReason: (value: string) => void;
+  pending: boolean;
+  onClose: () => void;
+  onSubmit: () => void;
 }) {
   return (
-    <div className="grid gap-3 rounded-2xl border border-[var(--line)] bg-white p-3 md:grid-cols-[1fr_auto_auto]">
-      <label className="relative">
-        <Search
-          size={16}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]"
+    <Dialog open={Boolean(target)} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Denunciar conteúdo</DialogTitle>
+          <DialogDescription>
+            A moderação analisará o relato. Explique o motivo sem incluir dados pessoais.
+          </DialogDescription>
+        </DialogHeader>
+        <Label htmlFor="report-reason">Motivo</Label>
+        <Textarea
+          id="report-reason"
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          minLength={5}
+          maxLength={1000}
+          className="min-h-28"
         />
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Buscar conversas"
-          className="pl-9"
-        />
-      </label>
-      <select
-        value={category}
-        onChange={(event) => setCategory(event.target.value)}
-        className="h-10 rounded-xl border border-[var(--line)] bg-white px-3 text-sm font-bold"
-      >
-        {categories.map((item) => (
-          <option key={item}>{item}</option>
-        ))}
-      </select>
-      <select
-        value={sort}
-        onChange={(event) => setSort(event.target.value)}
-        className="h-10 rounded-xl border border-[var(--line)] bg-white px-3 text-sm font-bold"
-      >
-        <option value="recentes">Mais recentes</option>
-        <option value="respondidas">Mais respondidas</option>
-        <option value="sem-resposta">Sem resposta</option>
-      </select>
-    </div>
+        <Button disabled={pending || reason.trim().length < 5} onClick={onSubmit}>
+          {pending ? (
+            <Loader2 className="mr-2 animate-spin" size={16} />
+          ) : (
+            <Flag className="mr-2" size={16} />
+          )}
+          Enviar denúncia
+        </Button>
+      </DialogContent>
+    </Dialog>
   );
 }
