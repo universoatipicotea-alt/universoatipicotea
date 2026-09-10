@@ -43,17 +43,19 @@ test("login direciona equipes à gestão e mantém membros na área de assinante
   assert.match(auth, /"\/inicio"/);
 });
 
-test("ferramentas atuais recebem links profundos sem duplicar suas regras", () => {
+test("ferramentas atuais recebem rotas próprias sem duplicar suas regras", () => {
   const section = read("src/pages/ManagementSection.tsx");
   const admin = read("src/pages/Admin.tsx");
   const master = read("src/pages/Master.tsx");
 
-  assert.match(section, /\/admin\?tab=guides/);
-  assert.match(section, /\/admin\?tab=moderation/);
-  assert.match(section, /\/master\?view=accounts/);
-  assert.match(section, /\/master\?view=driveImport/);
+  assert.match(section, /\/gestao\/conteudos\/academia/);
+  assert.match(section, /\/gestao\/comunidade\/moderacao/);
+  assert.match(section, /\/gestao\/plataforma\/acessos/);
+  assert.match(section, /\/gestao\/conteudos\/importacao/);
   assert.match(admin, /new URLSearchParams\(search\)\.get\("tab"\)/);
   assert.match(master, /new URLSearchParams\(search\)\.get\("view"\)/);
+  assert.match(admin, /fixedTab/);
+  assert.match(master, /fixedView/);
   assert.match(admin, /<ManagementShell/);
   assert.match(master, /<ManagementShell/);
 });

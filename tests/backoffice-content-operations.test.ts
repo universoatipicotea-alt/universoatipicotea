@@ -21,9 +21,21 @@ test("gestão de conteúdo usa indicadores reais do acervo", () => {
 test("atalhos editoriais preservam as ferramentas existentes", () => {
   const overview = read("src/components/management/ContentOperationsOverview.tsx");
 
-  assert.match(overview, /\/admin\?tab=guides/);
-  assert.match(overview, /\/admin\?tab=recipes/);
-  assert.match(overview, /\/admin\?tab=academyModules/);
-  assert.match(overview, /\/admin\?tab=recipeCategories/);
+  assert.match(overview, /\/gestao\/conteudos\/academia/);
+  assert.match(overview, /\/gestao\/conteudos\/receitas/);
+  assert.match(overview, /\/gestao\/conteudos\/modulos/);
+  assert.match(overview, /\/gestao\/conteudos\/categorias/);
   assert.doesNotMatch(overview, /useMutation/);
+});
+
+test("sidebar representa setores e funções sem repetir ferramentas", () => {
+  const navigation = read("src/components/management/managementSections.ts");
+  const shell = read("src/components/management/ManagementShell.tsx");
+
+  assert.match(navigation, /destinations/);
+  assert.match(navigation, /\/gestao\/comercial\/produtos/);
+  assert.match(navigation, /\/gestao\/plataforma\/aparencia/);
+  assert.match(navigation, /\/gestao\/conteudos\/importacao/);
+  assert.doesNotMatch(navigation, /admin\?tab|master\?view/);
+  assert.match(shell, /section\.destinations/);
 });

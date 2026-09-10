@@ -93,13 +93,13 @@ export function ContentOperationsOverview() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href="/admin?tab=guides"
+            href="/gestao/conteudos/academia"
             className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#082c62] px-4 text-xs font-extrabold text-white"
           >
             <BookOpen size={16} /> Novo conteúdo
           </Link>
           <Link
-            href="/admin?tab=recipes"
+            href="/gestao/conteudos/receitas"
             className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#cdd8e6] bg-white px-4 text-xs font-extrabold"
           >
             <ChefHat size={16} /> Nova receita
@@ -138,11 +138,15 @@ export function ContentOperationsOverview() {
             Acompanhe o que ainda está em preparação antes de disponibilizar aos membros.
           </p>
           <div className="mt-5 grid gap-2 sm:grid-cols-2">
-            <StatusRow label="Conteúdos em rascunho" value={draftGuides} href="/admin?tab=guides" />
+            <StatusRow
+              label="Conteúdos em rascunho"
+              value={draftGuides}
+              href="/gestao/conteudos/academia"
+            />
             <StatusRow
               label="Receitas em rascunho"
               value={draftRecipes}
-              href="/admin?tab=recipes"
+              href="/gestao/conteudos/receitas"
             />
           </div>
         </article>
@@ -156,12 +160,12 @@ export function ContentOperationsOverview() {
             <StatusRow
               label="Módulos em breve"
               value={comingSoonModules}
-              href="/admin?tab=academyModules"
+              href="/gestao/conteudos/modulos"
             />
             <StatusRow
               label="Categorias cadastradas"
               value={categories.length}
-              href="/admin?tab=recipeCategories"
+              href="/gestao/conteudos/categorias"
             />
           </div>
         </article>

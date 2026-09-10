@@ -63,6 +63,15 @@ type GuideForm = {
   status: "draft" | "published" | "archived";
   position: number;
 };
+
+export type AdminTab =
+  | "overview"
+  | "guides"
+  | "recipes"
+  | "recipeCategories"
+  | "academyModules"
+  | "facilitators"
+  | "moderation";
 type FacilitatorForm = {
   id?: number;
   title: string;
@@ -160,21 +169,13 @@ function Stat({
   );
 }
 
-export default function Admin() {
+export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
   const { user, loading } = useAuth();
   const search = useSearch();
   const dashboard = trpc.community.admin.dashboard.useQuery(undefined, {
     enabled: ["admin", "admin_master"].includes(user?.accessRole || ""),
   });
   const utils = trpc.useUtils();
-  type AdminTab =
-    | "overview"
-    | "guides"
-    | "recipes"
-    | "recipeCategories"
-    | "academyModules"
-    | "facilitators"
-    | "moderation";
   const requestedTab = new URLSearchParams(search).get("tab");
   const allowedTabs: AdminTab[] = [
     "overview",
@@ -185,9 +186,10 @@ export default function Admin() {
     "facilitators",
     "moderation",
   ];
-  const [tab, setTab] = useState<AdminTab>(() =>
+  const [selectedTab, setTab] = useState<AdminTab>(() =>
     allowedTabs.includes(requestedTab as AdminTab) ? (requestedTab as AdminTab) : "overview",
   );
+  const tab = fixedTab ?? selectedTab;
   const [guideForm, setGuideForm] = useState<GuideForm>(newGuide());
   const [facilitatorForm, setFacilitatorForm] = useState<FacilitatorForm>(newFacilitator());
   const recipes = trpc.community.admin.testGuides.useQuery(undefined, {
@@ -407,23 +409,25 @@ export default function Admin() {
       title="Centro de gestão"
       description="Publique recursos, organize conteúdos e preserve um espaço de conversa respeitoso."
     >
-      <div className="mb-9 flex gap-2 overflow-x-auto border-b border-[var(--line)] pb-3">
-        {tabs.map((item) => {
-          const Icon = item.icon;
-          const active = tab === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setTab(item.id)}
-              className={`nav-link inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-extrabold ${active ? "bg-[var(--sage-deep)] text-white" : "bg-white text-[var(--ink-soft)] hover:bg-[var(--linen)] hover:text-[var(--ink)]"}`}
-            >
-              <Icon size={15} />
-              {item.label}
-            </button>
-          );
-        })}
-      </div>
+      {fixedTab ? null : (
+        <div className="mb-9 flex gap-2 overflow-x-auto border-b border-[var(--line)] pb-3">
+          {tabs.map((item) => {
+            const Icon = item.icon;
+            const active = tab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTab(item.id)}
+                className={`nav-link inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-extrabold ${active ? "bg-[var(--sage-deep)] text-white" : "bg-white text-[var(--ink-soft)] hover:bg-[var(--linen)] hover:text-[var(--ink)]"}`}
+              >
+                <Icon size={15} />
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {dashboard.isLoading ? (
         <div className="grid gap-4 md:grid-cols-4">
