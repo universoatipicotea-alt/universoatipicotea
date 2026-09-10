@@ -34,7 +34,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "re
 import { toast } from "sonner";
 import { useSearch } from "wouter";
 
-type ProducerView =
+export type ProducerView =
   | "overview"
   | "products"
   | "campaigns"
@@ -132,7 +132,7 @@ function Metric({
   );
 }
 
-export default function Master() {
+export default function Master({ fixedView }: { fixedView?: ProducerView } = {}) {
   const { user, loading } = useAuth();
   const search = useSearch();
   const master = trpc.community.master.dashboard.useQuery(undefined, {
@@ -151,11 +151,12 @@ export default function Master() {
     "visualAssets",
     "driveImport",
   ];
-  const [view, setView] = useState<ProducerView>(() =>
+  const [selectedView, setView] = useState<ProducerView>(() =>
     allowedViews.includes(requestedView as ProducerView)
       ? (requestedView as ProducerView)
       : "overview",
   );
+  const view = fixedView ?? selectedView;
   const [product, setProduct] = useState<ProductForm>(blankProduct());
   const [campaign, setCampaign] = useState<CampaignForm>(blankCampaign());
   const [conversion, setConversion] = useState({
@@ -407,133 +408,139 @@ export default function Master() {
       description="Organize produtos, campanhas, links, cliques e conversões confirmadas sem confundir interesse com venda."
       masterOnly
     >
-      <div className="lg:grid lg:grid-cols-[248px_minmax(0,1fr)] lg:items-start lg:gap-8">
-        <aside className="mb-7 lg:mb-0">
-          <div className="lg:sticky lg:top-8">
-            <div className="mb-3 rounded-2xl border border-[var(--line)] bg-[var(--ink)] p-4 text-white shadow-[0_12px_28px_rgba(14,38,91,0.12)]">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#efd4a2]">
-                    Área de gestão
-                  </p>
-                  <h2 className="display-font mt-1 text-xl font-semibold">Navegação do painel</h2>
+      <div
+        className={
+          fixedView ? "" : "lg:grid lg:grid-cols-[248px_minmax(0,1fr)] lg:items-start lg:gap-8"
+        }
+      >
+        {fixedView ? null : (
+          <aside className="mb-7 lg:mb-0">
+            <div className="lg:sticky lg:top-8">
+              <div className="mb-3 rounded-2xl border border-[var(--line)] bg-[var(--ink)] p-4 text-white shadow-[0_12px_28px_rgba(14,38,91,0.12)]">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#efd4a2]">
+                      Área de gestão
+                    </p>
+                    <h2 className="display-font mt-1 text-xl font-semibold">Navegação do painel</h2>
+                  </div>
+                  <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-extrabold text-white/75">
+                    Master
+                  </span>
                 </div>
-                <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-extrabold text-white/75">
-                  Master
-                </span>
+                <p className="mt-3 text-xs leading-5 text-white/65">
+                  Acompanhe o funil, mantenha o catálogo organizado e registre confirmações com
+                  clareza.
+                </p>
               </div>
-              <p className="mt-3 text-xs leading-5 text-white/65">
-                Acompanhe o funil, mantenha o catálogo organizado e registre confirmações com
-                clareza.
-              </p>
-            </div>
-            <nav
-              aria-label="Seções do painel de produtor"
-              className="producer-rail rounded-2xl border border-[var(--line)] bg-white p-2 shadow-[0_10px_24px_rgba(14,38,91,0.04)]"
-            >
-              <p className="px-3 pb-2 pt-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--ink-soft)]">
-                Seções
-              </p>
-              <div className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
-                {menu.map((item) => {
-                  const Icon = item.icon;
-                  const active = view === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setView(item.id)}
-                      aria-current={active ? "page" : undefined}
-                      className={`nav-link group flex min-w-[145px] shrink-0 items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors lg:min-w-0 ${active ? "bg-[var(--sage-deep)] text-white shadow-[0_8px_18px_rgba(34,91,73,0.2)]" : "text-[var(--ink-soft)] hover:bg-[var(--linen)] hover:text-[var(--ink)]"}`}
-                    >
-                      <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${active ? "bg-white/12 text-[#efd4a2]" : "bg-[var(--paper)] text-[var(--sage-deep)]"}`}
+              <nav
+                aria-label="Seções do painel de produtor"
+                className="producer-rail rounded-2xl border border-[var(--line)] bg-white p-2 shadow-[0_10px_24px_rgba(14,38,91,0.04)]"
+              >
+                <p className="px-3 pb-2 pt-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--ink-soft)]">
+                  Seções
+                </p>
+                <div className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
+                  {menu.map((item) => {
+                    const Icon = item.icon;
+                    const active = view === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setView(item.id)}
+                        aria-current={active ? "page" : undefined}
+                        className={`nav-link group flex min-w-[145px] shrink-0 items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors lg:min-w-0 ${active ? "bg-[var(--sage-deep)] text-white shadow-[0_8px_18px_rgba(34,91,73,0.2)]" : "text-[var(--ink-soft)] hover:bg-[var(--linen)] hover:text-[var(--ink)]"}`}
                       >
-                        <Icon size={16} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <strong className="block truncate text-xs font-extrabold">
-                          {item.label}
-                        </strong>
-                        <small
-                          className={`mt-0.5 block truncate text-[10px] ${active ? "text-white/70" : "text-[var(--ink-soft)]"}`}
+                        <span
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${active ? "bg-white/12 text-[#efd4a2]" : "bg-[var(--paper)] text-[var(--sage-deep)]"}`}
                         >
-                          {item.hint}
-                        </small>
-                      </span>
-                      <span
-                        className={`hidden text-lg leading-none lg:block ${active ? "text-white/70" : "text-[var(--line)] group-hover:text-[var(--sage)]"}`}
-                      >
-                        ›
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </nav>
-            {data ? (
-              <div className="mt-3 rounded-2xl border border-[var(--line)] bg-white p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--ink-soft)]">
-                    Resumo rápido
-                  </p>
-                  <span className="h-2 w-2 rounded-full bg-[#2ca36a]" title="Dados atualizados" />
+                          <Icon size={16} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <strong className="block truncate text-xs font-extrabold">
+                            {item.label}
+                          </strong>
+                          <small
+                            className={`mt-0.5 block truncate text-[10px] ${active ? "text-white/70" : "text-[var(--ink-soft)]"}`}
+                          >
+                            {item.hint}
+                          </small>
+                        </span>
+                        <span
+                          className={`hidden text-lg leading-none lg:block ${active ? "text-white/70" : "text-[var(--line)] group-hover:text-[var(--sage)]"}`}
+                        >
+                          ›
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
-                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                  <div className="rounded-xl bg-[var(--paper)] px-2 py-2">
-                    <strong className="display-font block text-lg font-semibold">
-                      {data.products.length}
-                    </strong>
-                    <span className="text-[9px] font-extrabold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
-                      produtos
-                    </span>
+              </nav>
+              {data ? (
+                <div className="mt-3 rounded-2xl border border-[var(--line)] bg-white p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--ink-soft)]">
+                      Resumo rápido
+                    </p>
+                    <span className="h-2 w-2 rounded-full bg-[#2ca36a]" title="Dados atualizados" />
                   </div>
-                  <div className="rounded-xl bg-[var(--paper)] px-2 py-2">
-                    <strong className="display-font block text-lg font-semibold">
-                      {data.campaigns.length}
-                    </strong>
-                    <span className="text-[9px] font-extrabold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
-                      campanhas
-                    </span>
-                  </div>
-                  <div className="rounded-xl bg-[var(--paper)] px-2 py-2">
-                    <strong className="display-font block text-lg font-semibold">
-                      {data.stats.confirmedConversions}
-                    </strong>
-                    <span className="text-[9px] font-extrabold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
-                      vendas
-                    </span>
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-xl bg-[var(--paper)] px-2 py-2">
+                      <strong className="display-font block text-lg font-semibold">
+                        {data.products.length}
+                      </strong>
+                      <span className="text-[9px] font-extrabold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                        produtos
+                      </span>
+                    </div>
+                    <div className="rounded-xl bg-[var(--paper)] px-2 py-2">
+                      <strong className="display-font block text-lg font-semibold">
+                        {data.campaigns.length}
+                      </strong>
+                      <span className="text-[9px] font-extrabold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                        campanhas
+                      </span>
+                    </div>
+                    <div className="rounded-xl bg-[var(--paper)] px-2 py-2">
+                      <strong className="display-font block text-lg font-semibold">
+                        {data.stats.confirmedConversions}
+                      </strong>
+                      <span className="text-[9px] font-extrabold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                        vendas
+                      </span>
+                    </div>
                   </div>
                 </div>
+              ) : null}
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setProduct(blankProduct());
+                    setView("products");
+                  }}
+                  className="pressable justify-between rounded-xl bg-[var(--sage-deep)] text-xs font-extrabold text-white hover:bg-[var(--ink)]"
+                >
+                  <span>Novo produto</span>
+                  <span aria-hidden="true">+</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setCampaign(blankCampaign());
+                    setView("campaigns");
+                  }}
+                  className="pressable justify-between rounded-xl border-[var(--line)] bg-white text-xs font-extrabold text-[var(--sage-deep)]"
+                >
+                  <span>Nova campanha</span>
+                  <span aria-hidden="true">+</span>
+                </Button>
               </div>
-            ) : null}
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-              <Button
-                type="button"
-                onClick={() => {
-                  setProduct(blankProduct());
-                  setView("products");
-                }}
-                className="pressable justify-between rounded-xl bg-[var(--sage-deep)] text-xs font-extrabold text-white hover:bg-[var(--ink)]"
-              >
-                <span>Novo produto</span>
-                <span aria-hidden="true">+</span>
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setCampaign(blankCampaign());
-                  setView("campaigns");
-                }}
-                className="pressable justify-between rounded-xl border-[var(--line)] bg-white text-xs font-extrabold text-[var(--sage-deep)]"
-              >
-                <span>Nova campanha</span>
-                <span aria-hidden="true">+</span>
-              </Button>
             </div>
-          </div>
-        </aside>
+          </aside>
+        )}
         <div>
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-[var(--line)] bg-white px-5 py-4">
             <div>

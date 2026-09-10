@@ -138,15 +138,33 @@ function ManagementShellContent({
             </Link>
             {sections.map((section) => {
               const Icon = section.icon;
+              const active = isActive(location, section.href);
               return (
-                <Link
-                  key={section.href}
-                  href={section.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`mb-1 flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold ${isActive(location, section.href) ? "bg-[#e8f2ff] text-[#082c62]" : "text-[#60708a]"}`}
-                >
-                  <Icon size={18} /> {section.label}
-                </Link>
+                <div key={section.href}>
+                  <Link
+                    href={section.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`mb-1 flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold ${active ? "bg-[#e8f2ff] text-[#082c62]" : "text-[#60708a]"}`}
+                  >
+                    <Icon size={18} /> {section.label}
+                  </Link>
+                  {active ? (
+                    <div className="mb-3 ml-5 border-l border-[#cdd8e6] pl-3">
+                      {section.destinations
+                        .filter((destination) => isMaster || !destination.masterOnly)
+                        .map((destination) => (
+                          <Link
+                            key={destination.href}
+                            href={destination.href}
+                            onClick={() => setMobileOpen(false)}
+                            className={`flex min-h-10 items-center rounded-lg px-3 text-xs font-bold ${location === destination.href ? "bg-[#082c62] text-white" : "text-[#60708a]"}`}
+                          >
+                            {destination.label}
+                          </Link>
+                        ))}
+                    </div>
+                  ) : null}
+                </div>
               );
             })}
           </nav>
@@ -181,13 +199,33 @@ function ManagementShellContent({
               const Icon = section.icon;
               const active = isActive(location, section.href);
               return (
-                <Link
-                  key={section.href}
-                  href={section.href}
-                  className={`flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-bold transition ${active ? "bg-white text-[#082c62]" : "text-white/70 hover:bg-white/10 hover:text-white"}`}
-                >
-                  <Icon size={18} /> {section.shortLabel}
-                </Link>
+                <div key={section.href}>
+                  <Link
+                    href={section.href}
+                    className={`flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-bold transition ${active ? "bg-white text-[#082c62]" : "text-white/70 hover:bg-white/10 hover:text-white"}`}
+                  >
+                    <Icon size={18} /> {section.shortLabel}
+                  </Link>
+                  {active ? (
+                    <div className="my-2 ml-5 space-y-1 border-l border-white/15 pl-3">
+                      {section.destinations
+                        .filter((destination) => isMaster || !destination.masterOnly)
+                        .map((destination) => {
+                          const DestinationIcon = destination.icon;
+                          const destinationActive = location === destination.href;
+                          return (
+                            <Link
+                              key={destination.href}
+                              href={destination.href}
+                              className={`flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold transition ${destinationActive ? "bg-white/15 text-white" : "text-white/55 hover:bg-white/10 hover:text-white"}`}
+                            >
+                              <DestinationIcon size={14} /> {destination.label}
+                            </Link>
+                          );
+                        })}
+                    </div>
+                  ) : null}
+                </div>
               );
             })}
           </nav>

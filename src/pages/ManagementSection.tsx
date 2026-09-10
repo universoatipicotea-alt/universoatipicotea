@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { ContentOperationsOverview } from "@/components/management/ContentOperationsOverview";
 import { ManagementShell } from "@/components/management/ManagementShell";
 import {
   ArrowUpRight,
@@ -14,7 +15,6 @@ import {
   Settings2,
   ShieldCheck,
   ShoppingBag,
-  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -41,31 +41,31 @@ const areas: Record<
       {
         title: "Academia Atípica",
         description: "Guias, PDFs, vídeos, capas e ordem.",
-        href: "/admin?tab=guides",
+        href: "/gestao/conteudos/academia",
         icon: BookOpen,
       },
       {
         title: "Receitas",
         description: "Cadastro, arquivos, capas e publicação.",
-        href: "/admin?tab=recipes",
+        href: "/gestao/conteudos/receitas",
         icon: ChefHat,
       },
       {
         title: "Módulos da Academia",
         description: "Estrutura, capas e disponibilidade.",
-        href: "/admin?tab=academyModules",
+        href: "/gestao/conteudos/modulos",
         icon: LayoutGrid,
       },
       {
         title: "Categorias de receitas",
         description: "Organização e navegação do catálogo.",
-        href: "/admin?tab=recipeCategories",
+        href: "/gestao/conteudos/categorias",
         icon: Settings2,
       },
       {
         title: "Importação do Drive",
         description: "Prévia, associação, importação e rollback.",
-        href: "/master?view=driveImport",
+        href: "/gestao/conteudos/importacao",
         icon: FolderSync,
         masterOnly: true,
       },
@@ -79,21 +79,14 @@ const areas: Record<
       {
         title: "Moderação",
         description: "Conversas, respostas e denúncias.",
-        href: "/admin?tab=moderation",
+        href: "/gestao/comunidade/moderacao",
         icon: MessageCircleMore,
       },
       {
         title: "Facilitadores",
         description: "Recursos atuais e preparação do futuro catálogo.",
-        href: "/admin?tab=facilitators",
+        href: "/gestao/comunidade/facilitadores",
         icon: ShoppingBag,
-      },
-      {
-        title: "Contas e acessos",
-        description: "Papéis, situação e acesso dos usuários.",
-        href: "/master?view=accounts",
-        icon: UsersRound,
-        masterOnly: true,
       },
     ],
   },
@@ -106,25 +99,25 @@ const areas: Record<
       {
         title: "Visão do funil",
         description: "Indicadores comerciais disponíveis hoje.",
-        href: "/master?view=overview",
+        href: "/gestao/comercial/funil",
         icon: BarChart3,
       },
       {
         title: "Produtos",
         description: "Catálogo e destinos comerciais atuais.",
-        href: "/master?view=products",
+        href: "/gestao/comercial/produtos",
         icon: ShoppingBag,
       },
       {
         title: "Campanhas",
         description: "Links, UTMs e origens de tráfego.",
-        href: "/master?view=campaigns",
+        href: "/gestao/comercial/campanhas",
         icon: Megaphone,
       },
       {
         title: "Conversões",
         description: "Confirmações e registros operacionais.",
-        href: "/master?view=conversions",
+        href: "/gestao/comercial/conversoes",
         icon: ReceiptText,
       },
     ],
@@ -138,20 +131,14 @@ const areas: Record<
       {
         title: "Contas e permissões",
         description: "Papéis administrativos e níveis de acesso.",
-        href: "/master?view=accounts",
+        href: "/gestao/plataforma/acessos",
         icon: ShieldCheck,
       },
       {
         title: "Aparência",
         description: "Banners e imagens responsivas da plataforma.",
-        href: "/master?view=visualAssets",
+        href: "/gestao/plataforma/aparencia",
         icon: Image,
-      },
-      {
-        title: "Importação do Drive",
-        description: "Origem, prévia, histórico e rollback.",
-        href: "/master?view=driveImport",
-        icon: FolderSync,
       },
     ],
   },
@@ -170,6 +157,7 @@ export default function ManagementSection({ area }: { area: ManagementArea }) {
       description={config.description}
       masterOnly={config.masterOnly}
     >
+      {area === "conteudos" ? <ContentOperationsOverview /> : null}
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {tools.map((tool) => {
           const Icon = tool.icon;
