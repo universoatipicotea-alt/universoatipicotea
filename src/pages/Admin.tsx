@@ -1,4 +1,5 @@
 import { ContentEmpty, MemberShell, SectionHeading } from "@/components/MemberShell";
+import { ManagementShell } from "@/components/management/ManagementShell";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,6 +32,7 @@ import {
   X,
 } from "lucide-react";
 import { ChangeEvent, FormEvent, useRef, useState } from "react";
+import { useSearch } from "wouter";
 import { toast } from "sonner";
 
 const contentCategories = [
@@ -160,19 +162,32 @@ function Stat({
 
 export default function Admin() {
   const { user, loading } = useAuth();
+  const search = useSearch();
   const dashboard = trpc.community.admin.dashboard.useQuery(undefined, {
     enabled: ["admin", "admin_master"].includes(user?.accessRole || ""),
   });
   const utils = trpc.useUtils();
-  const [tab, setTab] = useState<
+  type AdminTab =
     | "overview"
     | "guides"
     | "recipes"
     | "recipeCategories"
     | "academyModules"
     | "facilitators"
-    | "moderation"
-  >("overview");
+    | "moderation";
+  const requestedTab = new URLSearchParams(search).get("tab");
+  const allowedTabs: AdminTab[] = [
+    "overview",
+    "guides",
+    "recipes",
+    "recipeCategories",
+    "academyModules",
+    "facilitators",
+    "moderation",
+  ];
+  const [tab, setTab] = useState<AdminTab>(() =>
+    allowedTabs.includes(requestedTab as AdminTab) ? (requestedTab as AdminTab) : "overview",
+  );
   const [guideForm, setGuideForm] = useState<GuideForm>(newGuide());
   const [facilitatorForm, setFacilitatorForm] = useState<FacilitatorForm>(newFacilitator());
   const recipes = trpc.community.admin.testGuides.useQuery(undefined, {
@@ -387,7 +402,7 @@ export default function Admin() {
   ];
 
   return (
-    <MemberShell
+    <ManagementShell
       eyebrow="Administração"
       title="Centro de gestão"
       description="Publique recursos, organize conteúdos e preserve um espaço de conversa respeitoso."
@@ -426,7 +441,7 @@ export default function Admin() {
             <Stat label="conteúdos da academia" value={data.stats.guides} icon={BookOpen} />
             <Stat
               label="receitas publicadas"
-              value={(recipes.data ?? []).filter((item: any) => item.status === "published").length}
+              value={(recipes.data ?? []).filter((item) => item.status === "published").length}
               icon={ChefHat}
             />
             <Stat label="facilitadores" value={data.stats.facilitators} icon={Lightbulb} />
@@ -525,7 +540,7 @@ export default function Admin() {
                     value={guideForm.moduleId ?? ""}
                     onChange={(event) => {
                       const module = taxonomy.data?.academyModules?.find(
-                        (item: any) => item.id === Number(event.target.value),
+                        (item) => item.id === Number(event.target.value),
                       );
                       setGuideForm((current) => ({
                         ...current,
@@ -539,8 +554,8 @@ export default function Admin() {
                       Selecione um módulo
                     </option>
                     {(taxonomy.data?.academyModules ?? [])
-                      .filter((item: any) => item.status !== "archived")
-                      .map((item: any) => (
+                      .filter((item) => item.status !== "archived")
+                      .map((item) => (
                         <option key={item.id} value={item.id}>
                           {`Módulo ${String(item.position).padStart(2, "0")} — ${item.name}`}
                         </option>
@@ -1236,6 +1251,6 @@ export default function Admin() {
           )}
         </DialogContent>
       </Dialog>
-    </MemberShell>
+    </ManagementShell>
   );
 }

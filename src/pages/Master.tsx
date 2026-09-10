@@ -1,4 +1,5 @@
 import { ContentEmpty, MemberShell, SectionHeading } from "@/components/MemberShell";
+import { ManagementShell } from "@/components/management/ManagementShell";
 import AccessControlPanel from "@/components/AccessControlPanel";
 import DriveImportAdmin from "@/components/admin/DriveImportAdmin";
 import TaxonomyAdmin from "@/components/admin/TaxonomyAdmin";
@@ -31,6 +32,7 @@ import {
 } from "lucide-react";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useSearch } from "wouter";
 
 type ProducerView =
   | "overview"
@@ -132,11 +134,28 @@ function Metric({
 
 export default function Master() {
   const { user, loading } = useAuth();
+  const search = useSearch();
   const master = trpc.community.master.dashboard.useQuery(undefined, {
     enabled: user?.accessRole === "admin_master",
   });
   const utils = trpc.useUtils();
-  const [view, setView] = useState<ProducerView>("overview");
+  const requestedView = new URLSearchParams(search).get("view");
+  const allowedViews: ProducerView[] = [
+    "overview",
+    "products",
+    "campaigns",
+    "conversions",
+    "accounts",
+    "recipeCategories",
+    "academyModules",
+    "visualAssets",
+    "driveImport",
+  ];
+  const [view, setView] = useState<ProducerView>(() =>
+    allowedViews.includes(requestedView as ProducerView)
+      ? (requestedView as ProducerView)
+      : "overview",
+  );
   const [product, setProduct] = useState<ProductForm>(blankProduct());
   const [campaign, setCampaign] = useState<CampaignForm>(blankCampaign());
   const [conversion, setConversion] = useState({
@@ -382,10 +401,11 @@ export default function Master() {
 
   const activeMenu = menu.find((item) => item.id === view) ?? menu[0];
   return (
-    <MemberShell
+    <ManagementShell
       eyebrow="Admin Master"
       title="Painel de produtor"
       description="Organize produtos, campanhas, links, cliques e conversões confirmadas sem confundir interesse com venda."
+      masterOnly
     >
       <div className="lg:grid lg:grid-cols-[248px_minmax(0,1fr)] lg:items-start lg:gap-8">
         <aside className="mb-7 lg:mb-0">
@@ -1458,6 +1478,6 @@ export default function Master() {
           {view === "driveImport" ? <DriveImportAdmin /> : null}
         </div>
       </div>
-    </MemberShell>
+    </ManagementShell>
   );
 }
