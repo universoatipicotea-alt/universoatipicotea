@@ -24,6 +24,7 @@ import { Route as ComunidadeRouteImport } from './routes/comunidade'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as FacilitadoresRouteImport } from './routes/facilitadores'
 import { Route as ForumRouteImport } from './routes/forum'
+import { Route as GestaoRouteImport } from './routes/gestao'
 import { Route as InicioRouteImport } from './routes/inicio'
 import { Route as MasterRouteImport } from './routes/master'
 import { Route as MinhaAssinaturaRouteImport } from './routes/minha-assinatura'
@@ -35,6 +36,10 @@ import { Route as ReceitasRouteImport } from './routes/receitas'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as VslRouteImport } from './routes/vsl'
 import { Route as AcademiaModuloRouteImport } from './routes/academia_.$modulo'
+import { Route as GestaoComercialRouteImport } from './routes/gestao_.comercial'
+import { Route as GestaoComunidadeRouteImport } from './routes/gestao_.comunidade'
+import { Route as GestaoConteudosRouteImport } from './routes/gestao_.conteudos'
+import { Route as GestaoPlataformaRouteImport } from './routes/gestao_.plataforma'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
 import { Route as ReceitasCategoriaRouteImport } from './routes/receitas_.$categoria'
 import { Route as ApiProtectedDriveVideoSplatRouteImport } from './routes/api/protected-drive-video/$'
@@ -117,6 +122,11 @@ const ForumRoute = ForumRouteImport.update({
   path: '/forum',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GestaoRoute = GestaoRouteImport.update({
+  id: '/gestao',
+  path: '/gestao',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InicioRoute = InicioRouteImport.update({
   id: '/inicio',
   path: '/inicio',
@@ -172,6 +182,26 @@ const AcademiaModuloRoute = AcademiaModuloRouteImport.update({
   path: '/academia/$modulo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GestaoComercialRoute = GestaoComercialRouteImport.update({
+  id: '/gestao_/comercial',
+  path: '/gestao/comercial',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GestaoComunidadeRoute = GestaoComunidadeRouteImport.update({
+  id: '/gestao_/comunidade',
+  path: '/gestao/comunidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GestaoConteudosRoute = GestaoConteudosRouteImport.update({
+  id: '/gestao_/conteudos',
+  path: '/gestao/conteudos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GestaoPlataformaRoute = GestaoPlataformaRouteImport.update({
+  id: '/gestao_/plataforma',
+  path: '/gestao/plataforma',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProdutoSlugRoute = ProdutoSlugRouteImport.update({
   id: '/produto/$slug',
   path: '/produto/$slug',
@@ -220,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/entrar': typeof EntrarRoute
   '/facilitadores': typeof FacilitadoresRoute
   '/forum': typeof ForumRoute
+  '/gestao': typeof GestaoRoute
   '/inicio': typeof InicioRoute
   '/master': typeof MasterRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
@@ -231,6 +262,10 @@ export interface FileRoutesByFullPath {
   '/termos': typeof TermosRoute
   '/vsl': typeof VslRoute
   '/academia/$modulo': typeof AcademiaModuloRoute
+  '/gestao/comercial': typeof GestaoComercialRoute
+  '/gestao/comunidade': typeof GestaoComunidadeRoute
+  '/gestao/conteudos': typeof GestaoConteudosRoute
+  '/gestao/plataforma': typeof GestaoPlataformaRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/receitas/$categoria': typeof ReceitasCategoriaRoute
   '/api/protected-drive-video/$': typeof ApiProtectedDriveVideoSplatRoute
@@ -254,6 +289,7 @@ export interface FileRoutesByTo {
   '/entrar': typeof EntrarRoute
   '/facilitadores': typeof FacilitadoresRoute
   '/forum': typeof ForumRoute
+  '/gestao': typeof GestaoRoute
   '/inicio': typeof InicioRoute
   '/master': typeof MasterRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
@@ -265,6 +301,10 @@ export interface FileRoutesByTo {
   '/termos': typeof TermosRoute
   '/vsl': typeof VslRoute
   '/academia/$modulo': typeof AcademiaModuloRoute
+  '/gestao/comercial': typeof GestaoComercialRoute
+  '/gestao/comunidade': typeof GestaoComunidadeRoute
+  '/gestao/conteudos': typeof GestaoConteudosRoute
+  '/gestao/plataforma': typeof GestaoPlataformaRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/receitas/$categoria': typeof ReceitasCategoriaRoute
   '/api/protected-drive-video/$': typeof ApiProtectedDriveVideoSplatRoute
@@ -289,6 +329,7 @@ export interface FileRoutesById {
   '/entrar': typeof EntrarRoute
   '/facilitadores': typeof FacilitadoresRoute
   '/forum': typeof ForumRoute
+  '/gestao': typeof GestaoRoute
   '/inicio': typeof InicioRoute
   '/master': typeof MasterRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
@@ -300,6 +341,10 @@ export interface FileRoutesById {
   '/termos': typeof TermosRoute
   '/vsl': typeof VslRoute
   '/academia_/$modulo': typeof AcademiaModuloRoute
+  '/gestao_/comercial': typeof GestaoComercialRoute
+  '/gestao_/comunidade': typeof GestaoComunidadeRoute
+  '/gestao_/conteudos': typeof GestaoConteudosRoute
+  '/gestao_/plataforma': typeof GestaoPlataformaRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/receitas_/$categoria': typeof ReceitasCategoriaRoute
   '/api/protected-drive-video/$': typeof ApiProtectedDriveVideoSplatRoute
@@ -325,6 +370,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/facilitadores'
     | '/forum'
+    | '/gestao'
     | '/inicio'
     | '/master'
     | '/minha-assinatura'
@@ -336,6 +382,10 @@ export interface FileRouteTypes {
     | '/termos'
     | '/vsl'
     | '/academia/$modulo'
+    | '/gestao/comercial'
+    | '/gestao/comunidade'
+    | '/gestao/conteudos'
+    | '/gestao/plataforma'
     | '/produto/$slug'
     | '/receitas/$categoria'
     | '/api/protected-drive-video/$'
@@ -359,6 +409,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/facilitadores'
     | '/forum'
+    | '/gestao'
     | '/inicio'
     | '/master'
     | '/minha-assinatura'
@@ -370,6 +421,10 @@ export interface FileRouteTypes {
     | '/termos'
     | '/vsl'
     | '/academia/$modulo'
+    | '/gestao/comercial'
+    | '/gestao/comunidade'
+    | '/gestao/conteudos'
+    | '/gestao/plataforma'
     | '/produto/$slug'
     | '/receitas/$categoria'
     | '/api/protected-drive-video/$'
@@ -393,6 +448,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/facilitadores'
     | '/forum'
+    | '/gestao'
     | '/inicio'
     | '/master'
     | '/minha-assinatura'
@@ -404,6 +460,10 @@ export interface FileRouteTypes {
     | '/termos'
     | '/vsl'
     | '/academia_/$modulo'
+    | '/gestao_/comercial'
+    | '/gestao_/comunidade'
+    | '/gestao_/conteudos'
+    | '/gestao_/plataforma'
     | '/produto/$slug'
     | '/receitas_/$categoria'
     | '/api/protected-drive-video/$'
@@ -428,6 +488,7 @@ export interface RootRouteChildren {
   EntrarRoute: typeof EntrarRoute
   FacilitadoresRoute: typeof FacilitadoresRoute
   ForumRoute: typeof ForumRoute
+  GestaoRoute: typeof GestaoRoute
   InicioRoute: typeof InicioRoute
   MasterRoute: typeof MasterRoute
   MinhaAssinaturaRoute: typeof MinhaAssinaturaRoute
@@ -439,6 +500,10 @@ export interface RootRouteChildren {
   TermosRoute: typeof TermosRoute
   VslRoute: typeof VslRoute
   AcademiaModuloRoute: typeof AcademiaModuloRoute
+  GestaoComercialRoute: typeof GestaoComercialRoute
+  GestaoComunidadeRoute: typeof GestaoComunidadeRoute
+  GestaoConteudosRoute: typeof GestaoConteudosRoute
+  GestaoPlataformaRoute: typeof GestaoPlataformaRoute
   ProdutoSlugRoute: typeof ProdutoSlugRoute
   ReceitasCategoriaRoute: typeof ReceitasCategoriaRoute
   ApiProtectedDriveVideoSplatRoute: typeof ApiProtectedDriveVideoSplatRoute
@@ -554,6 +619,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ForumRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gestao': {
+      id: '/gestao'
+      path: '/gestao'
+      fullPath: '/gestao'
+      preLoaderRoute: typeof GestaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/inicio': {
       id: '/inicio'
       path: '/inicio'
@@ -631,6 +703,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AcademiaModuloRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gestao_/comercial': {
+      id: '/gestao_/comercial'
+      path: '/gestao/comercial'
+      fullPath: '/gestao/comercial'
+      preLoaderRoute: typeof GestaoComercialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gestao_/comunidade': {
+      id: '/gestao_/comunidade'
+      path: '/gestao/comunidade'
+      fullPath: '/gestao/comunidade'
+      preLoaderRoute: typeof GestaoComunidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gestao_/conteudos': {
+      id: '/gestao_/conteudos'
+      path: '/gestao/conteudos'
+      fullPath: '/gestao/conteudos'
+      preLoaderRoute: typeof GestaoConteudosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gestao_/plataforma': {
+      id: '/gestao_/plataforma'
+      path: '/gestao/plataforma'
+      fullPath: '/gestao/plataforma'
+      preLoaderRoute: typeof GestaoPlataformaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/produto/$slug': {
       id: '/produto/$slug'
       path: '/produto/$slug'
@@ -692,6 +792,7 @@ const rootRouteChildren: RootRouteChildren = {
   EntrarRoute: EntrarRoute,
   FacilitadoresRoute: FacilitadoresRoute,
   ForumRoute: ForumRoute,
+  GestaoRoute: GestaoRoute,
   InicioRoute: InicioRoute,
   MasterRoute: MasterRoute,
   MinhaAssinaturaRoute: MinhaAssinaturaRoute,
@@ -703,6 +804,10 @@ const rootRouteChildren: RootRouteChildren = {
   TermosRoute: TermosRoute,
   VslRoute: VslRoute,
   AcademiaModuloRoute: AcademiaModuloRoute,
+  GestaoComercialRoute: GestaoComercialRoute,
+  GestaoComunidadeRoute: GestaoComunidadeRoute,
+  GestaoConteudosRoute: GestaoConteudosRoute,
+  GestaoPlataformaRoute: GestaoPlataformaRoute,
   ProdutoSlugRoute: ProdutoSlugRoute,
   ReceitasCategoriaRoute: ReceitasCategoriaRoute,
   ApiProtectedDriveVideoSplatRoute: ApiProtectedDriveVideoSplatRoute,

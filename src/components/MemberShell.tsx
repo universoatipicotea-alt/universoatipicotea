@@ -6,7 +6,6 @@ import {
   CircleUserRound,
   Compass,
   CreditCard,
-  Crown,
   GraduationCap,
   Home,
   Lightbulb,
@@ -206,8 +205,11 @@ export function MemberShell({
         ? "Membro"
         : "Visitante";
   const managementLinks = [
-    { href: "/admin", label: "Administração", icon: ShieldCheck },
-    ...(isMaster ? [{ href: "/master", label: "Admin Master", icon: Crown }] : []),
+    {
+      href: isMaster ? "/gestao" : "/gestao/conteudos",
+      label: "Gestão administrativa",
+      icon: ShieldCheck,
+    },
   ];
   return (
     <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)]">

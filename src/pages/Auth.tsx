@@ -34,10 +34,16 @@ export default function Auth() {
   });
   const utils = trpc.useUtils();
   const login = trpc.auth.login.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (authenticatedUser: { accessRole?: string } | null) => {
       await utils.auth.me.invalidate();
       toast.success("Bem-vindo de volta ao Universo Atípico.");
-      setLocation("/inicio");
+      setLocation(
+        authenticatedUser?.accessRole === "admin_master"
+          ? "/gestao"
+          : authenticatedUser?.accessRole === "admin"
+            ? "/gestao/conteudos"
+            : "/inicio",
+      );
     },
   });
 
