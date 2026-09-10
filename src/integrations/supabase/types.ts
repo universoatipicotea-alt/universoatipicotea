@@ -557,14 +557,93 @@ export type Database = {
           },
         ]
       }
+      ua_forum_attachments: {
+        Row: {
+          alt_text: string | null
+          attached_at: string | null
+          byte_size: number
+          created_at: string
+          deleted_at: string | null
+          height: number | null
+          id: number
+          mime_type: string
+          original_name: string | null
+          position: number
+          status: string
+          storage_bucket: string
+          storage_key: string
+          topic_id: number | null
+          uploader_id: number
+          width: number | null
+        }
+        Insert: {
+          alt_text?: string | null
+          attached_at?: string | null
+          byte_size: number
+          created_at?: string
+          deleted_at?: string | null
+          height?: number | null
+          id?: number
+          mime_type: string
+          original_name?: string | null
+          position?: number
+          status?: string
+          storage_bucket?: string
+          storage_key: string
+          topic_id?: number | null
+          uploader_id: number
+          width?: number | null
+        }
+        Update: {
+          alt_text?: string | null
+          attached_at?: string | null
+          byte_size?: number
+          created_at?: string
+          deleted_at?: string | null
+          height?: number | null
+          id?: number
+          mime_type?: string
+          original_name?: string | null
+          position?: number
+          status?: string
+          storage_bucket?: string
+          storage_key?: string
+          topic_id?: number | null
+          uploader_id?: number
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ua_forum_attachments_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "ua_forum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ua_forum_attachments_uploader_id_fkey"
+            columns: ["uploader_id"]
+            isOneToOne: false
+            referencedRelation: "ua_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ua_forum_comments: {
         Row: {
           author_id: number
           body: string
+          client_request_id: string | null
           created_at: string
+          deleted_at: string | null
+          deleted_by: number | null
           edited_at: string | null
           id: number
+          moderated_at: string | null
+          moderated_by: number | null
+          moderation_reason: string | null
           parent_comment_id: number | null
+          reaction_count: number
           status: string
           topic_id: number
           updated_at: string
@@ -572,10 +651,17 @@ export type Database = {
         Insert: {
           author_id: number
           body: string
+          client_request_id?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: number | null
           edited_at?: string | null
           id?: number
+          moderated_at?: string | null
+          moderated_by?: number | null
+          moderation_reason?: string | null
           parent_comment_id?: number | null
+          reaction_count?: number
           status?: string
           topic_id: number
           updated_at?: string
@@ -583,10 +669,17 @@ export type Database = {
         Update: {
           author_id?: number
           body?: string
+          client_request_id?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: number | null
           edited_at?: string | null
           id?: number
+          moderated_at?: string | null
+          moderated_by?: number | null
+          moderation_reason?: string | null
           parent_comment_id?: number | null
+          reaction_count?: number
           status?: string
           topic_id?: number
           updated_at?: string
@@ -595,6 +688,20 @@ export type Database = {
           {
             foreignKeyName: "ua_forum_comments_author_id_fkey"
             columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "ua_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ua_forum_comments_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "ua_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ua_forum_comments_moderated_by_fkey"
+            columns: ["moderated_by"]
             isOneToOne: false
             referencedRelation: "ua_users"
             referencedColumns: ["id"]
@@ -611,6 +718,38 @@ export type Database = {
             columns: ["topic_id"]
             isOneToOne: false
             referencedRelation: "ua_forum_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ua_forum_rate_limits: {
+        Row: {
+          action: string
+          bucket_started_at: string
+          request_count: number
+          updated_at: string
+          user_id: number
+        }
+        Insert: {
+          action: string
+          bucket_started_at?: string
+          request_count?: number
+          updated_at?: string
+          user_id: number
+        }
+        Update: {
+          action?: string
+          bucket_started_at?: string
+          request_count?: number
+          updated_at?: string
+          user_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ua_forum_rate_limits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ua_users"
             referencedColumns: ["id"]
           },
         ]
@@ -719,16 +858,64 @@ export type Database = {
           },
         ]
       }
+      ua_forum_topic_reactions: {
+        Row: {
+          created_at: string
+          id: number
+          reaction: string
+          topic_id: number
+          user_id: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          reaction?: string
+          topic_id: number
+          user_id: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          reaction?: string
+          topic_id?: number
+          user_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ua_forum_topic_reactions_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "ua_forum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ua_forum_topic_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "ua_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ua_forum_topics: {
         Row: {
           author_id: number
           body: string
           category: string
+          client_request_id: string | null
           comment_count: number
           created_at: string
+          deleted_at: string | null
+          deleted_by: number | null
+          edited_at: string | null
           id: number
           is_pinned: boolean
           last_activity_at: string
+          moderated_at: string | null
+          moderated_by: number | null
+          moderation_reason: string | null
+          reaction_count: number
+          search_document: unknown
           status: string
           title: string
           updated_at: string
@@ -737,11 +924,20 @@ export type Database = {
           author_id: number
           body: string
           category?: string
+          client_request_id?: string | null
           comment_count?: number
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: number | null
+          edited_at?: string | null
           id?: number
           is_pinned?: boolean
           last_activity_at?: string
+          moderated_at?: string | null
+          moderated_by?: number | null
+          moderation_reason?: string | null
+          reaction_count?: number
+          search_document?: unknown
           status?: string
           title: string
           updated_at?: string
@@ -750,11 +946,20 @@ export type Database = {
           author_id?: number
           body?: string
           category?: string
+          client_request_id?: string | null
           comment_count?: number
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: number | null
+          edited_at?: string | null
           id?: number
           is_pinned?: boolean
           last_activity_at?: string
+          moderated_at?: string | null
+          moderated_by?: number | null
+          moderation_reason?: string | null
+          reaction_count?: number
+          search_document?: unknown
           status?: string
           title?: string
           updated_at?: string
@@ -763,6 +968,20 @@ export type Database = {
           {
             foreignKeyName: "ua_forum_topics_author_id_fkey"
             columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "ua_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ua_forum_topics_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "ua_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ua_forum_topics_moderated_by_fkey"
+            columns: ["moderated_by"]
             isOneToOne: false
             referencedRelation: "ua_users"
             referencedColumns: ["id"]
@@ -1460,6 +1679,114 @@ export type Database = {
         Returns: boolean
       }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      ua_consume_forum_rate_limit: {
+        Args: {
+          p_action: string
+          p_limit: number
+          p_user_id: number
+          p_window_seconds: number
+        }
+        Returns: boolean
+      }
+      ua_create_forum_topic: {
+        Args: {
+          p_attachment_ids?: number[]
+          p_author_id: number
+          p_body: string
+          p_category: string
+          p_client_request_id: string
+          p_title: string
+        }
+        Returns: number
+      }
+      ua_list_forum_root_comments: {
+        Args: {
+          p_cursor_id?: number
+          p_cursor_time?: string
+          p_include_hidden?: boolean
+          p_limit?: number
+          p_topic_id: number
+        }
+        Returns: {
+          author_id: number
+          body: string
+          client_request_id: string | null
+          created_at: string
+          deleted_at: string | null
+          deleted_by: number | null
+          edited_at: string | null
+          id: number
+          moderated_at: string | null
+          moderated_by: number | null
+          moderation_reason: string | null
+          parent_comment_id: number | null
+          reaction_count: number
+          status: string
+          topic_id: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "ua_forum_comments"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      ua_list_forum_topics: {
+        Args: {
+          p_category?: string
+          p_cursor_id?: number
+          p_cursor_number?: number
+          p_cursor_pinned?: boolean
+          p_cursor_time?: string
+          p_include_hidden?: boolean
+          p_limit?: number
+          p_query?: string
+          p_sort?: string
+        }
+        Returns: {
+          author_id: number
+          body: string
+          category: string
+          client_request_id: string | null
+          comment_count: number
+          created_at: string
+          deleted_at: string | null
+          deleted_by: number | null
+          edited_at: string | null
+          id: number
+          is_pinned: boolean
+          last_activity_at: string
+          moderated_at: string | null
+          moderated_by: number | null
+          moderation_reason: string | null
+          reaction_count: number
+          search_document: unknown
+          status: string
+          title: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "ua_forum_topics"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      ua_toggle_forum_comment_reaction: {
+        Args: { p_comment_id: number; p_reaction?: string; p_user_id: number }
+        Returns: {
+          active: boolean
+          reaction_count: number
+        }[]
+      }
+      ua_toggle_forum_topic_reaction: {
+        Args: { p_reaction?: string; p_topic_id: number; p_user_id: number }
+        Returns: {
+          active: boolean
+          reaction_count: number
+        }[]
+      }
     }
     Enums: {
       app_role: "master" | "admin" | "user"
