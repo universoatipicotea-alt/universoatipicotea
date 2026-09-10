@@ -172,16 +172,19 @@ function ManagementShellContent({
       </header>
 
       <div className="mx-auto flex min-h-screen w-full max-w-[1920px]">
-        <aside className="sticky top-0 hidden h-screen w-[300px] shrink-0 flex-col border-r border-[#dfe6ee] bg-[#071f4d] px-5 py-6 text-white lg:flex">
-          <Link href="/gestao" className="rounded-2xl bg-white p-3">
+        <aside className="sticky top-0 hidden h-screen w-[300px] shrink-0 flex-col border-r border-[#dfe6ee] bg-[#fffdf8] px-5 py-6 text-[#082c62] shadow-[12px_0_36px_rgba(8,31,77,.04)] lg:flex">
+          <Link
+            href="/gestao"
+            className="rounded-2xl border border-[#e3e9f0] bg-white p-3 shadow-[0_10px_28px_rgba(8,31,77,.06)]"
+          >
             <Brand compact priority />
           </Link>
-          <div className="mt-7 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#f4c96b]">
+          <div className="mt-7 rounded-2xl border border-[#d8e4f0] bg-gradient-to-br from-[#eef5ff] to-[#f6fbf8] p-4">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#2f8f68]">
               Backoffice
             </p>
             <p className="mt-2 font-extrabold">Universo Atípico</p>
-            <p className="mt-1 text-xs leading-5 text-white/60">
+            <p className="mt-1 text-xs leading-5 text-[#60708a]">
               Operação, conteúdo, clientes e crescimento em um só lugar.
             </p>
           </div>
@@ -191,7 +194,7 @@ function ManagementShellContent({
           >
             <Link
               href="/gestao"
-              className={`flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-extrabold ${location === "/gestao" ? "bg-white text-[#082c62]" : "text-white/75 hover:bg-white/10 hover:text-white"}`}
+              className={`flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-extrabold transition ${location === "/gestao" ? "bg-[#082c62] text-white shadow-[0_8px_20px_rgba(8,44,98,.18)]" : "text-[#60708a] hover:bg-[#eef5ff] hover:text-[#082c62]"}`}
             >
               <Building2 size={18} /> Visão geral
             </Link>
@@ -202,12 +205,12 @@ function ManagementShellContent({
                 <div key={section.href}>
                   <Link
                     href={section.href}
-                    className={`flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-bold transition ${active ? "bg-white text-[#082c62]" : "text-white/70 hover:bg-white/10 hover:text-white"}`}
+                    className={`flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-bold transition ${active ? "bg-[#082c62] text-white shadow-[0_8px_20px_rgba(8,44,98,.18)]" : "text-[#60708a] hover:bg-[#eef5ff] hover:text-[#082c62]"}`}
                   >
                     <Icon size={18} /> {section.shortLabel}
                   </Link>
                   {active ? (
-                    <div className="my-2 ml-5 space-y-1 border-l border-white/15 pl-3">
+                    <div className="my-2 ml-5 space-y-1 border-l border-[#cdd8e6] pl-3">
                       {section.destinations
                         .filter((destination) => isMaster || !destination.masterOnly)
                         .map((destination) => {
@@ -217,7 +220,7 @@ function ManagementShellContent({
                             <Link
                               key={destination.href}
                               href={destination.href}
-                              className={`flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold transition ${destinationActive ? "bg-white/15 text-white" : "text-white/55 hover:bg-white/10 hover:text-white"}`}
+                              className={`flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold transition ${destinationActive ? "bg-[#e8f2ff] text-[#082c62]" : "text-[#718096] hover:bg-white hover:text-[#082c62]"}`}
                             >
                               <DestinationIcon size={14} /> {destination.label}
                             </Link>
@@ -229,22 +232,22 @@ function ManagementShellContent({
               );
             })}
           </nav>
-          <div className="mt-5 border-t border-white/10 pt-5">
+          <div className="mt-5 border-t border-[#dfe6ee] pt-5">
             <p className="truncate text-sm font-extrabold">{user?.name || "Administração"}</p>
-            <p className="mt-1 text-xs text-white/55">
+            <p className="mt-1 text-xs text-[#718096]">
               {isMaster ? "Admin Master" : "Administrador"}
             </p>
             <div className="mt-4 grid gap-2">
               <Link
                 href="/inicio"
-                className="flex min-h-10 items-center gap-2 rounded-xl border border-white/15 px-3 text-xs font-bold text-white/75 hover:bg-white/10 hover:text-white"
+                className="flex min-h-10 items-center gap-2 rounded-xl border border-[#cdd8e6] bg-white px-3 text-xs font-bold text-[#082c62] hover:bg-[#eef5ff]"
               >
                 <ArrowLeft size={15} /> Visualizar como membro
               </Link>
               <button
                 type="button"
                 onClick={() => void leaveManagement()}
-                className="flex min-h-10 items-center gap-2 rounded-xl px-3 text-xs font-bold text-white/60 hover:bg-white/10 hover:text-white"
+                className="flex min-h-10 items-center gap-2 rounded-xl px-3 text-xs font-bold text-[#718096] hover:bg-[#fff0ed] hover:text-[#b9423a]"
               >
                 <LogOut size={15} /> Sair
               </button>

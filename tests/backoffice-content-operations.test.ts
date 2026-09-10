@@ -38,4 +38,6 @@ test("sidebar representa setores e funções sem repetir ferramentas", () => {
   assert.match(navigation, /\/gestao\/conteudos\/importacao/);
   assert.doesNotMatch(navigation, /admin\?tab|master\?view/);
   assert.match(shell, /section\.destinations/);
+  assert.match(shell, /bg-\[#fffdf8\]/);
+  assert.match(shell, /bg-\[#082c62\] text-white/);
 });
