@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { ContentOperationsOverview } from "@/components/management/ContentOperationsOverview";
 import { ManagementShell } from "@/components/management/ManagementShell";
 import {
   ArrowUpRight,
@@ -170,6 +171,7 @@ export default function ManagementSection({ area }: { area: ManagementArea }) {
       description={config.description}
       masterOnly={config.masterOnly}
     >
+      {area === "conteudos" ? <ContentOperationsOverview /> : null}
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {tools.map((tool) => {
           const Icon = tool.icon;
