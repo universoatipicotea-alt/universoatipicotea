@@ -1,6 +1,8 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ContentOperationsOverview } from "@/components/management/ContentOperationsOverview";
 import { CommunityOperationsOverview } from "@/components/management/CommunityOperationsOverview";
+import { CommercialOperationsOverview } from "@/components/management/CommercialOperationsOverview";
+import { PlatformOperationsOverview } from "@/components/management/PlatformOperationsOverview";
 import { ManagementShell } from "@/components/management/ManagementShell";
 import {
   ArrowUpRight,
@@ -160,6 +162,8 @@ export default function ManagementSection({ area }: { area: ManagementArea }) {
     >
       {area === "conteudos" ? <ContentOperationsOverview /> : null}
       {area === "comunidade" ? <CommunityOperationsOverview /> : null}
+      {area === "comercial" ? <CommercialOperationsOverview /> : null}
+      {area === "plataforma" ? <PlatformOperationsOverview /> : null}
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {tools.map((tool) => {
           const Icon = tool.icon;
