@@ -1,0 +1,32 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.22
+      - run: bun install --frozen-lockfile
+      - name: Lint changed source files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          files="$(git diff --name-only "$BASE_SHA" "$GITHUB_SHA" -- '*.ts' '*.tsx' '*.js' '*.jsx')"
+          if [ -n "$files" ]; then
+            echo "$files" | xargs bunx eslint
+          fi
+      - run: bun run check
+      - run: bun run test
+      - run: bun run build
