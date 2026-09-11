@@ -2,7 +2,7 @@
 
 # Prompt para o Lovable — Universo Atípico
 
-Você está recebendo o código existente do projeto **Universo Atípico**, uma plataforma brasileira para famílias atípicas. Este projeto já possui funcionalidades importantes e não deve ser reescrito do zero. Antes de alterar qualquer coisa, leia o `README.md`, este prompt, `GUIA_TRANSFERENCIA_CHATGPT_LOVABLE.md`, `todo-fvxyznca.md` e a estrutura completa de `client/`, `server/`, `drizzle/` e `shared/`.
+Você está recebendo o código existente do projeto **Universo Atípico**, uma plataforma brasileira para famílias atípicas. Este projeto já possui funcionalidades importantes e não deve ser reescrito do zero. Antes de alterar qualquer coisa, leia o `README.md`, `AGENTS.md`, `roadmap.md` e a estrutura de `src/`, `supabase/`, `drizzle/` e `tests/`.
 
 ## Objetivo principal
 
@@ -46,7 +46,7 @@ O material **“Receitas Saudáveis e Criativas”** já foi importado e deve pe
 
 ## Logo e identidade visual
 
-Vou fornecer a logo oficial separadamente. Use exatamente esse arquivo ou asset. Não gere outra logo, não substitua por ícone genérico e não use uma marca alternativa. Centralize a logo no componente `client/src/components/Brand.tsx` e reutilize-a em cabeçalho, rodapé, sidebar, navegação mobile, login e páginas públicas.
+Vou fornecer a logo oficial separadamente. Use exatamente esse arquivo ou asset. Não gere outra logo, não substitua por ícone genérico e não use uma marca alternativa. Centralize a logo no componente `src/components/Brand.tsx` e reutilize-a em cabeçalho, rodapé, sidebar, navegação mobile, login e páginas públicas.
 
 Se a logo falhar, mostre o texto **“Universo Atípico”** como fallback visível e acessível; nunca deixe uma imagem quebrada ou esconda completamente a marca.
 
@@ -110,11 +110,11 @@ Depois das alterações, execute:
 
 ```bash
 
-pnpm check
+bun run check
 
-pnpm test
+bun run test
 
-pnpm build
+bun run build
 
 ```
 
@@ -140,11 +140,11 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Prefer working locally? You need [Bun](https://bun.sh/).
 
 ```sh
 git clone <this-repository-url>
 cd <repository-name>
-npm i
-npm run dev
+bun install --frozen-lockfile
+bun run dev
 ```
