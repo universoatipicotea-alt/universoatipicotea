@@ -59,3 +59,19 @@ test("ferramentas atuais recebem rotas próprias sem duplicar suas regras", () =
   assert.match(admin, /<ManagementShell/);
   assert.match(master, /<ManagementShell/);
 });
+
+test("comercial e plataforma exibem indicadores operacionais sem criar integrações", () => {
+  const commercial = read("src/components/management/CommercialOperationsOverview.tsx");
+  const platform = read("src/components/management/PlatformOperationsOverview.tsx");
+  const section = read("src/pages/ManagementSection.tsx");
+
+  assert.match(commercial, /community\.master\.dashboard\.useQuery/);
+  assert.match(commercial, /Pulso comercial/);
+  assert.match(commercial, /\/gestao\/comercial\/funil/);
+  assert.doesNotMatch(commercial, /useMutation|stripe/i);
+  assert.match(platform, /community\.master\.dashboard\.useQuery/);
+  assert.match(platform, /community\.master\.visualAssets\.useQuery/);
+  assert.match(platform, /\/gestao\/plataforma\/acessos/);
+  assert.match(section, /area === "comercial"/);
+  assert.match(section, /area === "plataforma"/);
+});
