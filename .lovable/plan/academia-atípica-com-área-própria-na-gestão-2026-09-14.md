@@ -37,4 +37,8 @@ Os endereços antigos (`/gestao/conteudos/academia`, `/gestao/conteudos/modulos`
 
 ## Validação
 
-Verificação de tipos, testes automatizados e conferência no preview: menu com a nova seção, as três telas abrindo e os endereços antigos redirecionando.
+Verificação de tipos, testes automatizados e conferência no preview: menu com a nova seção, as três telas abrindo e os endereços antigos redirecionando.  
+  
+FAZER ESTA MESMA ORGANIZAÇÃO PAR AS RECEITAS
+
+&nbsp;
