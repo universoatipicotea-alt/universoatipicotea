@@ -2,6 +2,7 @@
 
 ## Em andamento
 - [ ] Refatoração completa de UI/UX (fonte de design: Gestão → Administração → Receitas)
+- [ ] Refinar a Academia Atípica no mobile: capas oficiais, cards simples, aula em tela útil e login coerente
 
 ### Refatoração tela por tela
 - [ ] Design system (`src/components/ds.tsx`): tokens, tipografia, grid, sidebar, header interno
