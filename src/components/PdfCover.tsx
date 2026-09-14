@@ -1,4 +1,3 @@
-import { BookOpen } from "lucide-react";
 import { useState } from "react";
 
 /**
@@ -35,12 +34,14 @@ export function PdfCover({
           className="max-h-full max-w-full object-contain drop-shadow-[0_10px_24px_rgba(8,31,77,.14)] transition duration-300"
         />
       ) : (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--line)] bg-white/70 text-center">
-          <BookOpen size={22} className="text-[var(--sage)]" />
-          <p className="px-4 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--sage-deep)]">
-            Universo Atípico
-          </p>
-          <p className="px-6 text-[11px] leading-4 text-[var(--ink-soft)]">Preparando a capa deste material…</p>
+        <div className="flex h-full w-full flex-col justify-between rounded-xl bg-[var(--academy-cream)] p-5 text-left">
+          <div className="flex gap-1.5" aria-hidden="true">
+            <span className="h-2 w-2 rounded-full bg-[var(--blue)]" />
+            <span className="h-2 w-2 rounded-full bg-[var(--red)]" />
+            <span className="h-2 w-2 rounded-full bg-[var(--gold)]" />
+            <span className="h-2 w-2 rounded-full bg-[var(--green)]" />
+          </div>
+          <p className="display-font max-w-[16rem] text-xl font-semibold leading-tight text-[var(--ink)]">{title}</p>
         </div>
       )}
     </div>

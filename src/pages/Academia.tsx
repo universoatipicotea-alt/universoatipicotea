@@ -19,6 +19,7 @@ import { CategoryHub } from "@/components/CategoryHub";
 import { PdfReaderDialog, type ReaderDocument } from "@/components/PdfReaderDialog";
 import { AcademyLessonView } from "@/components/AcademyLessonView";
 import ResponsiveVisualAsset from "@/components/ResponsiveVisualAsset";
+import { getAcademyLessonCover, getAcademyModuleCover } from "@/lib/academy-covers";
 
 type AcademiaGuide = {
   id: number;
@@ -256,7 +257,9 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
 
   useEffect(() => {
     if (!user || reading || htmlLesson || typeof window === "undefined") return;
-    const guideId = Number(new URLSearchParams(window.location.search).get("guide"));
+    const guideId = Number(
+      (new URLSearchParams(window.location.search).get("guide") || "").replaceAll('"', ""),
+    );
     const guide = guides.find((item) => item.id === guideId);
     if (guide?.hasPdf) setReading({ id: guide.id, title: guide.title, sourceType: "guide" });
     else if (guide?.contentType === "html" && guide.hasHtml)
@@ -287,10 +290,11 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
       <MemberShell
         allowGuest
         eyebrow="Academia Atípica"
-        title="Conhecimento organizado para cada momento."
+        title="Aprenda no seu ritmo."
         description="Escolha um módulo e avance no seu ritmo."
+        compactMobile
       >
-        <section className="mb-8 overflow-hidden rounded-[2rem] border border-[var(--line)] bg-white shadow-[0_22px_54px_rgba(8,31,77,.08)]">
+        <section className="mb-8 hidden overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--card)] shadow-sm sm:block">
           <div className="relative aspect-video overflow-hidden bg-[var(--linen)]">
             <ResponsiveVisualAsset
               slot="academia"
@@ -315,9 +319,9 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
             />
           </div>
         </section>
-        <div id="academy-modules" className="scroll-mt-24">
+        <div id="academy-modules" className="scroll-mt-24 sm:mt-0">
           <SectionHeading
-            label="Trilhas de conhecimento"
+            label="Academia Atípica"
             title={`${modules.length} ${modules.length === 1 ? "módulo" : "módulos"} da Academia`}
           />
         </div>
@@ -340,6 +344,9 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
                   normalize(guide.category || "") === normalize(module?.name || ""),
               ).length;
             }}
+            coverFor={(_item, index) => getAcademyModuleCover(index)}
+            compactMobile
+            actionLabel="Abrir módulo"
           />
         ) : (
           <ContentEmpty
@@ -405,17 +412,19 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
       allowGuest
       eyebrow="Academia Atípica"
       title={activeModule?.name || "Módulo da Academia"}
-      description="Explore guias e conteúdos organizados para consultar no seu ritmo e voltar sempre que precisar."
+      description="Escolha uma aula e avance no seu ritmo."
+      compactMobile
+      immersiveMobile={Boolean(htmlLesson)}
     >
       <Button
         type="button"
         variant="outline"
         onClick={() => setLocation("/academia")}
-        className="mb-7 rounded-xl border-[var(--line)] bg-white text-xs font-extrabold"
+        className={`${htmlLesson ? "hidden" : ""} mb-4 ml-5 min-h-11 rounded-xl border-[var(--line)] bg-[var(--card)] text-xs font-extrabold sm:mb-7 sm:ml-0`}
       >
         ← Todos os módulos
       </Button>
-      <section className="relative mb-10 overflow-hidden rounded-[2rem] bg-[var(--ink)] text-white shadow-[0_24px_60px_rgba(8,31,77,.12)]">
+      <section className={`${htmlLesson ? "hidden" : ""} relative mb-6 hidden overflow-hidden rounded-2xl bg-[var(--ink)] text-[var(--primary-foreground)] shadow-sm sm:block sm:mb-10`}>
         <div className="grid min-h-72 lg:grid-cols-[1fr_360px]">
           <div className="relative z-10 flex flex-col justify-center p-7 sm:p-10">
             <div className="flex flex-wrap items-center gap-2">
@@ -465,7 +474,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
           </div>
         </div>
       </section>
-      {continueReading ? (
+      {continueReading && !htmlLesson ? (
         <section className="mb-10" aria-label="Continue de onde parou">
           <SectionHeading label="Continue de onde parou" title="Retome sua leitura" />
           <article className="soft-card grid gap-6 overflow-hidden rounded-3xl bg-white p-5 sm:grid-cols-[180px_1fr] sm:p-6">
@@ -515,7 +524,10 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
 
       {htmlLesson ? (
         <AcademyLessonView
-          lessons={moduleLessons}
+          lessons={moduleLessons.map((lesson) => ({
+            ...lesson,
+            coverImageUrl: getAcademyLessonCover(lesson.title),
+          }))}
           currentId={htmlLesson.id}
           completedIds={completedLessonIds}
           onSelect={(id) => {
@@ -529,14 +541,16 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
       ) : null}
 
       <section id="materiais-academia" className={`scroll-mt-24 ${htmlLesson ? "hidden" : ""}`}>
-        <SectionHeading label="Conteúdos do módulo" title="Avance no seu ritmo" />
-        <p className="-mt-3 mb-6 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
+        <div className="px-5 sm:px-0">
+          <SectionHeading label="Aulas do módulo" title="Escolha uma aula" />
+        </div>
+        <p className="-mt-3 mb-6 hidden max-w-2xl text-sm leading-6 text-[var(--ink-soft)] sm:block">
           Escolha um conteúdo para começar ou continue explorando os temas disponíveis.
         </p>
 
         {guides.length ? (
-          <div className="mb-7 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap gap-2">
+          <div className="mb-5 flex flex-col gap-3 px-5 sm:px-0 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap">
               {(moduleSlug
                 ? [
                     { key: "todos", label: "Todos", icon: BookOpen },
@@ -560,7 +574,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
                     key={item.key}
                     type="button"
                     onClick={() => setCategory(item.key)}
-                    className={`rounded-full px-3.5 py-2 text-xs font-extrabold transition ${
+                    className={`min-h-11 shrink-0 rounded-xl px-3.5 py-2 text-xs font-extrabold transition ${
                       category === item.key
                         ? "bg-[var(--sage-deep)] text-white"
                         : "bg-[var(--linen)] text-[var(--ink-soft)] hover:bg-[var(--sage-pale)]"
@@ -595,14 +609,18 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
             <div className="h-96 animate-pulse rounded-3xl bg-[var(--linen)]" />
           </div>
         ) : visibleGuides.length ? (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 px-5 sm:px-0 md:grid-cols-2 xl:grid-cols-3">
             {visibleGuides.map((guide) => (
               <article
                 key={guide.id}
-                className="soft-card flex flex-col overflow-hidden rounded-3xl bg-white"
+                className="flex flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--card)] shadow-sm"
               >
                 <div className="relative">
-                  <PdfCover src={guide.coverImageUrl} title={guide.title} ratio="16 / 10" />
+                  <PdfCover
+                    src={getAcademyLessonCover(guide.title) || guide.coverImageUrl}
+                    title={guide.title}
+                    ratio="64 / 45"
+                  />
                   {guide.contentType === "video" ? (
                     <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--ink)] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-white">
                       <PlayCircle size={13} /> Vídeo
@@ -614,14 +632,17 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
                     </span>
                   ) : null}
                 </div>
-                <div className="flex flex-1 flex-col gap-0 p-5 [&>button]:mt-6">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--sage)]">
-                    {guide.category}
-                  </p>
-                  <h3 className="display-font mt-2 text-2xl font-semibold leading-tight">
+                <div className="flex flex-1 flex-col gap-0 p-4 sm:p-5 [&>button]:mt-5">
+                  <div className="mb-3 flex gap-1.5" aria-hidden="true">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--blue)]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--red)]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--gold)]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--green)]" />
+                  </div>
+                  <h3 className="display-font text-xl font-semibold leading-tight sm:text-2xl">
                     {guide.title}
                   </h3>
-                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-[var(--ink-soft)]">
+                  <p className="mt-3 hidden line-clamp-2 text-sm leading-6 text-[var(--ink-soft)] sm:block">
                     {guide.summary}
                   </p>
                   {guide.estimatedDuration ? (
@@ -646,7 +667,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
                           : undefined
                         : openGuide(guide.id, guide.title)
                     }
-                    className="pressable mt-auto w-full rounded-xl bg-[var(--sage-deep)] px-3 py-2 text-xs font-extrabold text-white hover:bg-[var(--ink)] sm:w-fit"
+                    className="pressable mt-auto min-h-11 w-full rounded-xl bg-[var(--sage-deep)] px-3 py-2 text-xs font-extrabold text-[var(--primary-foreground)] hover:bg-[var(--ink)] sm:w-fit"
                   >
                     {guide.contentType === "video"
                       ? user

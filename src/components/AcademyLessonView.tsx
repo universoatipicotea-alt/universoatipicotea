@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 
-export type AcademyLesson = { id: number; title: string };
+export type AcademyLesson = { id: number; title: string; coverImageUrl?: string | null };
 
 export function AcademyLessonView({
   lessons,
@@ -138,15 +138,15 @@ export function AcademyLessonView({
   return (
     <section
       ref={frameWrapper}
-      className="scroll-mt-24"
+      className="min-w-0 scroll-mt-24 bg-[var(--academy-cream)] sm:rounded-2xl sm:p-4"
       aria-label={`Aula interativa: ${current?.title ?? ""}`}
     >
-      <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+      <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 sm:px-0">
         <div className="min-w-0">
           <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--sage)]">
             Aula {index + 1} de {lessons.length}
           </p>
-          <h2 className="display-font mt-1 truncate text-xl font-semibold leading-tight sm:text-3xl">
+          <h2 className="display-font mt-1 truncate text-lg font-semibold leading-tight sm:text-3xl">
             {current?.title}
           </h2>
         </div>
@@ -156,7 +156,7 @@ export function AcademyLessonView({
             variant="outline"
             onClick={() => setChaptersOpen(true)}
             aria-label="Abrir capítulos"
-            className="h-11 rounded-xl border-[var(--line)] bg-white px-3 text-xs font-extrabold lg:hidden"
+            className="h-11 rounded-xl border-[var(--line)] bg-[var(--card)] px-3 text-xs font-extrabold lg:hidden"
           >
             <ListChecks size={16} />
           </Button>
@@ -165,7 +165,7 @@ export function AcademyLessonView({
             variant="outline"
             onClick={onClose}
             aria-label="Fechar aula"
-            className="h-11 rounded-xl border-[var(--line)] bg-white px-3 text-xs font-extrabold"
+            className="h-11 rounded-xl border-[var(--line)] bg-[var(--card)] px-3 text-xs font-extrabold"
           >
             <X size={16} />
             <span className="ml-1.5 hidden sm:inline">Fechar aula</span>
@@ -173,7 +173,7 @@ export function AcademyLessonView({
         </div>
       </div>
 
-      <div className="mb-4 max-w-xl sm:mb-5">
+      <div className="mb-3 max-w-xl px-4 sm:mb-5 sm:px-0">
         <div className="mb-2 flex justify-between text-[10px] font-extrabold uppercase tracking-[0.14em] text-[var(--ink-soft)]">
           <span>Progresso do módulo</span>
           <span>
@@ -194,7 +194,7 @@ export function AcademyLessonView({
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
+      <div className="grid min-w-0 gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
         {chaptersOpen ? (
           <button
             type="button"
@@ -255,15 +255,15 @@ export function AcademyLessonView({
           </ol>
         </aside>
 
-        <div className="soft-card overflow-hidden rounded-2xl bg-white sm:rounded-3xl">
-          <div className="relative h-[calc(100dvh-14rem)] min-h-[380px] bg-[#eef1f0] sm:h-[72vh] lg:h-[78vh]">
+         <div className="min-w-0 overflow-hidden border-y border-[var(--line)] bg-[var(--card)] sm:rounded-2xl sm:border">
+           <div className="relative h-[calc(100dvh-15.5rem)] min-h-[430px] w-full overflow-hidden bg-[var(--muted)] sm:h-[72vh] lg:h-[78vh]">
             {source.data?.url ? (
               <iframe
                 key={currentId}
                 ref={frameRef}
                 src={source.data.url}
                 title={current?.title ?? "Aula interativa"}
-                className="h-full w-full border-0"
+                 className="block h-full w-full max-w-full border-0"
                 sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"
                 allow="fullscreen"
               />
@@ -297,37 +297,34 @@ export function AcademyLessonView({
               </div>
             ) : null}
           </div>
-          <p className="border-t border-[var(--line)] px-4 py-2 text-center text-[11px] font-bold text-[var(--ink-soft)] lg:hidden">
-            Deslize para o lado para passar as páginas da aula.
-          </p>
-          <div className="grid gap-2 border-t border-[var(--line)] p-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:p-4">
+           <div className="grid grid-cols-3 gap-2 border-t border-[var(--line)] p-2 pb-[calc(.5rem+env(safe-area-inset-bottom))] sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:p-4">
             <Button
               type="button"
               variant="outline"
               disabled={!previous}
               onClick={() => previous && onSelect(previous.id)}
-              className="h-12 w-full rounded-xl border-[var(--line)] bg-white text-xs font-extrabold sm:h-11 sm:w-auto"
+               className="h-11 w-full rounded-xl border-[var(--line)] bg-[var(--card)] px-2 text-[10px] font-extrabold sm:w-auto sm:px-4 sm:text-xs"
             >
-              <ArrowLeft size={15} className="mr-1.5" /> Aula anterior
+               <ArrowLeft size={15} className="mr-1 sm:mr-1.5" /> <span className="sm:hidden">Anterior</span><span className="hidden sm:inline">Aula anterior</span>
             </Button>
-            <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center">
+             <div className="contents sm:flex sm:flex-wrap sm:items-center sm:gap-2">
               <Button
                 type="button"
                 variant="outline"
                 disabled={isCompleted || saveProgress.isPending}
                 onClick={() => void markCompleted()}
-                className="h-12 w-full rounded-xl border-[var(--line)] bg-white text-xs font-extrabold sm:h-11 sm:w-auto"
+                 className="h-11 w-full rounded-xl border-[var(--line)] bg-[var(--card)] px-2 text-[10px] font-extrabold sm:w-auto sm:px-4 sm:text-xs"
               >
                 <CheckCircle2 size={15} className="mr-1.5" />
-                {isCompleted ? "Aula concluída" : "Marcar como concluída"}
+                 <span className="sm:hidden">{isCompleted ? "Concluída" : "Concluir"}</span><span className="hidden sm:inline">{isCompleted ? "Aula concluída" : "Marcar como concluída"}</span>
               </Button>
               <Button
                 type="button"
                 disabled={!next}
                 onClick={() => void markCompleted(() => next && onSelect(next.id))}
-                className="pressable h-12 w-full rounded-xl bg-[var(--sage-deep)] px-4 text-xs font-extrabold text-white hover:bg-[var(--ink)] sm:h-11 sm:w-auto"
+                 className="pressable h-11 w-full rounded-xl bg-[var(--sage-deep)] px-2 text-[10px] font-extrabold text-[var(--primary-foreground)] hover:bg-[var(--ink)] sm:w-auto sm:px-4 sm:text-xs"
               >
-                Próxima aula <ArrowRight size={15} className="ml-1.5" />
+                 <span className="sm:hidden">Próxima</span><span className="hidden sm:inline">Próxima aula</span> <ArrowRight size={15} className="ml-1 sm:ml-1.5" />
               </Button>
             </div>
           </div>
