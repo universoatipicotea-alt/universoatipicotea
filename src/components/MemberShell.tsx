@@ -195,6 +195,39 @@ export function MemberShell({
         </section>
       </div>
     );
+  if (user.hasPaidAccess === false)
+    return (
+      <div className="page-texture grid min-h-screen place-items-center p-6">
+        <section className="soft-card w-full max-w-lg rounded-[2rem] p-8 text-center sm:p-12">
+          <div className="mx-auto mb-8 w-fit">
+            <Brand priority />
+          </div>
+          <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.18em] text-[var(--sage)]">
+            Conteúdo exclusivo de assinantes
+          </p>
+          <h1 className="display-font text-4xl font-semibold leading-none">
+            Sua assinatura está inativa.
+          </h1>
+          <p className="mx-auto mt-5 max-w-md text-sm leading-7 text-[var(--ink-soft)]">
+            A Academia Atípica, a Biblioteca, as Receitas e a Comunidade ficam disponíveis apenas
+            para quem tem assinatura ativa. Assine para liberar o acesso completo.
+          </p>
+          <Button
+            onClick={() => setLocation("/assinatura")}
+            className="pressable mt-8 h-12 rounded-xl bg-[var(--sage-deep)] px-6 font-bold text-white hover:bg-[var(--ink)]"
+          >
+            Ver o plano e assinar
+          </Button>
+          <button
+            type="button"
+            onClick={() => void logout()}
+            className="mt-5 block w-full text-sm font-bold text-[var(--sage-deep)] underline underline-offset-4"
+          >
+            Sair da conta
+          </button>
+        </section>
+      </div>
+    );
   const isAdmin = ["admin", "admin_master"].includes(user.accessRole);
   const isMaster = user.accessRole === "admin_master";
   const accountLabel = isMaster
