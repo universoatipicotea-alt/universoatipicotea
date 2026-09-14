@@ -431,6 +431,8 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
       title="Centro de gestão"
       description="Publique recursos, organize conteúdos e preserve um espaço de conversa respeitoso."
     >
+      {fixedTab ? <AdminGroupNav tab={fixedTab} /> : null}
+
       {fixedTab ? null : (
         <div className="mb-9 flex gap-2 overflow-x-auto border-b border-[var(--line)] pb-3">
           {tabs.map((item) => {
