@@ -56,6 +56,7 @@ type UaUser = {
   role: "user" | "admin" | "master";
   accountStatus: "active" | "suspended";
   membershipStatus: "member" | "free" | "canceled";
+  courtesyAccess: boolean;
   createdAt: string | null;
   lastSignedIn: string | null;
 };
