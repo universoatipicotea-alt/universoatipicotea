@@ -29,8 +29,10 @@ type Item = {
   status: "draft" | "published" | "coming_soon" | "archived";
   comingSoonMessage?: string | null;
   contentCount?: number;
+  publishedCount?: number;
+  draftCount?: number;
 };
-type Form = Omit<Item, "id" | "contentCount"> & { id?: number };
+type Form = Omit<Item, "id" | "contentCount" | "publishedCount" | "draftCount"> & { id?: number };
 const empty = (): Form => ({
   name: "",
   slug: "",
