@@ -1,0 +1,1 @@
+UPDATE public.ua_academy_modules SET status = 'archived', updated_at = now() WHERE id = 10;
