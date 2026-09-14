@@ -394,13 +394,17 @@ async function listTaxonomy(kind: "recipe" | "module", includeDrafts = false) {
     .order("name", { ascending: true });
   const rows = camel<any[]>(data ?? []);
   if (!includeDrafts) return rows;
+  const linkedTable = kind === "recipe" ? "ua_test_guides" : "ua_guides";
+  const linkedColumn = kind === "recipe" ? "category_id" : "module_id";
   return Promise.all(
-    rows.map(async (item) => ({
-      ...item,
-      contentCount: await countRows(kind === "recipe" ? "ua_test_guides" : "ua_guides", {
-        [kind === "recipe" ? "category_id" : "module_id"]: String(item.id),
-      }),
-    })),
+    rows.map(async (item) => {
+      const [contentCount, publishedCount, draftCount] = await Promise.all([
+        countRows(linkedTable, { [linkedColumn]: String(item.id) }),
+        countRows(linkedTable, { [linkedColumn]: String(item.id), status: "published" }),
+        countRows(linkedTable, { [linkedColumn]: String(item.id), status: "draft" }),
+      ]);
+      return { ...item, contentCount, publishedCount, draftCount };
+    }),
   );
 }
 
