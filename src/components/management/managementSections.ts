@@ -42,6 +42,7 @@ export const managementSections: ManagementSection[] = [
       { href: "/gestao/conteudos/academia", label: "Academia Atípica", icon: BookOpenCheck },
       { href: "/gestao/conteudos/receitas", label: "Receitas", icon: ChefHat },
       { href: "/gestao/conteudos/modulos", label: "Módulos", icon: Layers3 },
+      { href: "/gestao/conteudos/aulas", label: "Aulas da Academia", icon: Layers3 },
       { href: "/gestao/conteudos/categorias", label: "Categorias", icon: Settings2 },
       {
         href: "/gestao/conteudos/importacao",
