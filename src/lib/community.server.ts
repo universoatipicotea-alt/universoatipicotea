@@ -408,15 +408,15 @@ async function listPublishedGuides() {
   const { data } = await db()
     .from("ua_guides")
     .select(
-      "id,title,summary,content,category,module_id,pdf_key,cover_image_url,content_type,video_url,estimated_duration,technical_review,position,published_at,created_at",
+      "id,title,summary,content,category,module_id,pdf_key,html_key,cover_image_url,content_type,video_url,estimated_duration,technical_review,position,published_at,created_at",
     )
     .eq("status", "published")
     .not("module_id", "is", null)
     .order("position", { ascending: true })
     .order("published_at", { ascending: false });
   return (data ?? []).map((row: any) => {
-    const { pdf_key, ...rest } = row;
-    return { ...camel(rest), hasPdf: Boolean(pdf_key) };
+    const { pdf_key, html_key, ...rest } = row;
+    return { ...camel(rest), hasPdf: Boolean(pdf_key), hasHtml: Boolean(html_key) };
   });
 }
 
@@ -1124,6 +1124,7 @@ async function listMemberVideos() {
 
 const IMAGE_UPLOAD_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const PDF_UPLOAD_MIME_TYPES = new Set(["application/pdf"]);
+const HTML_UPLOAD_MIME_TYPES = new Set(["text/html"]);
 const MAX_IMAGE_UPLOAD_BYTES = 6 * 1024 * 1024;
 const MAX_PDF_UPLOAD_BYTES = 50 * 1024 * 1024;
 
@@ -1147,6 +1148,10 @@ function hasExpectedFileSignature(bytes: Uint8Array, mimeType: string) {
   }
   if (mimeType === "application/pdf") {
     return startsWithBytes(bytes, [0x25, 0x50, 0x44, 0x46, 0x2d]);
+  }
+  if (mimeType === "text/html") {
+    const head = new TextDecoder().decode(bytes.slice(0, 512)).trimStart().toLowerCase();
+    return head.startsWith("<!doctype html") || head.startsWith("<html");
   }
   return false;
 }
@@ -1183,14 +1188,31 @@ function safeName(fileName: string, mimeType: string) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "")
       .slice(0, 60) || "arquivo";
-  const extension = mimeType.includes("pdf")
-    ? "pdf"
+  const extension = mimeType.includes("html")
+    ? "html"
+    : mimeType.includes("pdf")
+      ? "pdf"
     : mimeType.includes("png")
       ? "png"
       : mimeType.includes("webp")
         ? "webp"
         : "jpg";
   return `${base}-${Date.now()}.${extension}`;
+}
+
+async function saveHtmlUpload(input: { fileName: string; dataUrl: string }, userId: number) {
+  if (!input.fileName || input.fileName.length > 255) fail("Nome de arquivo inválido.");
+  const { bytes, mimeType } = decodeDataUrl(input.dataUrl, {
+    allowedMimeTypes: HTML_UPLOAD_MIME_TYPES,
+    maxBytes: 5 * 1024 * 1024,
+  });
+  const key = `community/guides/${userId}/html/${safeName(input.fileName, mimeType)}`;
+  const { error } = await db().storage.from(PDF_BUCKET).upload(key, bytes, {
+    contentType: "text/html; charset=utf-8",
+    upsert: false,
+  });
+  if (error) fail(error.message);
+  return { key, fileName: input.fileName };
 }
 
 async function saveUpload(
@@ -2562,6 +2584,24 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         fail("Conteúdo indisponível.");
       return { url: await protectedVideoUrl(data.video_url, Number(data.id)) };
     }
+    case "community.htmlSource": {
+      const user = await requireUser();
+      await assertMemberContent(user);
+      const { data } = await db()
+        .from("ua_guides")
+        .select("id,status,content_type,html_key")
+        .eq("id", Number(input.documentId))
+        .maybeSingle();
+      const privileged = isAdminRole(user.accessRole);
+      if (
+        !data?.html_key ||
+        data.content_type !== "html" ||
+        (data.status !== "published" && !privileged)
+      ) fail("Conteúdo indisponível.");
+      const { createDriveMediaToken } = await import("./drive-media-token.server");
+      const token = createDriveMediaToken(Number(data.id), 10 * 60);
+      return { url: `/api/protected-html/${data.id}?token=${encodeURIComponent(token)}` };
+    }
     case "community.readingProgress.get": {
       const user = await requireUser();
       await assertMemberContent(user);
@@ -2701,6 +2741,10 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       const user = await requireAdmin();
       return saveUpload(input, PDF_BUCKET, `community/guides/${user.id}/pdfs`);
     }
+    case "community.files.uploadGuideHtml": {
+      const user = await requireAdmin();
+      return saveHtmlUpload(input, user.id);
+    }
     /**
      * PDFs grandes (25–50 MB) não cabem numa requisição embutida em base64.
      * Aqui devolvemos uma URL assinada para o navegador enviar direto ao
@@ -2837,10 +2881,14 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
     }
     case "community.admin.saveGuide": {
       const user = await requireAdmin();
-      const contentType = input.contentType === "video" ? "video" : "pdf";
+      const contentType = ["pdf", "video", "html"].includes(input.contentType)
+        ? input.contentType
+        : "pdf";
       const moduleId = input.moduleId ? Number(input.moduleId) : null;
       if (input.status === "published" && !moduleId)
         fail("Selecione um módulo antes de publicar este conteúdo.");
+      if (input.status === "published" && contentType === "html" && !input.htmlKey)
+        fail("Adicione o arquivo HTML antes de publicar esta aula.");
       const values = {
         title: input.title,
         summary: input.summary,
@@ -2851,6 +2899,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         video_url: contentType === "video" ? (input.videoUrl ?? null) : null,
         pdf_key: contentType === "pdf" ? (input.pdfKey ?? null) : null,
         pdf_url: contentType === "pdf" ? (input.pdfUrl ?? null) : null,
+        html_key: contentType === "html" ? (input.htmlKey ?? null) : null,
         estimated_duration: input.estimatedDuration ?? null,
         technical_review: input.technicalReview ?? null,
         cover_image_key: input.coverImageKey ?? null,

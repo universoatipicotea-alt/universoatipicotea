@@ -52,12 +52,13 @@ type GuideForm = {
   content: string;
   category: string;
   moduleId: number | null;
-  contentType: "pdf" | "video";
+  contentType: "pdf" | "video" | "html";
   videoUrl: string;
   estimatedDuration: string;
   technicalReview: string;
   pdfKey: string | null;
   pdfUrl: string | null;
+  htmlKey: string | null;
   coverImageKey: string | null;
   coverImageUrl: string | null;
   status: "draft" | "published" | "archived";
@@ -97,6 +98,7 @@ const newGuide = (): GuideForm => ({
   technicalReview: "",
   pdfKey: null,
   pdfUrl: null,
+  htmlKey: null,
   coverImageKey: null,
   coverImageUrl: null,
   status: "draft",
@@ -201,6 +203,7 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
   const [detailTopicId, setDetailTopicId] = useState<number | null>(null);
   const pdfInput = useRef<HTMLInputElement>(null);
   const coverInput = useRef<HTMLInputElement>(null);
+  const htmlInput = useRef<HTMLInputElement>(null);
   const facilitatorImageInput = useRef<HTMLInputElement>(null);
   const topicDetail = trpc.community.admin.topicDetail.useQuery(
     { topicId: detailTopicId ?? 1 },
@@ -265,16 +268,25 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
   const uploadContentImage = trpc.community.files.uploadContentImage.useMutation({
     onError: (error) => toast.error(error.message),
   });
+  const uploadHtml = trpc.community.files.uploadGuideHtml.useMutation({
+    onSuccess: (result) => {
+      setGuideForm((current) => ({ ...current, htmlKey: result.key }));
+      toast.success("HTML carregado. Salve a aula para publicar a alteração.");
+    },
+    onError: (error) => toast.error(error.message),
+  });
 
   const uploadFile = async (
     event: ChangeEvent<HTMLInputElement>,
-    kind: "pdf" | "guideImage" | "facilitatorImage",
+    kind: "pdf" | "html" | "guideImage" | "facilitatorImage",
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
     const rules =
       kind === "pdf"
         ? { accepted: ["application/pdf"], max: 12 * 1024 * 1024, name: "PDF" }
+        : kind === "html"
+          ? { accepted: ["text/html"], max: 5 * 1024 * 1024, name: "HTML" }
         : {
             accepted: ["image/jpeg", "image/png", "image/webp"],
             max: 6 * 1024 * 1024,
@@ -291,6 +303,8 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
     const dataUrl = await readAsDataUrl(file);
     if (kind === "pdf") {
       await uploadPdf.mutateAsync({ fileName: file.name, dataUrl });
+    } else if (kind === "html") {
+      await uploadHtml.mutateAsync({ fileName: file.name, dataUrl });
     } else {
       const result = await uploadContentImage.mutateAsync({ fileName: file.name, dataUrl });
       if (kind === "guideImage")
@@ -364,12 +378,15 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
       content: guide.content || "",
       category: guide.category,
       moduleId: guide.moduleId ?? null,
-      contentType: guide.contentType === "video" ? "video" : "pdf",
+      contentType: ["pdf", "video", "html"].includes(guide.contentType)
+        ? guide.contentType as GuideForm["contentType"]
+        : "pdf",
       videoUrl: guide.videoUrl || "",
       estimatedDuration: guide.estimatedDuration || "",
       technicalReview: guide.technicalReview || "",
       pdfKey: guide.pdfKey,
       pdfUrl: guide.pdfUrl,
+      htmlKey: guide.htmlKey ?? null,
       coverImageKey: guide.coverImageKey,
       coverImageUrl: guide.coverImageUrl,
       status: guide.status,
@@ -602,6 +619,7 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
                   >
                     <option value="pdf">PDF</option>
                     <option value="video">Vídeo</option>
+                    <option value="html">HTML interativo</option>
                   </select>
                 </div>
                 <div>
@@ -694,6 +712,13 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
                 className="sr-only"
                 onChange={(event) => uploadFile(event, "guideImage")}
               />
+              <input
+                ref={htmlInput}
+                type="file"
+                accept="text/html,.html"
+                className="sr-only"
+                onChange={(event) => uploadFile(event, "html")}
+              />
               <div className="grid gap-3 sm:grid-cols-2">
                 {guideForm.contentType === "pdf" ? (
                   <button
@@ -707,6 +732,19 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
                       {guideForm.pdfKey ? "PDF carregado" : "Adicionar PDF"}
                     </strong>
                     <span className="mt-1 block text-xs text-[var(--ink-soft)]">Até 12 MB</span>
+                  </button>
+                ) : guideForm.contentType === "html" ? (
+                  <button
+                    type="button"
+                    onClick={() => htmlInput.current?.click()}
+                    disabled={uploadHtml.isPending}
+                    className="rounded-xl border border-dashed border-[var(--line)] bg-[var(--paper)] p-4 text-left hover:bg-[var(--linen)]"
+                  >
+                    <FileUp size={18} className="text-[var(--sage-deep)]" />
+                    <strong className="mt-3 block text-xs">
+                      {guideForm.htmlKey ? "HTML carregado" : "Adicionar HTML interativo"}
+                    </strong>
+                    <span className="mt-1 block text-xs text-[var(--ink-soft)]">Arquivo .html · até 5 MB</span>
                   </button>
                 ) : (
                   <div className="rounded-xl border border-dashed border-[var(--line)] bg-[var(--linen)] p-4 text-xs text-[var(--ink-soft)]">

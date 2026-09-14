@@ -17,6 +17,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { CategoryHub } from "@/components/CategoryHub";
 import { PdfReaderDialog, type ReaderDocument } from "@/components/PdfReaderDialog";
+import { HtmlLessonDialog } from "@/components/HtmlLessonDialog";
 import ResponsiveVisualAsset from "@/components/ResponsiveVisualAsset";
 
 type AcademiaGuide = {
@@ -26,11 +27,12 @@ type AcademiaGuide = {
   category: string;
   moduleId?: number | null;
   coverImageUrl?: string | null;
-  contentType?: "pdf" | "video" | null;
+  contentType?: "pdf" | "video" | "html" | null;
   videoUrl?: string | null;
   estimatedDuration?: string | null;
   technicalReview?: string | null;
   hasPdf?: boolean;
+  hasHtml?: boolean;
 };
 
 type GuideProgress = {
@@ -160,6 +162,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
   const [category, setCategory] = useState("todos");
   const [search, setSearch] = useState("");
   const [reading, setReading] = useState<ReaderDocument | null>(null);
+  const [htmlLesson, setHtmlLesson] = useState<{ id: number; title: string } | null>(null);
 
   const visibleGuides = useMemo(() => {
     const term = normalize(search.trim());
@@ -174,8 +177,9 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
         return false;
       const matchesCategory = moduleSlug
         ? category === "todos" ||
-          (category === "pdf" && guide.contentType !== "video") ||
+          (category === "pdf" && guide.contentType === "pdf") ||
           (category === "video" && guide.contentType === "video") ||
+          (category === "html" && guide.contentType === "html") ||
           (category === "concluidos" && (progressByGuide.get(guide.id)?.percent ?? 0) >= 100)
         : category === "todos" || normalize(guide.category || "") === category;
       const matchesTerm =
@@ -208,6 +212,12 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
       return;
     }
     const guide = guides.find((item) => item.id === id);
+    if (guide?.contentType === "html") {
+      if (!guide.hasHtml) return;
+      setHtmlLesson({ id: guide.id, title: title || guide.title });
+      setLocation(`${modulePath}?guide=${id}`);
+      return;
+    }
     if (guide && !guide.hasPdf) return;
     setReading({ id, title: title || guide?.title || "Guia da Academia", sourceType: "guide" });
     setLocation(`${modulePath}?guide=${id}`);
@@ -216,22 +226,31 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
     setReading(null);
     setLocation(modulePath);
   }, [modulePath, setLocation]);
+  const closeHtmlLesson = useCallback(() => {
+    setHtmlLesson(null);
+    setLocation(modulePath);
+  }, [modulePath, setLocation]);
 
   useEffect(() => {
-    if (!user || reading || typeof window === "undefined") return;
+    if (!user || reading || htmlLesson || typeof window === "undefined") return;
     const guideId = Number(new URLSearchParams(window.location.search).get("guide"));
     const guide = guides.find((item) => item.id === guideId);
     if (guide?.hasPdf) setReading({ id: guide.id, title: guide.title, sourceType: "guide" });
-  }, [guides, reading, user]);
+    else if (guide?.contentType === "html" && guide.hasHtml)
+      setHtmlLesson({ id: guide.id, title: guide.title });
+  }, [guides, reading, htmlLesson, user]);
 
   useEffect(() => {
-    if (!reading) return;
+    if (!reading && !htmlLesson) return;
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeReader();
+      if (event.key === "Escape") {
+        if (htmlLesson) closeHtmlLesson();
+        else closeReader();
+      }
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [reading, closeReader]);
+  }, [reading, htmlLesson, closeReader, closeHtmlLesson]);
 
   const ctaLabel = (id: number) => {
     const progress = progressByGuide.get(id);
@@ -485,6 +504,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
                     { key: "todos", label: "Todos", icon: BookOpen },
                     { key: "pdf", label: "PDF", icon: FileText },
                     { key: "video", label: "Vídeos", icon: PlayCircle },
+                    { key: "html", label: "Interativas", icon: BookOpen },
                     { key: "concluidos", label: "Concluídos", icon: CheckCircle2 },
                   ]
                 : [
@@ -550,6 +570,11 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
                       <PlayCircle size={13} /> Vídeo
                     </span>
                   ) : null}
+                  {guide.contentType === "html" ? (
+                    <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--ink)] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-white">
+                      Aula interativa
+                    </span>
+                  ) : null}
                 </div>
                 <div className="flex flex-1 flex-col gap-0 p-5 [&>button]:mt-6">
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--sage)]">
@@ -589,7 +614,9 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
                       ? user
                         ? "Assistir acima"
                         : "Conhecer o acesso"
-                      : ctaLabel(guide.id)}{" "}
+                      : guide.contentType === "html"
+                        ? "Abrir aula"
+                        : ctaLabel(guide.id)}{" "}
                     <ArrowRight size={14} className="ml-1.5" />
                   </Button>
                 </div>
@@ -611,6 +638,9 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
         )}
       </section>
       {reading ? <PdfReaderDialog document={reading} onClose={closeReader} /> : null}
+      {htmlLesson ? (
+        <HtmlLessonDialog lesson={htmlLesson} onClose={closeHtmlLesson} />
+      ) : null}
     </MemberShell>
   );
 }
