@@ -84,5 +84,5 @@ O Google Drive será apenas uma fonte opcional de importação e organização. 
 
 ### Academia — gestão de aulas e Admin Master
 - [ ] Acesso pago obrigatório (assinatura ativa, cortesia ou admin) + leitura estilo Kindle no celular
-- [ ] Tela de gestão de aulas na Academia: upload de HTML, título, capítulos e publicação sem tocar no banco
-- [ ] Admin Master com sidebar no mesmo padrão da área de membros
+- [x] Tela de gestão de aulas na Academia: upload de HTML, título, capítulos e publicação sem tocar no banco
+- [x] Admin Master com sidebar no mesmo padrão da área de membros
