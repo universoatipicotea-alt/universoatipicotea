@@ -1858,12 +1858,12 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
       const user = await ensureUaUser(input.name);
       if (!user) fail("Sessão não encontrada.");
       await ensureMemberProfile(user);
-      return user;
+      return { ...user, hasPaidAccess: await hasPaidAccess(user) };
     }
     case "auth.me": {
       const user = await ensureUaUser();
       if (!user) return null;
-      return user;
+      return { ...user, hasPaidAccess: await hasPaidAccess(user) };
     }
 
     /* -------------------------------- público -------------------------------- */
