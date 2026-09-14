@@ -63,13 +63,33 @@ export default function TaxonomyAdmin({ kind, enabled }: { kind: Kind; enabled: 
   const inputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<Form>(empty());
   const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState<"all" | Item["status"]>("all");
+  const [search, setSearch] = useState("");
   const noun = kind === "recipe" ? "categoria" : "módulo";
-  const items = useMemo(
+  const allItems = useMemo(
     () =>
       ((kind === "recipe" ? query.data?.recipeCategories : query.data?.academyModules) ??
         []) as Item[],
     [kind, query.data],
   );
+  const term = search.trim().toLowerCase();
+  const items = useMemo(
+    () =>
+      allItems.filter(
+        (item) =>
+          (filter === "all" || item.status === filter) &&
+          (!term || item.name.toLowerCase().includes(term) || item.slug.includes(term)),
+      ),
+    [allItems, filter, term],
+  );
+  const totals = {
+    all: allItems.length,
+    published: allItems.filter((i) => i.status === "published").length,
+    coming_soon: allItems.filter((i) => i.status === "coming_soon").length,
+    draft: allItems.filter((i) => i.status === "draft").length,
+    archived: allItems.filter((i) => i.status === "archived").length,
+  };
+  const lessons = allItems.reduce((sum, i) => sum + (i.publishedCount ?? 0), 0);
   const refresh = async () => {
     await Promise.all([
       utils.community.admin.taxonomy.invalidate(),
