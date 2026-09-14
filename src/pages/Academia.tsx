@@ -678,9 +678,6 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
         )}
       </section>
       {reading ? <PdfReaderDialog document={reading} onClose={closeReader} /> : null}
-      {htmlLesson ? (
-        <HtmlLessonDialog lesson={htmlLesson} onClose={closeHtmlLesson} />
-      ) : null}
     </MemberShell>
   );
 }
