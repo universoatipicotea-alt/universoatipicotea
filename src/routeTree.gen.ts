@@ -52,6 +52,7 @@ import { Route as GestaoComercialProdutosRouteImport } from './routes/gestao_.co
 import { Route as GestaoComunidadeFacilitadoresRouteImport } from './routes/gestao_.comunidade_.facilitadores'
 import { Route as GestaoComunidadeModeracaoRouteImport } from './routes/gestao_.comunidade_.moderacao'
 import { Route as GestaoConteudosAcademiaRouteImport } from './routes/gestao_.conteudos_.academia'
+import { Route as GestaoConteudosAulasRouteImport } from './routes/gestao_.conteudos_.aulas'
 import { Route as GestaoConteudosCategoriasRouteImport } from './routes/gestao_.conteudos_.categorias'
 import { Route as GestaoConteudosImportacaoRouteImport } from './routes/gestao_.conteudos_.importacao'
 import { Route as GestaoConteudosModulosRouteImport } from './routes/gestao_.conteudos_.modulos'
@@ -281,6 +282,11 @@ const GestaoConteudosAcademiaRoute = GestaoConteudosAcademiaRouteImport.update({
   path: '/gestao/conteudos/academia',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GestaoConteudosAulasRoute = GestaoConteudosAulasRouteImport.update({
+  id: '/gestao_/conteudos_/aulas',
+  path: '/gestao/conteudos/aulas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GestaoConteudosCategoriasRoute =
   GestaoConteudosCategoriasRouteImport.update({
     id: '/gestao_/conteudos_/categorias',
@@ -369,6 +375,7 @@ export interface FileRoutesByFullPath {
   '/gestao/comunidade/facilitadores': typeof GestaoComunidadeFacilitadoresRoute
   '/gestao/comunidade/moderacao': typeof GestaoComunidadeModeracaoRoute
   '/gestao/conteudos/academia': typeof GestaoConteudosAcademiaRoute
+  '/gestao/conteudos/aulas': typeof GestaoConteudosAulasRoute
   '/gestao/conteudos/categorias': typeof GestaoConteudosCategoriasRoute
   '/gestao/conteudos/importacao': typeof GestaoConteudosImportacaoRoute
   '/gestao/conteudos/modulos': typeof GestaoConteudosModulosRoute
@@ -422,6 +429,7 @@ export interface FileRoutesByTo {
   '/gestao/comunidade/facilitadores': typeof GestaoComunidadeFacilitadoresRoute
   '/gestao/comunidade/moderacao': typeof GestaoComunidadeModeracaoRoute
   '/gestao/conteudos/academia': typeof GestaoConteudosAcademiaRoute
+  '/gestao/conteudos/aulas': typeof GestaoConteudosAulasRoute
   '/gestao/conteudos/categorias': typeof GestaoConteudosCategoriasRoute
   '/gestao/conteudos/importacao': typeof GestaoConteudosImportacaoRoute
   '/gestao/conteudos/modulos': typeof GestaoConteudosModulosRoute
@@ -476,6 +484,7 @@ export interface FileRoutesById {
   '/gestao_/comunidade_/facilitadores': typeof GestaoComunidadeFacilitadoresRoute
   '/gestao_/comunidade_/moderacao': typeof GestaoComunidadeModeracaoRoute
   '/gestao_/conteudos_/academia': typeof GestaoConteudosAcademiaRoute
+  '/gestao_/conteudos_/aulas': typeof GestaoConteudosAulasRoute
   '/gestao_/conteudos_/categorias': typeof GestaoConteudosCategoriasRoute
   '/gestao_/conteudos_/importacao': typeof GestaoConteudosImportacaoRoute
   '/gestao_/conteudos_/modulos': typeof GestaoConteudosModulosRoute
@@ -531,6 +540,7 @@ export interface FileRouteTypes {
     | '/gestao/comunidade/facilitadores'
     | '/gestao/comunidade/moderacao'
     | '/gestao/conteudos/academia'
+    | '/gestao/conteudos/aulas'
     | '/gestao/conteudos/categorias'
     | '/gestao/conteudos/importacao'
     | '/gestao/conteudos/modulos'
@@ -584,6 +594,7 @@ export interface FileRouteTypes {
     | '/gestao/comunidade/facilitadores'
     | '/gestao/comunidade/moderacao'
     | '/gestao/conteudos/academia'
+    | '/gestao/conteudos/aulas'
     | '/gestao/conteudos/categorias'
     | '/gestao/conteudos/importacao'
     | '/gestao/conteudos/modulos'
@@ -637,6 +648,7 @@ export interface FileRouteTypes {
     | '/gestao_/comunidade_/facilitadores'
     | '/gestao_/comunidade_/moderacao'
     | '/gestao_/conteudos_/academia'
+    | '/gestao_/conteudos_/aulas'
     | '/gestao_/conteudos_/categorias'
     | '/gestao_/conteudos_/importacao'
     | '/gestao_/conteudos_/modulos'
@@ -691,6 +703,7 @@ export interface RootRouteChildren {
   GestaoComunidadeFacilitadoresRoute: typeof GestaoComunidadeFacilitadoresRoute
   GestaoComunidadeModeracaoRoute: typeof GestaoComunidadeModeracaoRoute
   GestaoConteudosAcademiaRoute: typeof GestaoConteudosAcademiaRoute
+  GestaoConteudosAulasRoute: typeof GestaoConteudosAulasRoute
   GestaoConteudosCategoriasRoute: typeof GestaoConteudosCategoriasRoute
   GestaoConteudosImportacaoRoute: typeof GestaoConteudosImportacaoRoute
   GestaoConteudosModulosRoute: typeof GestaoConteudosModulosRoute
@@ -1004,6 +1017,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GestaoConteudosAcademiaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gestao_/conteudos_/aulas': {
+      id: '/gestao_/conteudos_/aulas'
+      path: '/gestao/conteudos/aulas'
+      fullPath: '/gestao/conteudos/aulas'
+      preLoaderRoute: typeof GestaoConteudosAulasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/gestao_/conteudos_/categorias': {
       id: '/gestao_/conteudos_/categorias'
       path: '/gestao/conteudos/categorias'
@@ -1107,6 +1127,7 @@ const rootRouteChildren: RootRouteChildren = {
   GestaoComunidadeFacilitadoresRoute: GestaoComunidadeFacilitadoresRoute,
   GestaoComunidadeModeracaoRoute: GestaoComunidadeModeracaoRoute,
   GestaoConteudosAcademiaRoute: GestaoConteudosAcademiaRoute,
+  GestaoConteudosAulasRoute: GestaoConteudosAulasRoute,
   GestaoConteudosCategoriasRoute: GestaoConteudosCategoriasRoute,
   GestaoConteudosImportacaoRoute: GestaoConteudosImportacaoRoute,
   GestaoConteudosModulosRoute: GestaoConteudosModulosRoute,

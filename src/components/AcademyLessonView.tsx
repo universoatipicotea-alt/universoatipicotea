@@ -1,5 +1,13 @@
-import { ArrowLeft, ArrowRight, CheckCircle2, ListChecks, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  ListChecks,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 
@@ -31,6 +39,7 @@ export function AcademyLessonView({
   const saveProgress = trpc.community.readingProgress.save.useMutation();
   const [chaptersOpen, setChaptersOpen] = useState(false);
   const frameWrapper = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<HTMLIFrameElement>(null);
 
   const isCompleted = completedIds.has(currentId);
   const completedCount = useMemo(
@@ -43,6 +52,78 @@ export function AcademyLessonView({
     setChaptersOpen(false);
     frameWrapper.current?.scrollIntoView({ block: "start", behavior: "smooth" });
   }, [currentId]);
+
+  // Passa a página dentro da aula sem alterar os arquivos originais:
+  // envia a mesma tecla de seta que o próprio material já entende.
+  const turnPage = useCallback((direction: "next" | "previous") => {
+    const frame = frameRef.current;
+    const win = frame?.contentWindow;
+    const doc = win?.document;
+    if (!win || !doc) return;
+    const key = direction === "next" ? "ArrowRight" : "ArrowLeft";
+    const init: KeyboardEventInit = {
+      key,
+      code: key,
+      keyCode: direction === "next" ? 39 : 37,
+      which: direction === "next" ? 39 : 37,
+      bubbles: true,
+      cancelable: true,
+    } as KeyboardEventInit;
+    const KeyboardEventCtor = (win as unknown as { KeyboardEvent: typeof KeyboardEvent })
+      .KeyboardEvent;
+    for (const target of [doc, doc.body, win] as EventTarget[]) {
+      try {
+        target.dispatchEvent(new KeyboardEventCtor("keydown", init));
+        target.dispatchEvent(new KeyboardEventCtor("keyup", init));
+      } catch {
+        /* conteúdo ainda carregando */
+      }
+    }
+  }, []);
+
+  // Deslizar o dedo dentro da aula, como num leitor de livro.
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    let cleanup: (() => void) | undefined;
+    const attach = () => {
+      const doc = frame.contentWindow?.document;
+      if (!doc) return;
+      let startX = 0;
+      let startY = 0;
+      let tracking = false;
+      const onStart = (event: TouchEvent) => {
+        if (event.touches.length !== 1) return;
+        const touch = event.touches[0];
+        if (!touch) return;
+        startX = touch.clientX;
+        startY = touch.clientY;
+        tracking = true;
+      };
+      const onEnd = (event: TouchEvent) => {
+        if (!tracking) return;
+        tracking = false;
+        const touch = event.changedTouches[0];
+        if (!touch) return;
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+        if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+        turnPage(dx < 0 ? "next" : "previous");
+      };
+      doc.addEventListener("touchstart", onStart, { passive: true });
+      doc.addEventListener("touchend", onEnd, { passive: true });
+      cleanup = () => {
+        doc.removeEventListener("touchstart", onStart);
+        doc.removeEventListener("touchend", onEnd);
+      };
+    };
+    frame.addEventListener("load", attach);
+    attach();
+    return () => {
+      frame.removeEventListener("load", attach);
+      cleanup?.();
+    };
+  }, [currentId, source.data?.url, turnPage]);
 
   const markCompleted = async (then?: () => void) => {
     if (!isCompleted) {
@@ -60,36 +141,39 @@ export function AcademyLessonView({
       className="scroll-mt-24"
       aria-label={`Aula interativa: ${current?.title ?? ""}`}
     >
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <div className="min-w-0">
           <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--sage)]">
             Aula {index + 1} de {lessons.length}
           </p>
-          <h2 className="display-font mt-1 truncate text-2xl font-semibold leading-tight sm:text-3xl">
+          <h2 className="display-font mt-1 truncate text-xl font-semibold leading-tight sm:text-3xl">
             {current?.title}
           </h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <Button
             type="button"
             variant="outline"
-            onClick={() => setChaptersOpen((value) => !value)}
-            className="h-11 rounded-xl border-[var(--line)] bg-white text-xs font-extrabold lg:hidden"
+            onClick={() => setChaptersOpen(true)}
+            aria-label="Abrir capítulos"
+            className="h-11 rounded-xl border-[var(--line)] bg-white px-3 text-xs font-extrabold lg:hidden"
           >
-            <ListChecks size={15} className="mr-1.5" /> Capítulos
+            <ListChecks size={16} />
           </Button>
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
-            className="h-11 rounded-xl border-[var(--line)] bg-white text-xs font-extrabold"
+            aria-label="Fechar aula"
+            className="h-11 rounded-xl border-[var(--line)] bg-white px-3 text-xs font-extrabold"
           >
-            <X size={15} className="mr-1.5" /> Fechar aula
+            <X size={16} />
+            <span className="ml-1.5 hidden sm:inline">Fechar aula</span>
           </Button>
         </div>
       </div>
 
-      <div className="mb-5 max-w-xl">
+      <div className="mb-4 max-w-xl sm:mb-5">
         <div className="mb-2 flex justify-between text-[10px] font-extrabold uppercase tracking-[0.14em] text-[var(--ink-soft)]">
           <span>Progresso do módulo</span>
           <span>
@@ -111,11 +195,36 @@ export function AcademyLessonView({
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
+        {chaptersOpen ? (
+          <button
+            type="button"
+            aria-label="Fechar capítulos"
+            onClick={() => setChaptersOpen(false)}
+            className="fixed inset-0 z-40 bg-[var(--ink)]/45 lg:hidden"
+          />
+        ) : null}
         <aside
-          className={`${chaptersOpen ? "block" : "hidden"} lg:block`}
+          className={`${
+            chaptersOpen
+              ? "fixed inset-x-3 bottom-3 top-16 z-50 overflow-hidden rounded-3xl bg-white p-2 shadow-2xl"
+              : "hidden"
+          } lg:static lg:z-auto lg:block lg:overflow-visible lg:rounded-none lg:bg-transparent lg:p-0 lg:shadow-none`}
           aria-label="Capítulos do módulo"
         >
-          <ol className="soft-card max-h-[70vh] overflow-y-auto rounded-3xl bg-white p-2">
+          <div className="flex items-center justify-between px-3 py-2 lg:hidden">
+            <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-[var(--ink-soft)]">
+              Capítulos
+            </span>
+            <button
+              type="button"
+              onClick={() => setChaptersOpen(false)}
+              aria-label="Fechar capítulos"
+              className="grid h-10 w-10 place-items-center rounded-full bg-[var(--linen)]"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <ol className="soft-card max-h-[calc(100dvh-8rem)] overflow-y-auto rounded-3xl bg-white p-2 lg:max-h-[70vh]">
             {lessons.map((lesson, position) => {
               const done = completedIds.has(lesson.id);
               const active = lesson.id === currentId;
@@ -125,7 +234,7 @@ export function AcademyLessonView({
                     type="button"
                     onClick={() => onSelect(lesson.id)}
                     aria-current={active ? "true" : undefined}
-                    className={`flex min-h-[44px] w-full items-start gap-2.5 rounded-2xl px-3 py-3 text-left text-xs font-bold transition ${
+                    className={`flex min-h-[48px] w-full items-start gap-2.5 rounded-2xl px-3 py-3 text-left text-xs font-bold transition ${
                       active
                         ? "bg-[var(--sage-deep)] text-white"
                         : "text-[var(--ink-soft)] hover:bg-[var(--linen)]"
@@ -146,11 +255,12 @@ export function AcademyLessonView({
           </ol>
         </aside>
 
-        <div className="soft-card overflow-hidden rounded-3xl bg-white">
-          <div className="h-[72vh] min-h-[420px] bg-[#eef1f0] lg:h-[78vh]">
+        <div className="soft-card overflow-hidden rounded-2xl bg-white sm:rounded-3xl">
+          <div className="relative h-[calc(100dvh-14rem)] min-h-[380px] bg-[#eef1f0] sm:h-[72vh] lg:h-[78vh]">
             {source.data?.url ? (
               <iframe
                 key={currentId}
+                ref={frameRef}
                 src={source.data.url}
                 title={current?.title ?? "Aula interativa"}
                 className="h-full w-full border-0"
@@ -166,24 +276,47 @@ export function AcademyLessonView({
                 Carregando aula…
               </div>
             )}
+            {source.data?.url ? (
+              <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-between px-3 lg:hidden">
+                <button
+                  type="button"
+                  onClick={() => turnPage("previous")}
+                  aria-label="Página anterior da aula"
+                  className="pointer-events-auto grid h-12 w-12 place-items-center rounded-full bg-white/90 text-[var(--ink)] shadow-lg backdrop-blur"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => turnPage("next")}
+                  aria-label="Próxima página da aula"
+                  className="pointer-events-auto grid h-12 w-12 place-items-center rounded-full bg-white/90 text-[var(--ink)] shadow-lg backdrop-blur"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            ) : null}
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] p-4">
+          <p className="border-t border-[var(--line)] px-4 py-2 text-center text-[11px] font-bold text-[var(--ink-soft)] lg:hidden">
+            Deslize para o lado para passar as páginas da aula.
+          </p>
+          <div className="grid gap-2 border-t border-[var(--line)] p-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:p-4">
             <Button
               type="button"
               variant="outline"
               disabled={!previous}
               onClick={() => previous && onSelect(previous.id)}
-              className="h-11 rounded-xl border-[var(--line)] bg-white text-xs font-extrabold"
+              className="h-12 w-full rounded-xl border-[var(--line)] bg-white text-xs font-extrabold sm:h-11 sm:w-auto"
             >
               <ArrowLeft size={15} className="mr-1.5" /> Aula anterior
             </Button>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center">
               <Button
                 type="button"
                 variant="outline"
                 disabled={isCompleted || saveProgress.isPending}
                 onClick={() => void markCompleted()}
-                className="h-11 rounded-xl border-[var(--line)] bg-white text-xs font-extrabold"
+                className="h-12 w-full rounded-xl border-[var(--line)] bg-white text-xs font-extrabold sm:h-11 sm:w-auto"
               >
                 <CheckCircle2 size={15} className="mr-1.5" />
                 {isCompleted ? "Aula concluída" : "Marcar como concluída"}
@@ -192,7 +325,7 @@ export function AcademyLessonView({
                 type="button"
                 disabled={!next}
                 onClick={() => void markCompleted(() => next && onSelect(next.id))}
-                className="pressable h-11 rounded-xl bg-[var(--sage-deep)] px-4 text-xs font-extrabold text-white hover:bg-[var(--ink)]"
+                className="pressable h-12 w-full rounded-xl bg-[var(--sage-deep)] px-4 text-xs font-extrabold text-white hover:bg-[var(--ink)] sm:h-11 sm:w-auto"
               >
                 Próxima aula <ArrowRight size={15} className="ml-1.5" />
               </Button>

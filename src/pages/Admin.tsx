@@ -15,6 +15,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import RecipesAdmin from "@/components/admin/RecipesAdmin";
 import TaxonomyAdmin from "@/components/admin/TaxonomyAdmin";
+import { AcademyLessonsAdmin } from "@/components/admin/AcademyLessonsAdmin";
 import {
   BookOpen,
   ChefHat,
@@ -22,6 +23,7 @@ import {
   Eye,
   FileUp,
   ImageUp,
+  GraduationCap,
   Lightbulb,
   Loader2,
   MessageCircleMore,
@@ -71,6 +73,7 @@ export type AdminTab =
   | "recipes"
   | "recipeCategories"
   | "academyModules"
+  | "academyLessons"
   | "facilitators"
   | "moderation";
 type FacilitatorForm = {
@@ -185,6 +188,7 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
     "recipes",
     "recipeCategories",
     "academyModules",
+    "academyLessons",
     "facilitators",
     "moderation",
   ];
@@ -416,6 +420,7 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
     { id: "recipes", label: "Receitas", icon: ChefHat },
     { id: "recipeCategories", label: "Categorias de Receitas", icon: ChefHat },
     { id: "academyModules", label: "Módulos da Academia", icon: BookOpen },
+    { id: "academyLessons", label: "Aulas da Academia", icon: GraduationCap },
     { id: "facilitators", label: "Facilitadores", icon: Lightbulb },
     { id: "moderation", label: "Moderação", icon: ShieldAlert },
   ];
@@ -843,6 +848,7 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
       ) : null}
       {tab === "recipeCategories" ? <TaxonomyAdmin kind="recipe" enabled /> : null}
       {tab === "academyModules" ? <TaxonomyAdmin kind="module" enabled /> : null}
+      {tab === "academyLessons" ? <AcademyLessonsAdmin /> : null}
 
       {tab === "facilitators" && data ? (
         <section className="grid gap-8 xl:grid-cols-[.95fr_1.05fr]">

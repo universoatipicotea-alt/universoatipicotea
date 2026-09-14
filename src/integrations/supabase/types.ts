@@ -1602,6 +1602,7 @@ export type Database = {
           access_role: string
           account_status: string
           auth_id: string | null
+          courtesy_access: boolean
           created_at: string
           email: string | null
           id: number
@@ -1615,6 +1616,7 @@ export type Database = {
           access_role?: string
           account_status?: string
           auth_id?: string | null
+          courtesy_access?: boolean
           created_at?: string
           email?: string | null
           id?: number
@@ -1628,6 +1630,7 @@ export type Database = {
           access_role?: string
           account_status?: string
           auth_id?: string | null
+          courtesy_access?: boolean
           created_at?: string
           email?: string | null
           id?: number

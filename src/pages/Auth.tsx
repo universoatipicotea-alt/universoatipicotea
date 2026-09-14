@@ -34,7 +34,9 @@ export default function Auth() {
   });
   const utils = trpc.useUtils();
   const login = trpc.auth.login.useMutation({
-    onSuccess: async (authenticatedUser: { accessRole?: string } | null) => {
+    onSuccess: async (
+      authenticatedUser: { accessRole?: string; hasPaidAccess?: boolean } | null,
+    ) => {
       await utils.auth.me.invalidate();
       toast.success("Bem-vindo de volta ao Universo Atípico.");
       setLocation(
@@ -42,7 +44,9 @@ export default function Auth() {
           ? "/gestao"
           : authenticatedUser?.accessRole === "admin"
             ? "/gestao/conteudos"
-            : "/inicio",
+            : authenticatedUser?.hasPaidAccess === false
+              ? "/assinatura"
+              : "/inicio",
       );
     },
   });
