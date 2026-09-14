@@ -490,7 +490,25 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
         </section>
       ) : null}
 
-      <section id="materiais-academia" className="scroll-mt-24">
+      {htmlLesson ? (
+        <AcademyLessonView
+          lessons={moduleLessons}
+          currentId={htmlLesson.id}
+          completedIds={completedLessonIds}
+          onSelect={(id) => {
+            const lesson = moduleLessons.find((item) => item.id === id);
+            setHtmlLesson({ id, title: lesson?.title || "Aula interativa" });
+            setLocation(`${modulePath}?guide=${id}`);
+          }}
+          onClose={closeHtmlLesson}
+          onCompleted={() => void dashboard.refetch()}
+        />
+      ) : null}
+
+      <section
+        id="materiais-academia"
+        className={`scroll-mt-24 ${htmlLesson ? "hidden" : ""}`}
+      >
         <SectionHeading label="Conteúdos do módulo" title="Avance no seu ritmo" />
         <p className="-mt-3 mb-6 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
           Escolha um conteúdo para começar ou continue explorando os temas disponíveis.
