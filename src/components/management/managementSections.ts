@@ -62,6 +62,7 @@ export const managementSections: ManagementSection[] = [
     shortLabel: "Conteúdo",
     description: "Importações e catálogo editorial complementar.",
     icon: BookOpenCheck,
+    masterOnly: true,
     destinations: [
       {
         href: "/gestao/conteudos/importacao",
