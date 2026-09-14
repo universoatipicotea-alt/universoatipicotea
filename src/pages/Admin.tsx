@@ -22,6 +22,7 @@ import {
   Eye,
   FileUp,
   ImageUp,
+  GraduationCap,
   Lightbulb,
   Loader2,
   MessageCircleMore,
