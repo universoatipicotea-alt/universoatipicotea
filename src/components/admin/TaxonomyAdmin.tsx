@@ -1,5 +1,15 @@
 import { useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { ImageUp, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import {
+  Archive,
+  ImageUp,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Save,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
