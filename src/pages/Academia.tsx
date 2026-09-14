@@ -17,7 +17,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { CategoryHub } from "@/components/CategoryHub";
 import { PdfReaderDialog, type ReaderDocument } from "@/components/PdfReaderDialog";
-import { HtmlLessonDialog } from "@/components/HtmlLessonDialog";
+import { AcademyLessonView } from "@/components/AcademyLessonView";
 import ResponsiveVisualAsset from "@/components/ResponsiveVisualAsset";
 
 type AcademiaGuide = {
@@ -205,6 +205,29 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
     };
   }, [guides, moduleSlug, activeModule?.id, activeModule?.name, progressByGuide]);
 
+  const moduleLessons = useMemo(
+    () =>
+      guides
+        .filter(
+          (guide) =>
+            guide.contentType === "html" &&
+            (guide.moduleId === activeModule?.id ||
+              normalize(guide.category || "") ===
+                normalize(activeModule?.name || moduleSlug || "")),
+        )
+        .map((guide) => ({ id: guide.id, title: guide.title })),
+    [guides, activeModule?.id, activeModule?.name, moduleSlug],
+  );
+  const completedLessonIds = useMemo(
+    () =>
+      new Set(
+        moduleLessons
+          .filter((lesson) => (progressByGuide.get(lesson.id)?.percent ?? 0) >= 100)
+          .map((lesson) => lesson.id),
+      ),
+    [moduleLessons, progressByGuide],
+  );
+
   const modulePath = moduleSlug ? `/academia/${moduleSlug}` : "/academia";
   const openGuide = (id: number, title?: string) => {
     if (!user) {
@@ -295,7 +318,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
         <div id="academy-modules" className="scroll-mt-24">
           <SectionHeading
             label="Trilhas de conhecimento"
-            title={`${modules.length} módulos da Academia`}
+            title={`${modules.length} ${modules.length === 1 ? "módulo" : "módulos"} da Academia`}
           />
         </div>
         {taxonomy.isLoading ? (
@@ -490,7 +513,22 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
         </section>
       ) : null}
 
-      <section id="materiais-academia" className="scroll-mt-24">
+      {htmlLesson ? (
+        <AcademyLessonView
+          lessons={moduleLessons}
+          currentId={htmlLesson.id}
+          completedIds={completedLessonIds}
+          onSelect={(id) => {
+            const lesson = moduleLessons.find((item) => item.id === id);
+            setHtmlLesson({ id, title: lesson?.title || "Aula interativa" });
+            setLocation(`${modulePath}?guide=${id}`);
+          }}
+          onClose={closeHtmlLesson}
+          onCompleted={() => void dashboard.refetch()}
+        />
+      ) : null}
+
+      <section id="materiais-academia" className={`scroll-mt-24 ${htmlLesson ? "hidden" : ""}`}>
         <SectionHeading label="Conteúdos do módulo" title="Avance no seu ritmo" />
         <p className="-mt-3 mb-6 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
           Escolha um conteúdo para começar ou continue explorando os temas disponíveis.
@@ -638,9 +676,6 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
         )}
       </section>
       {reading ? <PdfReaderDialog document={reading} onClose={closeReader} /> : null}
-      {htmlLesson ? (
-        <HtmlLessonDialog lesson={htmlLesson} onClose={closeHtmlLesson} />
-      ) : null}
     </MemberShell>
   );
 }

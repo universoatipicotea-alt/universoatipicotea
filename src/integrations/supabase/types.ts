@@ -1031,6 +1031,7 @@ export type Database = {
           created_at: string
           created_by: number | null
           estimated_duration: string | null
+          html_key: string | null
           id: number
           module_id: number | null
           pdf_key: string | null
@@ -1053,6 +1054,7 @@ export type Database = {
           created_at?: string
           created_by?: number | null
           estimated_duration?: string | null
+          html_key?: string | null
           id?: number
           module_id?: number | null
           pdf_key?: string | null
@@ -1075,6 +1077,7 @@ export type Database = {
           created_at?: string
           created_by?: number | null
           estimated_duration?: string | null
+          html_key?: string | null
           id?: number
           module_id?: number | null
           pdf_key?: string | null
