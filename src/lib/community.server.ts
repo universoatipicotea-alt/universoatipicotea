@@ -529,11 +529,11 @@ async function getSubscriptionStatus(user: UaUser) {
   const periodIsOpen = !currentPeriodEnd || new Date(currentPeriodEnd).getTime() > Date.now();
   const hasActive = Boolean(sub && ["active", "trialing"].includes(sub.status) && periodIsOpen);
   return {
-    status: hasActive || user.accessRole === "member" ? "member" : "visitor",
+    status: hasActive || user.courtesyAccess ? "member" : "visitor",
     planName: "Plano Universo",
     priceCents: 4990,
     currency: "BRL" as const,
-    canAccessPremium: privileged || hasActive || user.accessRole === "member",
+    canAccessPremium: privileged || hasActive || user.courtesyAccess,
     canCancel: !privileged && hasActive,
     cancelAtPeriodEnd: Boolean(sub?.cancel_at_period_end),
     currentPeriodEnd,
