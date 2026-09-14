@@ -48,7 +48,7 @@ test("ferramentas atuais recebem rotas próprias sem duplicar suas regras", () =
   const admin = read("src/pages/Admin.tsx");
   const master = read("src/pages/Master.tsx");
 
-  assert.match(section, /\/gestao\/conteudos\/academia/);
+  assert.match(section, /\/gestao\/academia/);
   assert.match(section, /\/gestao\/comunidade\/moderacao/);
   assert.match(section, /\/gestao\/plataforma\/acessos/);
   assert.match(section, /\/gestao\/conteudos\/importacao/);
