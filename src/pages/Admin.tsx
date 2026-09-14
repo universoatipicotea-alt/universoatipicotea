@@ -15,6 +15,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import RecipesAdmin from "@/components/admin/RecipesAdmin";
 import TaxonomyAdmin from "@/components/admin/TaxonomyAdmin";
+import { AcademyLessonsAdmin } from "@/components/admin/AcademyLessonsAdmin";
 import {
   BookOpen,
   ChefHat,
