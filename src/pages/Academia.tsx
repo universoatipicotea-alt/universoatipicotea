@@ -212,7 +212,8 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
           (guide) =>
             guide.contentType === "html" &&
             (guide.moduleId === activeModule?.id ||
-              normalize(guide.category || "") === normalize(activeModule?.name || moduleSlug || "")),
+              normalize(guide.category || "") ===
+                normalize(activeModule?.name || moduleSlug || "")),
         )
         .map((guide) => ({ id: guide.id, title: guide.title })),
     [guides, activeModule?.id, activeModule?.name, moduleSlug],
@@ -527,10 +528,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
         />
       ) : null}
 
-      <section
-        id="materiais-academia"
-        className={`scroll-mt-24 ${htmlLesson ? "hidden" : ""}`}
-      >
+      <section id="materiais-academia" className={`scroll-mt-24 ${htmlLesson ? "hidden" : ""}`}>
         <SectionHeading label="Conteúdos do módulo" title="Avance no seu ritmo" />
         <p className="-mt-3 mb-6 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
           Escolha um conteúdo para começar ou continue explorando os temas disponíveis.
