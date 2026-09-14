@@ -34,7 +34,7 @@ import {
   X,
 } from "lucide-react";
 import { ChangeEvent, FormEvent, useRef, useState } from "react";
-import { useSearch } from "wouter";
+import { Link, useSearch } from "wouter";
 import { toast } from "sonner";
 
 const contentCategories = [
