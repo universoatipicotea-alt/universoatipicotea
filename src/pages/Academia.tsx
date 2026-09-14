@@ -205,6 +205,28 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
     };
   }, [guides, moduleSlug, activeModule?.id, activeModule?.name, progressByGuide]);
 
+  const moduleLessons = useMemo(
+    () =>
+      guides
+        .filter(
+          (guide) =>
+            guide.contentType === "html" &&
+            (guide.moduleId === activeModule?.id ||
+              normalize(guide.category || "") === normalize(activeModule?.name || moduleSlug || "")),
+        )
+        .map((guide) => ({ id: guide.id, title: guide.title })),
+    [guides, activeModule?.id, activeModule?.name, moduleSlug],
+  );
+  const completedLessonIds = useMemo(
+    () =>
+      new Set(
+        moduleLessons
+          .filter((lesson) => (progressByGuide.get(lesson.id)?.percent ?? 0) >= 100)
+          .map((lesson) => lesson.id),
+      ),
+    [moduleLessons, progressByGuide],
+  );
+
   const modulePath = moduleSlug ? `/academia/${moduleSlug}` : "/academia";
   const openGuide = (id: number, title?: string) => {
     if (!user) {
