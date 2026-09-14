@@ -1,7 +1,8 @@
-import Admin from "@/pages/Admin";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/gestao_/conteudos_/receitas")({
-  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
-  component: () => <Admin fixedTab="recipes" />,
+  beforeLoad: () => {
+    throw redirect({ to: "/gestao/receitas" });
+  },
+  component: () => null,
 });

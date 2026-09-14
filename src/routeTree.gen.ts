@@ -36,15 +36,19 @@ import { Route as ReceitasRouteImport } from './routes/receitas'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as VslRouteImport } from './routes/vsl'
 import { Route as AcademiaModuloRouteImport } from './routes/academia_.$modulo'
+import { Route as GestaoAcademiaRouteImport } from './routes/gestao_.academia'
 import { Route as GestaoComercialRouteImport } from './routes/gestao_.comercial'
 import { Route as GestaoComunidadeRouteImport } from './routes/gestao_.comunidade'
 import { Route as GestaoConteudosRouteImport } from './routes/gestao_.conteudos'
 import { Route as GestaoPlataformaRouteImport } from './routes/gestao_.plataforma'
+import { Route as GestaoReceitasRouteImport } from './routes/gestao_.receitas'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
 import { Route as ReceitasCategoriaRouteImport } from './routes/receitas_.$categoria'
 import { Route as ApiProtectedDriveVideoSplatRouteImport } from './routes/api/protected-drive-video/$'
 import { Route as ApiProtectedHtmlGuideIdRouteImport } from './routes/api/protected-html.$guideId'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
+import { Route as GestaoAcademiaAulasRouteImport } from './routes/gestao_.academia_.aulas'
+import { Route as GestaoAcademiaModulosRouteImport } from './routes/gestao_.academia_.modulos'
 import { Route as GestaoComercialCampanhasRouteImport } from './routes/gestao_.comercial_.campanhas'
 import { Route as GestaoComercialConversoesRouteImport } from './routes/gestao_.comercial_.conversoes'
 import { Route as GestaoComercialFunilRouteImport } from './routes/gestao_.comercial_.funil'
@@ -59,6 +63,7 @@ import { Route as GestaoConteudosModulosRouteImport } from './routes/gestao_.con
 import { Route as GestaoConteudosReceitasRouteImport } from './routes/gestao_.conteudos_.receitas'
 import { Route as GestaoPlataformaAcessosRouteImport } from './routes/gestao_.plataforma_.acessos'
 import { Route as GestaoPlataformaAparenciaRouteImport } from './routes/gestao_.plataforma_.aparencia'
+import { Route as GestaoReceitasCategoriasRouteImport } from './routes/gestao_.receitas_.categorias'
 import { Route as ApiPublicUaImageSplatRouteImport } from './routes/api/public/ua-image/$'
 import { Route as ApiPublicUaVideoSplatRouteImport } from './routes/api/public/ua-video/$'
 
@@ -197,6 +202,11 @@ const AcademiaModuloRoute = AcademiaModuloRouteImport.update({
   path: '/academia/$modulo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GestaoAcademiaRoute = GestaoAcademiaRouteImport.update({
+  id: '/gestao_/academia',
+  path: '/gestao/academia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GestaoComercialRoute = GestaoComercialRouteImport.update({
   id: '/gestao_/comercial',
   path: '/gestao/comercial',
@@ -215,6 +225,11 @@ const GestaoConteudosRoute = GestaoConteudosRouteImport.update({
 const GestaoPlataformaRoute = GestaoPlataformaRouteImport.update({
   id: '/gestao_/plataforma',
   path: '/gestao/plataforma',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GestaoReceitasRoute = GestaoReceitasRouteImport.update({
+  id: '/gestao_/receitas',
+  path: '/gestao/receitas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProdutoSlugRoute = ProdutoSlugRouteImport.update({
@@ -241,6 +256,16 @@ const ApiProtectedHtmlGuideIdRoute = ApiProtectedHtmlGuideIdRouteImport.update({
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   id: '/api/public/stripe-webhook',
   path: '/api/public/stripe-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GestaoAcademiaAulasRoute = GestaoAcademiaAulasRouteImport.update({
+  id: '/gestao_/academia_/aulas',
+  path: '/gestao/academia/aulas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GestaoAcademiaModulosRoute = GestaoAcademiaModulosRouteImport.update({
+  id: '/gestao_/academia_/modulos',
+  path: '/gestao/academia/modulos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GestaoComercialCampanhasRoute =
@@ -320,6 +345,12 @@ const GestaoPlataformaAparenciaRoute =
     path: '/gestao/plataforma/aparencia',
     getParentRoute: () => rootRouteImport,
   } as any)
+const GestaoReceitasCategoriasRoute =
+  GestaoReceitasCategoriasRouteImport.update({
+    id: '/gestao_/receitas_/categorias',
+    path: '/gestao/receitas/categorias',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicUaImageSplatRoute = ApiPublicUaImageSplatRouteImport.update({
   id: '/api/public/ua-image/$',
   path: '/api/public/ua-image/$',
@@ -359,15 +390,19 @@ export interface FileRoutesByFullPath {
   '/termos': typeof TermosRoute
   '/vsl': typeof VslRoute
   '/academia/$modulo': typeof AcademiaModuloRoute
+  '/gestao/academia': typeof GestaoAcademiaRoute
   '/gestao/comercial': typeof GestaoComercialRoute
   '/gestao/comunidade': typeof GestaoComunidadeRoute
   '/gestao/conteudos': typeof GestaoConteudosRoute
   '/gestao/plataforma': typeof GestaoPlataformaRoute
+  '/gestao/receitas': typeof GestaoReceitasRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/receitas/$categoria': typeof ReceitasCategoriaRoute
   '/api/protected-drive-video/$': typeof ApiProtectedDriveVideoSplatRoute
   '/api/protected-html/$guideId': typeof ApiProtectedHtmlGuideIdRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
+  '/gestao/academia/aulas': typeof GestaoAcademiaAulasRoute
+  '/gestao/academia/modulos': typeof GestaoAcademiaModulosRoute
   '/gestao/comercial/campanhas': typeof GestaoComercialCampanhasRoute
   '/gestao/comercial/conversoes': typeof GestaoComercialConversoesRoute
   '/gestao/comercial/funil': typeof GestaoComercialFunilRoute
@@ -382,6 +417,7 @@ export interface FileRoutesByFullPath {
   '/gestao/conteudos/receitas': typeof GestaoConteudosReceitasRoute
   '/gestao/plataforma/acessos': typeof GestaoPlataformaAcessosRoute
   '/gestao/plataforma/aparencia': typeof GestaoPlataformaAparenciaRoute
+  '/gestao/receitas/categorias': typeof GestaoReceitasCategoriasRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
   '/api/public/ua-video/$': typeof ApiPublicUaVideoSplatRoute
 }
@@ -413,15 +449,19 @@ export interface FileRoutesByTo {
   '/termos': typeof TermosRoute
   '/vsl': typeof VslRoute
   '/academia/$modulo': typeof AcademiaModuloRoute
+  '/gestao/academia': typeof GestaoAcademiaRoute
   '/gestao/comercial': typeof GestaoComercialRoute
   '/gestao/comunidade': typeof GestaoComunidadeRoute
   '/gestao/conteudos': typeof GestaoConteudosRoute
   '/gestao/plataforma': typeof GestaoPlataformaRoute
+  '/gestao/receitas': typeof GestaoReceitasRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/receitas/$categoria': typeof ReceitasCategoriaRoute
   '/api/protected-drive-video/$': typeof ApiProtectedDriveVideoSplatRoute
   '/api/protected-html/$guideId': typeof ApiProtectedHtmlGuideIdRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
+  '/gestao/academia/aulas': typeof GestaoAcademiaAulasRoute
+  '/gestao/academia/modulos': typeof GestaoAcademiaModulosRoute
   '/gestao/comercial/campanhas': typeof GestaoComercialCampanhasRoute
   '/gestao/comercial/conversoes': typeof GestaoComercialConversoesRoute
   '/gestao/comercial/funil': typeof GestaoComercialFunilRoute
@@ -436,6 +476,7 @@ export interface FileRoutesByTo {
   '/gestao/conteudos/receitas': typeof GestaoConteudosReceitasRoute
   '/gestao/plataforma/acessos': typeof GestaoPlataformaAcessosRoute
   '/gestao/plataforma/aparencia': typeof GestaoPlataformaAparenciaRoute
+  '/gestao/receitas/categorias': typeof GestaoReceitasCategoriasRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
   '/api/public/ua-video/$': typeof ApiPublicUaVideoSplatRoute
 }
@@ -468,15 +509,19 @@ export interface FileRoutesById {
   '/termos': typeof TermosRoute
   '/vsl': typeof VslRoute
   '/academia_/$modulo': typeof AcademiaModuloRoute
+  '/gestao_/academia': typeof GestaoAcademiaRoute
   '/gestao_/comercial': typeof GestaoComercialRoute
   '/gestao_/comunidade': typeof GestaoComunidadeRoute
   '/gestao_/conteudos': typeof GestaoConteudosRoute
   '/gestao_/plataforma': typeof GestaoPlataformaRoute
+  '/gestao_/receitas': typeof GestaoReceitasRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/receitas_/$categoria': typeof ReceitasCategoriaRoute
   '/api/protected-drive-video/$': typeof ApiProtectedDriveVideoSplatRoute
   '/api/protected-html/$guideId': typeof ApiProtectedHtmlGuideIdRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
+  '/gestao_/academia_/aulas': typeof GestaoAcademiaAulasRoute
+  '/gestao_/academia_/modulos': typeof GestaoAcademiaModulosRoute
   '/gestao_/comercial_/campanhas': typeof GestaoComercialCampanhasRoute
   '/gestao_/comercial_/conversoes': typeof GestaoComercialConversoesRoute
   '/gestao_/comercial_/funil': typeof GestaoComercialFunilRoute
@@ -491,6 +536,7 @@ export interface FileRoutesById {
   '/gestao_/conteudos_/receitas': typeof GestaoConteudosReceitasRoute
   '/gestao_/plataforma_/acessos': typeof GestaoPlataformaAcessosRoute
   '/gestao_/plataforma_/aparencia': typeof GestaoPlataformaAparenciaRoute
+  '/gestao_/receitas_/categorias': typeof GestaoReceitasCategoriasRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
   '/api/public/ua-video/$': typeof ApiPublicUaVideoSplatRoute
 }
@@ -524,15 +570,19 @@ export interface FileRouteTypes {
     | '/termos'
     | '/vsl'
     | '/academia/$modulo'
+    | '/gestao/academia'
     | '/gestao/comercial'
     | '/gestao/comunidade'
     | '/gestao/conteudos'
     | '/gestao/plataforma'
+    | '/gestao/receitas'
     | '/produto/$slug'
     | '/receitas/$categoria'
     | '/api/protected-drive-video/$'
     | '/api/protected-html/$guideId'
     | '/api/public/stripe-webhook'
+    | '/gestao/academia/aulas'
+    | '/gestao/academia/modulos'
     | '/gestao/comercial/campanhas'
     | '/gestao/comercial/conversoes'
     | '/gestao/comercial/funil'
@@ -547,6 +597,7 @@ export interface FileRouteTypes {
     | '/gestao/conteudos/receitas'
     | '/gestao/plataforma/acessos'
     | '/gestao/plataforma/aparencia'
+    | '/gestao/receitas/categorias'
     | '/api/public/ua-image/$'
     | '/api/public/ua-video/$'
   fileRoutesByTo: FileRoutesByTo
@@ -578,15 +629,19 @@ export interface FileRouteTypes {
     | '/termos'
     | '/vsl'
     | '/academia/$modulo'
+    | '/gestao/academia'
     | '/gestao/comercial'
     | '/gestao/comunidade'
     | '/gestao/conteudos'
     | '/gestao/plataforma'
+    | '/gestao/receitas'
     | '/produto/$slug'
     | '/receitas/$categoria'
     | '/api/protected-drive-video/$'
     | '/api/protected-html/$guideId'
     | '/api/public/stripe-webhook'
+    | '/gestao/academia/aulas'
+    | '/gestao/academia/modulos'
     | '/gestao/comercial/campanhas'
     | '/gestao/comercial/conversoes'
     | '/gestao/comercial/funil'
@@ -601,6 +656,7 @@ export interface FileRouteTypes {
     | '/gestao/conteudos/receitas'
     | '/gestao/plataforma/acessos'
     | '/gestao/plataforma/aparencia'
+    | '/gestao/receitas/categorias'
     | '/api/public/ua-image/$'
     | '/api/public/ua-video/$'
   id:
@@ -632,15 +688,19 @@ export interface FileRouteTypes {
     | '/termos'
     | '/vsl'
     | '/academia_/$modulo'
+    | '/gestao_/academia'
     | '/gestao_/comercial'
     | '/gestao_/comunidade'
     | '/gestao_/conteudos'
     | '/gestao_/plataforma'
+    | '/gestao_/receitas'
     | '/produto/$slug'
     | '/receitas_/$categoria'
     | '/api/protected-drive-video/$'
     | '/api/protected-html/$guideId'
     | '/api/public/stripe-webhook'
+    | '/gestao_/academia_/aulas'
+    | '/gestao_/academia_/modulos'
     | '/gestao_/comercial_/campanhas'
     | '/gestao_/comercial_/conversoes'
     | '/gestao_/comercial_/funil'
@@ -655,6 +715,7 @@ export interface FileRouteTypes {
     | '/gestao_/conteudos_/receitas'
     | '/gestao_/plataforma_/acessos'
     | '/gestao_/plataforma_/aparencia'
+    | '/gestao_/receitas_/categorias'
     | '/api/public/ua-image/$'
     | '/api/public/ua-video/$'
   fileRoutesById: FileRoutesById
@@ -687,15 +748,19 @@ export interface RootRouteChildren {
   TermosRoute: typeof TermosRoute
   VslRoute: typeof VslRoute
   AcademiaModuloRoute: typeof AcademiaModuloRoute
+  GestaoAcademiaRoute: typeof GestaoAcademiaRoute
   GestaoComercialRoute: typeof GestaoComercialRoute
   GestaoComunidadeRoute: typeof GestaoComunidadeRoute
   GestaoConteudosRoute: typeof GestaoConteudosRoute
   GestaoPlataformaRoute: typeof GestaoPlataformaRoute
+  GestaoReceitasRoute: typeof GestaoReceitasRoute
   ProdutoSlugRoute: typeof ProdutoSlugRoute
   ReceitasCategoriaRoute: typeof ReceitasCategoriaRoute
   ApiProtectedDriveVideoSplatRoute: typeof ApiProtectedDriveVideoSplatRoute
   ApiProtectedHtmlGuideIdRoute: typeof ApiProtectedHtmlGuideIdRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
+  GestaoAcademiaAulasRoute: typeof GestaoAcademiaAulasRoute
+  GestaoAcademiaModulosRoute: typeof GestaoAcademiaModulosRoute
   GestaoComercialCampanhasRoute: typeof GestaoComercialCampanhasRoute
   GestaoComercialConversoesRoute: typeof GestaoComercialConversoesRoute
   GestaoComercialFunilRoute: typeof GestaoComercialFunilRoute
@@ -710,6 +775,7 @@ export interface RootRouteChildren {
   GestaoConteudosReceitasRoute: typeof GestaoConteudosReceitasRoute
   GestaoPlataformaAcessosRoute: typeof GestaoPlataformaAcessosRoute
   GestaoPlataformaAparenciaRoute: typeof GestaoPlataformaAparenciaRoute
+  GestaoReceitasCategoriasRoute: typeof GestaoReceitasCategoriasRoute
   ApiPublicUaImageSplatRoute: typeof ApiPublicUaImageSplatRoute
   ApiPublicUaVideoSplatRoute: typeof ApiPublicUaVideoSplatRoute
 }
@@ -905,6 +971,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AcademiaModuloRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gestao_/academia': {
+      id: '/gestao_/academia'
+      path: '/gestao/academia'
+      fullPath: '/gestao/academia'
+      preLoaderRoute: typeof GestaoAcademiaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/gestao_/comercial': {
       id: '/gestao_/comercial'
       path: '/gestao/comercial'
@@ -931,6 +1004,13 @@ declare module '@tanstack/react-router' {
       path: '/gestao/plataforma'
       fullPath: '/gestao/plataforma'
       preLoaderRoute: typeof GestaoPlataformaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gestao_/receitas': {
+      id: '/gestao_/receitas'
+      path: '/gestao/receitas'
+      fullPath: '/gestao/receitas'
+      preLoaderRoute: typeof GestaoReceitasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/produto/$slug': {
@@ -966,6 +1046,20 @@ declare module '@tanstack/react-router' {
       path: '/api/public/stripe-webhook'
       fullPath: '/api/public/stripe-webhook'
       preLoaderRoute: typeof ApiPublicStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gestao_/academia_/aulas': {
+      id: '/gestao_/academia_/aulas'
+      path: '/gestao/academia/aulas'
+      fullPath: '/gestao/academia/aulas'
+      preLoaderRoute: typeof GestaoAcademiaAulasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gestao_/academia_/modulos': {
+      id: '/gestao_/academia_/modulos'
+      path: '/gestao/academia/modulos'
+      fullPath: '/gestao/academia/modulos'
+      preLoaderRoute: typeof GestaoAcademiaModulosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gestao_/comercial_/campanhas': {
@@ -1066,6 +1160,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GestaoPlataformaAparenciaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gestao_/receitas_/categorias': {
+      id: '/gestao_/receitas_/categorias'
+      path: '/gestao/receitas/categorias'
+      fullPath: '/gestao/receitas/categorias'
+      preLoaderRoute: typeof GestaoReceitasCategoriasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/ua-image/$': {
       id: '/api/public/ua-image/$'
       path: '/api/public/ua-image/$'
@@ -1111,15 +1212,19 @@ const rootRouteChildren: RootRouteChildren = {
   TermosRoute: TermosRoute,
   VslRoute: VslRoute,
   AcademiaModuloRoute: AcademiaModuloRoute,
+  GestaoAcademiaRoute: GestaoAcademiaRoute,
   GestaoComercialRoute: GestaoComercialRoute,
   GestaoComunidadeRoute: GestaoComunidadeRoute,
   GestaoConteudosRoute: GestaoConteudosRoute,
   GestaoPlataformaRoute: GestaoPlataformaRoute,
+  GestaoReceitasRoute: GestaoReceitasRoute,
   ProdutoSlugRoute: ProdutoSlugRoute,
   ReceitasCategoriaRoute: ReceitasCategoriaRoute,
   ApiProtectedDriveVideoSplatRoute: ApiProtectedDriveVideoSplatRoute,
   ApiProtectedHtmlGuideIdRoute: ApiProtectedHtmlGuideIdRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
+  GestaoAcademiaAulasRoute: GestaoAcademiaAulasRoute,
+  GestaoAcademiaModulosRoute: GestaoAcademiaModulosRoute,
   GestaoComercialCampanhasRoute: GestaoComercialCampanhasRoute,
   GestaoComercialConversoesRoute: GestaoComercialConversoesRoute,
   GestaoComercialFunilRoute: GestaoComercialFunilRoute,
@@ -1134,6 +1239,7 @@ const rootRouteChildren: RootRouteChildren = {
   GestaoConteudosReceitasRoute: GestaoConteudosReceitasRoute,
   GestaoPlataformaAcessosRoute: GestaoPlataformaAcessosRoute,
   GestaoPlataformaAparenciaRoute: GestaoPlataformaAparenciaRoute,
+  GestaoReceitasCategoriasRoute: GestaoReceitasCategoriasRoute,
   ApiPublicUaImageSplatRoute: ApiPublicUaImageSplatRoute,
   ApiPublicUaVideoSplatRoute: ApiPublicUaVideoSplatRoute,
 }
