@@ -39,7 +39,7 @@ test("login direciona equipes à gestão e mantém membros na área de assinante
   assert.match(auth, /accessRole === "admin_master"/);
   assert.match(auth, /"\/gestao"/);
   assert.match(auth, /accessRole === "admin"/);
-  assert.match(auth, /"\/gestao\/conteudos"/);
+  assert.match(auth, /"\/gestao\/academia"/);
   assert.match(auth, /"\/inicio"/);
 });
 
@@ -48,7 +48,7 @@ test("ferramentas atuais recebem rotas próprias sem duplicar suas regras", () =
   const admin = read("src/pages/Admin.tsx");
   const master = read("src/pages/Master.tsx");
 
-  assert.match(section, /\/gestao\/conteudos\/academia/);
+  assert.match(section, /\/gestao\/academia/);
   assert.match(section, /\/gestao\/comunidade\/moderacao/);
   assert.match(section, /\/gestao\/plataforma\/acessos/);
   assert.match(section, /\/gestao\/conteudos\/importacao/);

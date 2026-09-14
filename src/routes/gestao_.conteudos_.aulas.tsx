@@ -1,7 +1,8 @@
-import Admin from "@/pages/Admin";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/gestao_/conteudos_/aulas")({
-  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
-  component: () => <Admin fixedTab="academyLessons" />,
+  beforeLoad: () => {
+    throw redirect({ to: "/gestao/academia/aulas" });
+  },
+  component: () => null,
 });

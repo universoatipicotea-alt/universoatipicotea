@@ -21,10 +21,10 @@ test("gestão de conteúdo usa indicadores reais do acervo", () => {
 test("atalhos editoriais preservam as ferramentas existentes", () => {
   const overview = read("src/components/management/ContentOperationsOverview.tsx");
 
-  assert.match(overview, /\/gestao\/conteudos\/academia/);
-  assert.match(overview, /\/gestao\/conteudos\/receitas/);
-  assert.match(overview, /\/gestao\/conteudos\/modulos/);
-  assert.match(overview, /\/gestao\/conteudos\/categorias/);
+  assert.match(overview, /\/gestao\/academia/);
+  assert.match(overview, /\/gestao\/receitas/);
+  assert.match(overview, /\/gestao\/academia\/modulos/);
+  assert.match(overview, /\/gestao\/receitas\/categorias/);
   assert.doesNotMatch(overview, /useMutation/);
 });
 

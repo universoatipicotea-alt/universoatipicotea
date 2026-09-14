@@ -39,31 +39,20 @@ const areas: Record<
   conteudos: {
     eyebrow: "Conteúdo e produtos",
     title: "Acervo editorial",
-    description: "Organize o que será entregue aos assinantes, da preparação à publicação.",
+    description: "Importações e materiais complementares. Academia e Receitas têm áreas próprias.",
+    masterOnly: true,
     tools: [
       {
         title: "Academia Atípica",
-        description: "Guias, PDFs, vídeos, capas e ordem.",
-        href: "/gestao/conteudos/academia",
+        description: "Aulas, módulos e materiais.",
+        href: "/gestao/academia",
         icon: BookOpen,
       },
       {
         title: "Receitas",
-        description: "Cadastro, arquivos, capas e publicação.",
-        href: "/gestao/conteudos/receitas",
+        description: "Catálogo de receitas e categorias.",
+        href: "/gestao/receitas",
         icon: ChefHat,
-      },
-      {
-        title: "Módulos da Academia",
-        description: "Estrutura, capas e disponibilidade.",
-        href: "/gestao/conteudos/modulos",
-        icon: LayoutGrid,
-      },
-      {
-        title: "Categorias de receitas",
-        description: "Organização e navegação do catálogo.",
-        href: "/gestao/conteudos/categorias",
-        icon: Settings2,
       },
       {
         title: "Importação do Drive",

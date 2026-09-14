@@ -239,7 +239,7 @@ export function MemberShell({
         : "Visitante";
   const managementLinks = [
     {
-      href: isMaster ? "/gestao" : "/gestao/conteudos",
+      href: isMaster ? "/gestao" : "/gestao/academia",
       label: "Gestão administrativa",
       icon: ShieldCheck,
     },

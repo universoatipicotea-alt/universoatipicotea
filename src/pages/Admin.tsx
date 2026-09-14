@@ -34,7 +34,7 @@ import {
   X,
 } from "lucide-react";
 import { ChangeEvent, FormEvent, useRef, useState } from "react";
-import { useSearch } from "wouter";
+import { Link, useSearch } from "wouter";
 import { toast } from "sonner";
 
 const contentCategories = [
@@ -171,6 +171,46 @@ function Stat({
         {label}
       </span>
     </article>
+  );
+}
+
+const adminGroups: { tabs: AdminTab[]; items: { href: string; label: string; tab: AdminTab }[] }[] =
+  [
+    {
+      tabs: ["guides", "academyModules", "academyLessons"],
+      items: [
+        { href: "/gestao/academia", label: "Visão geral", tab: "guides" },
+        { href: "/gestao/academia/modulos", label: "Módulos", tab: "academyModules" },
+        { href: "/gestao/academia/aulas", label: "Aulas", tab: "academyLessons" },
+      ],
+    },
+    {
+      tabs: ["recipes", "recipeCategories"],
+      items: [
+        { href: "/gestao/receitas", label: "Visão geral", tab: "recipes" },
+        { href: "/gestao/receitas/categorias", label: "Categorias", tab: "recipeCategories" },
+      ],
+    },
+  ];
+
+function AdminGroupNav({ tab }: { tab: AdminTab }) {
+  const group = adminGroups.find((item) => item.tabs.includes(tab));
+  if (!group) return null;
+  return (
+    <nav className="mb-8 flex gap-2 overflow-x-auto border-b border-[var(--line)] pb-3">
+      {group.items.map((item) => {
+        const active = item.tab === tab;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`nav-link inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-extrabold ${active ? "bg-[var(--sage-deep)] text-white" : "bg-white text-[var(--ink-soft)] hover:bg-[var(--linen)] hover:text-[var(--ink)]"}`}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -431,6 +471,8 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
       title="Centro de gestão"
       description="Publique recursos, organize conteúdos e preserve um espaço de conversa respeitoso."
     >
+      {fixedTab ? <AdminGroupNav tab={fixedTab} /> : null}
+
       {fixedTab ? null : (
         <div className="mb-9 flex gap-2 overflow-x-auto border-b border-[var(--line)] pb-3">
           {tabs.map((item) => {

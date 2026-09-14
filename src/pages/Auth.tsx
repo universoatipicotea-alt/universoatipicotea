@@ -43,7 +43,7 @@ export default function Auth() {
         authenticatedUser?.accessRole === "admin_master"
           ? "/gestao"
           : authenticatedUser?.accessRole === "admin"
-            ? "/gestao/conteudos"
+            ? "/gestao/academia"
             : authenticatedUser?.hasPaidAccess === false
               ? "/assinatura"
               : "/inicio",
