@@ -58,6 +58,7 @@
   --ink: #071d4c;
   --ink-soft: #53617f;
   --paper: #fbfcff;
+  --academy-cream: #fdfcf9;
   --linen: #f0f6ff;
   --sage: #126ad2;
   --sage-deep: #081f4d;
@@ -191,6 +192,17 @@
     opacity: 0.68;
     pointer-events: none;
   }
+}
+
+@utility brand-dots {
+  background-image:
+    radial-gradient(circle, var(--blue) 0 3px, transparent 3.5px),
+    radial-gradient(circle, var(--red) 0 3px, transparent 3.5px),
+    radial-gradient(circle, var(--gold) 0 3px, transparent 3.5px),
+    radial-gradient(circle, var(--green) 0 3px, transparent 3.5px);
+  background-position: 0 50%, 12px 50%, 24px 50%, 36px 50%;
+  background-repeat: no-repeat;
+  background-size: 7px 7px;
 }
 
 @utility brand-constellation {

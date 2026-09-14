@@ -12,7 +12,6 @@ import {
   Loader2,
   LockKeyhole,
   Mail,
-  Sparkles,
 } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -26,12 +25,7 @@ export default function Auth() {
   const [recovering, setRecovering] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { sources: loginVisual } = useVisualAsset("login", {
-    desktopImageUrl: "/login-universo-atipico-desktop.webp",
-    tabletImageUrl: "/login-universo-atipico-tablet.webp",
-    mobileImageUrl: "/login-universo-atipico-mobile.webp",
-    altText: "Universo Atípico — um espaço para você chegar como está",
-  });
+  useVisualAsset("login", undefined, { enabled: false });
   const utils = trpc.useUtils();
   const login = trpc.auth.login.useMutation({
     onSuccess: async (
@@ -71,18 +65,10 @@ export default function Auth() {
   };
 
   return (
-    <main className="page-texture relative flex min-h-[100dvh] items-center overflow-x-hidden bg-[var(--paper)] px-3 py-3 min-[360px]:px-4 min-[360px]:py-5 sm:px-8 sm:py-12">
-      <div
-        className="aurora-float pointer-events-none absolute -left-24 top-16 h-72 w-72 rounded-full bg-[var(--sage-pale)]/70 blur-3xl"
-        aria-hidden="true"
-      />
-      <div
-        className="aurora-float pointer-events-none absolute -right-28 bottom-10 h-80 w-80 rounded-full bg-[#efd4a2]/35 blur-3xl"
-        aria-hidden="true"
-      />
-      <div className="relative mx-auto grid w-full min-w-0 max-w-7xl overflow-hidden rounded-[1.5rem] border border-white/80 bg-white/90 shadow-[0_32px_90px_rgba(8,31,77,.14)] backdrop-blur sm:rounded-[2rem] xl:grid-cols-[minmax(0,1.45fr)_minmax(430px,.85fr)]">
+    <main className="relative flex min-h-[100dvh] items-center overflow-x-hidden bg-[var(--academy-cream)] px-4 py-6 sm:px-8 sm:py-12">
+      <div className="relative mx-auto w-full max-w-lg overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--card)] shadow-sm">
         {/* Formulário primeiro no mobile */}
-        <section className="order-1 min-w-0 p-4 min-[360px]:p-5 sm:p-10 xl:order-2 xl:p-12">
+        <section className="min-w-0 p-5 sm:p-10">
           <div className="mb-6 flex min-w-0 items-center justify-between gap-3 sm:mb-8">
             <Link
               href="/"
@@ -90,17 +76,20 @@ export default function Auth() {
             >
               <ArrowLeft size={16} /> Voltar
             </Link>
-            <div className="min-w-0 overflow-hidden rounded-xl bg-white px-2 py-1 shadow-sm [&_img]:!h-10 [&_img]:!max-w-[8.5rem] xl:hidden">
+             <div className="min-w-0 overflow-hidden [&_img]:!h-10 [&_img]:!max-w-[8.5rem]">
               <Brand compact priority />
             </div>
           </div>
 
           <div className="mx-auto w-full min-w-0 max-w-md">
-            <span className="inline-flex items-center gap-2 rounded-full bg-[var(--sage-pale)] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[var(--sage-deep)]">
-              <Sparkles size={13} /> Área de membros
-            </span>
-            <h1 className="display-font mt-3 text-[2rem] font-semibold leading-[1.02] tracking-[-.04em] min-[360px]:text-4xl sm:text-5xl">
-              Que bom ter você de volta.
+            <div className="mb-5 flex gap-2" aria-hidden="true">
+              <span className="h-2 w-2 rounded-full bg-[var(--blue)]" />
+              <span className="h-2 w-2 rounded-full bg-[var(--red)]" />
+              <span className="h-2 w-2 rounded-full bg-[var(--gold)]" />
+              <span className="h-2 w-2 rounded-full bg-[var(--green)]" />
+            </div>
+            <h1 className="display-font text-[2rem] font-semibold leading-[1.05] min-[360px]:text-4xl sm:text-5xl">
+              Bem-vindo de volta.
             </h1>
             <p className="mt-4 text-sm leading-7 text-[var(--ink-soft)]">
               Entre com seu e-mail e senha para acessar o Universo Atípico.
@@ -223,14 +212,14 @@ export default function Auth() {
               </button>
             )}
 
-            <div className="mt-8 rounded-2xl border border-[var(--line)] bg-[var(--linen)] p-4">
+            <div className="mt-7 border-t border-[var(--line)] pt-5">
               <p className="text-sm text-[var(--ink-soft)]">
                 Ainda não faz parte do Universo Atípico?
               </p>
               <Button
                 asChild
                 variant="outline"
-                className="mt-3 h-11 w-full rounded-xl border-[var(--line)] bg-white text-xs font-extrabold text-[var(--sage-deep)] hover:bg-[var(--paper)] sm:w-auto sm:px-5"
+                 className="mt-3 h-11 w-full rounded-xl border-[var(--line)] bg-[var(--card)] text-xs font-extrabold text-[var(--sage-deep)] hover:bg-[var(--paper)] sm:w-auto sm:px-5"
               >
                 <Link href="/#assinatura">Conhecer a assinatura</Link>
               </Button>
@@ -238,23 +227,6 @@ export default function Auth() {
           </div>
         </section>
 
-        {/* A arte completa só é requisitada quando o painel desktop realmente é exibido. */}
-        <section className="relative order-2 hidden min-h-[700px] overflow-hidden bg-[#082c62] xl:order-1 xl:block">
-          <picture>
-            <source media="(min-width: 1280px)" srcSet={loginVisual.desktop} />
-            <img
-              src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
-              alt="Universo Atípico — um espaço para você chegar como está"
-              className="absolute inset-0 h-full w-full object-contain object-center"
-              decoding="async"
-              fetchPriority="high"
-            />
-          </picture>
-          <div
-            className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/15"
-            aria-hidden="true"
-          />
-        </section>
       </div>
     </main>
   );
