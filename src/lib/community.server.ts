@@ -225,17 +225,24 @@ async function requireMaster() {
   return user;
 }
 
-async function assertMemberContent(user: UaUser) {
-  const privileged = isAdminRole(user.accessRole);
-  if (privileged) return;
-  if (user.accessRole === "member") return;
+async function hasPaidAccess(user: UaUser) {
+  if (isAdminRole(user.accessRole)) return true;
+  if (user.courtesyAccess) return true;
   const { data: sub } = await db()
     .from("subscriptions")
-    .select("id")
+    .select("id,status,current_period_end")
     .eq("user_id", user.authId)
-    .eq("status", "active")
+    .in("status", ["active", "trialing"])
+    .order("updated_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
-  if (sub) return;
+  if (!sub) return false;
+  const end = sub.current_period_end ? new Date(sub.current_period_end).getTime() : null;
+  return !end || end > Date.now();
+}
+
+async function assertMemberContent(user: UaUser) {
+  if (await hasPaidAccess(user)) return;
   fail("ACESSO_RESTRITO: este conteúdo é exclusivo para assinantes ativos.");
 }
 
