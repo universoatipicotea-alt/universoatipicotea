@@ -155,6 +155,35 @@ export default function TaxonomyAdmin({ kind, enabled }: { kind: Kind; enabled: 
       toast.error((error as Error).message);
     }
   };
+  const setStatus = async (item: Item, status: Item["status"]) => {
+    try {
+      await save.mutateAsync({
+        kind,
+        id: item.id,
+        name: item.name,
+        slug: item.slug,
+        description: item.description ?? "",
+        coverImageKey: item.coverImageKey ?? null,
+        coverImageUrl: item.coverImageUrl ?? null,
+        position: item.position,
+        status,
+        comingSoonMessage: item.comingSoonMessage ?? null,
+      });
+      await refresh();
+      toast.success(status === "archived" ? "Item arquivado." : "Item publicado.");
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
+  };
+  const filters: { value: "all" | Item["status"]; label: string; count: number }[] = [
+    { value: "all", label: "Todos", count: totals.all },
+    { value: "published", label: "Publicados", count: totals.published },
+    ...(kind === "module"
+      ? [{ value: "coming_soon" as const, label: "Em breve", count: totals.coming_soon }]
+      : []),
+    { value: "draft", label: "Rascunhos", count: totals.draft },
+    { value: "archived", label: "Arquivados", count: totals.archived },
+  ];
   return (
     <section>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -169,6 +198,38 @@ export default function TaxonomyAdmin({ kind, enabled }: { kind: Kind; enabled: 
           <Plus size={16} className="mr-2" />
           Novo {noun}
         </Button>
+      </div>
+      <p className="-mt-3 mb-5 text-sm text-[var(--ink-soft)]">
+        {totals.published} {totals.published === 1 ? "ativo" : "ativos"} para os membros ·{" "}
+        {lessons} {kind === "recipe" ? "receitas publicadas" : "aulas publicadas"} no total
+      </p>
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        {filters.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setFilter(option.value)}
+            className={`min-h-10 rounded-full border px-4 text-xs font-extrabold transition ${
+              filter === option.value
+                ? "border-transparent bg-[var(--sage-deep)] text-white"
+                : "border-[var(--line)] bg-white text-[var(--ink-soft)]"
+            }`}
+          >
+            {option.label} ({option.count})
+          </button>
+        ))}
+        <div className="relative ml-auto w-full sm:w-64">
+          <Search
+            size={15}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]"
+          />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={`Buscar ${noun}`}
+            className="h-10 rounded-full pl-9"
+          />
+        </div>
       </div>
       {query.isLoading ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -212,10 +273,21 @@ export default function TaxonomyAdmin({ kind, enabled }: { kind: Kind; enabled: 
                     : ""}
                   {item.name}
                 </h3>
-                <p className="mt-2 text-xs text-[var(--ink-soft)]">
-                  {item.contentCount ?? 0} conteúdo(s) publicado(s) · /{item.slug}
-                </p>
-                <div className="mt-5 flex gap-2">
+                <p className="mt-2 text-xs text-[var(--ink-soft)]">/{item.slug}</p>
+                <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-extrabold">
+                  <span className="rounded-full bg-[var(--linen)] px-3 py-1">
+                    {item.publishedCount ?? 0} publicado(s)
+                  </span>
+                  {item.draftCount ? (
+                    <span className="rounded-full bg-[#fdf3e0] px-3 py-1 text-[#8b5f16]">
+                      {item.draftCount} em rascunho
+                    </span>
+                  ) : null}
+                  <span className="rounded-full bg-[var(--linen)] px-3 py-1 text-[var(--ink-soft)]">
+                    {item.contentCount ?? 0} no total
+                  </span>
+                </div>
+                <div className="mt-5 flex flex-wrap gap-2">
                   <Button
                     variant="outline"
                     onClick={() => edit(item)}
@@ -224,10 +296,36 @@ export default function TaxonomyAdmin({ kind, enabled }: { kind: Kind; enabled: 
                     <Pencil size={14} className="mr-1.5" />
                     Editar
                   </Button>
+                  {item.status === "archived" ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => setStatus(item, "published")}
+                      disabled={save.isPending}
+                      className="rounded-xl text-xs font-extrabold"
+                    >
+                      <RotateCcw size={14} className="mr-1.5" />
+                      Reativar
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => setStatus(item, "archived")}
+                      disabled={save.isPending}
+                      className="rounded-xl text-xs font-extrabold"
+                    >
+                      <Archive size={14} className="mr-1.5" />
+                      Arquivar
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     onClick={() => destroy(item)}
                     disabled={Boolean(item.contentCount)}
+                    title={
+                      item.contentCount
+                        ? "Existem conteúdos vinculados. Arquive em vez de excluir."
+                        : `Excluir ${noun}`
+                    }
                     className="rounded-xl text-xs font-extrabold text-[#9c583c]"
                   >
                     <Trash2 size={14} />
