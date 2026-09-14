@@ -81,3 +81,8 @@ O Google Drive será apenas uma fonte opcional de importação e organização. 
 - [ ] Conflitos resolvidos manualmente antes de alterar conteúdo
 
 - [ ] UX polish: unify free-now/premium-future messaging; fix member labels and Academy PDF link; qualitative zero metrics; add reduced-motion-safe reveals, card/progress/decorative/loading/checkout transitions; validate.
+
+### Academia — gestão de aulas e Admin Master
+- [ ] Acesso pago obrigatório (assinatura ativa, cortesia ou admin) + leitura estilo Kindle no celular
+- [ ] Tela de gestão de aulas na Academia: upload de HTML, título, capítulos e publicação sem tocar no banco
+- [ ] Admin Master com sidebar no mesmo padrão da área de membros
