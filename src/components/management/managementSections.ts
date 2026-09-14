@@ -3,6 +3,7 @@ import {
   BookOpenCheck,
   ChefHat,
   FolderSync,
+  GraduationCap,
   Image,
   Layers3,
   Megaphone,
@@ -33,17 +34,35 @@ export type ManagementSection = {
 
 export const managementSections: ManagementSection[] = [
   {
+    href: "/gestao/academia",
+    label: "Academia Atípica",
+    shortLabel: "Academia",
+    description: "Aulas, módulos e materiais da Academia Atípica.",
+    icon: GraduationCap,
+    destinations: [
+      { href: "/gestao/academia", label: "Visão geral", icon: BookOpenCheck },
+      { href: "/gestao/academia/modulos", label: "Módulos", icon: Layers3 },
+      { href: "/gestao/academia/aulas", label: "Aulas", icon: GraduationCap },
+    ],
+  },
+  {
+    href: "/gestao/receitas",
+    label: "Receitas",
+    shortLabel: "Receitas",
+    description: "Catálogo de receitas e categorias.",
+    icon: ChefHat,
+    destinations: [
+      { href: "/gestao/receitas", label: "Visão geral", icon: ChefHat },
+      { href: "/gestao/receitas/categorias", label: "Categorias", icon: Settings2 },
+    ],
+  },
+  {
     href: "/gestao/conteudos",
     label: "Conteúdo e produtos",
     shortLabel: "Conteúdo",
-    description: "Academia, receitas, guias, módulos e catálogo editorial.",
+    description: "Importações e catálogo editorial complementar.",
     icon: BookOpenCheck,
     destinations: [
-      { href: "/gestao/conteudos/academia", label: "Academia Atípica", icon: BookOpenCheck },
-      { href: "/gestao/conteudos/receitas", label: "Receitas", icon: ChefHat },
-      { href: "/gestao/conteudos/modulos", label: "Módulos", icon: Layers3 },
-      { href: "/gestao/conteudos/aulas", label: "Aulas da Academia", icon: Layers3 },
-      { href: "/gestao/conteudos/categorias", label: "Categorias", icon: Settings2 },
       {
         href: "/gestao/conteudos/importacao",
         label: "Importação do Drive",
