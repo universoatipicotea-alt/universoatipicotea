@@ -17,7 +17,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { CategoryHub } from "@/components/CategoryHub";
 import { PdfReaderDialog, type ReaderDocument } from "@/components/PdfReaderDialog";
-import { HtmlLessonDialog } from "@/components/HtmlLessonDialog";
+import { AcademyLessonView } from "@/components/AcademyLessonView";
 import ResponsiveVisualAsset from "@/components/ResponsiveVisualAsset";
 
 type AcademiaGuide = {
@@ -295,7 +295,7 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
         <div id="academy-modules" className="scroll-mt-24">
           <SectionHeading
             label="Trilhas de conhecimento"
-            title={`${modules.length} módulos da Academia`}
+            title={`${modules.length} ${modules.length === 1 ? "módulo" : "módulos"} da Academia`}
           />
         </div>
         {taxonomy.isLoading ? (
