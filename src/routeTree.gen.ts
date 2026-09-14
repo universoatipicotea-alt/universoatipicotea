@@ -43,6 +43,7 @@ import { Route as GestaoPlataformaRouteImport } from './routes/gestao_.plataform
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
 import { Route as ReceitasCategoriaRouteImport } from './routes/receitas_.$categoria'
 import { Route as ApiProtectedDriveVideoSplatRouteImport } from './routes/api/protected-drive-video/$'
+import { Route as ApiProtectedHtmlGuideIdRouteImport } from './routes/api/protected-html.$guideId'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
 import { Route as GestaoComercialCampanhasRouteImport } from './routes/gestao_.comercial_.campanhas'
 import { Route as GestaoComercialConversoesRouteImport } from './routes/gestao_.comercial_.conversoes'
@@ -231,6 +232,11 @@ const ApiProtectedDriveVideoSplatRoute =
     path: '/api/protected-drive-video/$',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiProtectedHtmlGuideIdRoute = ApiProtectedHtmlGuideIdRouteImport.update({
+  id: '/api/protected-html/$guideId',
+  path: '/api/protected-html/$guideId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   id: '/api/public/stripe-webhook',
   path: '/api/public/stripe-webhook',
@@ -354,6 +360,7 @@ export interface FileRoutesByFullPath {
   '/produto/$slug': typeof ProdutoSlugRoute
   '/receitas/$categoria': typeof ReceitasCategoriaRoute
   '/api/protected-drive-video/$': typeof ApiProtectedDriveVideoSplatRoute
+  '/api/protected-html/$guideId': typeof ApiProtectedHtmlGuideIdRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/gestao/comercial/campanhas': typeof GestaoComercialCampanhasRoute
   '/gestao/comercial/conversoes': typeof GestaoComercialConversoesRoute
@@ -406,6 +413,7 @@ export interface FileRoutesByTo {
   '/produto/$slug': typeof ProdutoSlugRoute
   '/receitas/$categoria': typeof ReceitasCategoriaRoute
   '/api/protected-drive-video/$': typeof ApiProtectedDriveVideoSplatRoute
+  '/api/protected-html/$guideId': typeof ApiProtectedHtmlGuideIdRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/gestao/comercial/campanhas': typeof GestaoComercialCampanhasRoute
   '/gestao/comercial/conversoes': typeof GestaoComercialConversoesRoute
@@ -459,6 +467,7 @@ export interface FileRoutesById {
   '/produto/$slug': typeof ProdutoSlugRoute
   '/receitas_/$categoria': typeof ReceitasCategoriaRoute
   '/api/protected-drive-video/$': typeof ApiProtectedDriveVideoSplatRoute
+  '/api/protected-html/$guideId': typeof ApiProtectedHtmlGuideIdRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/gestao_/comercial_/campanhas': typeof GestaoComercialCampanhasRoute
   '/gestao_/comercial_/conversoes': typeof GestaoComercialConversoesRoute
@@ -513,6 +522,7 @@ export interface FileRouteTypes {
     | '/produto/$slug'
     | '/receitas/$categoria'
     | '/api/protected-drive-video/$'
+    | '/api/protected-html/$guideId'
     | '/api/public/stripe-webhook'
     | '/gestao/comercial/campanhas'
     | '/gestao/comercial/conversoes'
@@ -565,6 +575,7 @@ export interface FileRouteTypes {
     | '/produto/$slug'
     | '/receitas/$categoria'
     | '/api/protected-drive-video/$'
+    | '/api/protected-html/$guideId'
     | '/api/public/stripe-webhook'
     | '/gestao/comercial/campanhas'
     | '/gestao/comercial/conversoes'
@@ -617,6 +628,7 @@ export interface FileRouteTypes {
     | '/produto/$slug'
     | '/receitas_/$categoria'
     | '/api/protected-drive-video/$'
+    | '/api/protected-html/$guideId'
     | '/api/public/stripe-webhook'
     | '/gestao_/comercial_/campanhas'
     | '/gestao_/comercial_/conversoes'
@@ -670,6 +682,7 @@ export interface RootRouteChildren {
   ProdutoSlugRoute: typeof ProdutoSlugRoute
   ReceitasCategoriaRoute: typeof ReceitasCategoriaRoute
   ApiProtectedDriveVideoSplatRoute: typeof ApiProtectedDriveVideoSplatRoute
+  ApiProtectedHtmlGuideIdRoute: typeof ApiProtectedHtmlGuideIdRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
   GestaoComercialCampanhasRoute: typeof GestaoComercialCampanhasRoute
   GestaoComercialConversoesRoute: typeof GestaoComercialConversoesRoute
@@ -928,6 +941,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiProtectedDriveVideoSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/protected-html/$guideId': {
+      id: '/api/protected-html/$guideId'
+      path: '/api/protected-html/$guideId'
+      fullPath: '/api/protected-html/$guideId'
+      preLoaderRoute: typeof ApiProtectedHtmlGuideIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/stripe-webhook': {
       id: '/api/public/stripe-webhook'
       path: '/api/public/stripe-webhook'
@@ -1078,6 +1098,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProdutoSlugRoute: ProdutoSlugRoute,
   ReceitasCategoriaRoute: ReceitasCategoriaRoute,
   ApiProtectedDriveVideoSplatRoute: ApiProtectedDriveVideoSplatRoute,
+  ApiProtectedHtmlGuideIdRoute: ApiProtectedHtmlGuideIdRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
   GestaoComercialCampanhasRoute: GestaoComercialCampanhasRoute,
   GestaoComercialConversoesRoute: GestaoComercialConversoesRoute,
