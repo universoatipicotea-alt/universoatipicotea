@@ -69,10 +69,12 @@ export function AcademyLessonView({
       bubbles: true,
       cancelable: true,
     } as KeyboardEventInit;
+    const KeyboardEventCtor = (win as unknown as { KeyboardEvent: typeof KeyboardEvent })
+      .KeyboardEvent;
     for (const target of [doc, doc.body, win] as EventTarget[]) {
       try {
-        target.dispatchEvent(new win.KeyboardEvent("keydown", init));
-        target.dispatchEvent(new win.KeyboardEvent("keyup", init));
+        target.dispatchEvent(new KeyboardEventCtor("keydown", init));
+        target.dispatchEvent(new KeyboardEventCtor("keyup", init));
       } catch {
         /* conteúdo ainda carregando */
       }
