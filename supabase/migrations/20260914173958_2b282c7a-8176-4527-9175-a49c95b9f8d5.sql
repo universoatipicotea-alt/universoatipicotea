@@ -1,0 +1,1 @@
+ALTER TABLE public.ua_users ADD COLUMN IF NOT EXISTS courtesy_access boolean NOT NULL DEFAULT false;
