@@ -39,7 +39,7 @@ test("login direciona equipes à gestão e mantém membros na área de assinante
   assert.match(auth, /accessRole === "admin_master"/);
   assert.match(auth, /"\/gestao"/);
   assert.match(auth, /accessRole === "admin"/);
-  assert.match(auth, /"\/gestao\/conteudos"/);
+  assert.match(auth, /"\/gestao\/academia"/);
   assert.match(auth, /"\/inicio"/);
 });
 
