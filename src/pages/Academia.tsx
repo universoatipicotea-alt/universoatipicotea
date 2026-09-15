@@ -344,7 +344,10 @@ export default function Academia({ moduleSlug }: { moduleSlug?: string }) {
                   normalize(guide.category || "") === normalize(module?.name || ""),
               ).length;
             }}
-            coverFor={(_item, index) => getAcademyModuleCover(index)}
+            coverFor={(item, index) =>
+              (item as { coverImageUrl?: string | null }).coverImageUrl ||
+              getAcademyModuleCover(index)
+            }
             compactMobile
             actionLabel="Abrir módulo"
           />
