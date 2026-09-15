@@ -1,0 +1,1 @@
+ALTER TABLE public.ua_academy_modules ADD COLUMN IF NOT EXISTS coming_soon_message text;
