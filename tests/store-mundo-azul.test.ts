@@ -34,11 +34,32 @@ test("rotas pública, coleção, produto, membros e gestão estão declaradas", 
   assert.match(read("src/routes/lojamundoazul_.colecao_.$slug.tsx"), /colecao_\/\$slug/);
   assert.match(read("src/routes/lojamundoazul_.produto_.$slug.tsx"), /produto_\/\$slug/);
   assert.match(read("src/routes/lojamundoazul_.membros.tsx"), /lojamundoazul_\/membros/);
-  assert.match(read("src/routes/facilitadores.tsx"), /Navigate to="\/lojamundoazul\/membros"/);
+  assert.match(read("src/routes/facilitadores.tsx"), /Navigate to="\/lojamundoazul"/);
+  assert.doesNotMatch(
+    read("src/routes/facilitadores.tsx"),
+    /Navigate to="\/lojamundoazul\/membros"/,
+  );
   assert.match(
     read("src/routes/gestao_.comunidade_.facilitadores.tsx"),
     /Navigate to="\/gestao\/lojamundoazul"/,
   );
+});
+
+test("migration histórica está pronta para staging sem publicar registros legados", () => {
+  const migration = read("supabase/migrations/20260918120000_store_mundo_azul.sql");
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.ua_store_collections/);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.ua_store_settings/);
+  assert.match(migration, /ALTER TABLE public\.ua_store_collections ENABLE ROW LEVEL SECURITY/);
+  assert.match(migration, /ALTER TABLE public\.ua_store_settings ENABLE ROW LEVEL SECURITY/);
+  assert.match(migration, /ua_facilitators_slug_unique/);
+  assert.match(migration, /ua_facilitators_shop_listing/);
+  assert.match(migration, /ua_facilitators_collections_gin/);
+  assert.match(
+    migration,
+    /UPDATE public\.ua_facilitators SET slug = 'produto-' \|\| id WHERE slug IS NULL/,
+  );
+  assert.doesNotMatch(migration, /UPDATE public\.ua_facilitators SET visible_public = true/i);
+  assert.doesNotMatch(migration, /DROP TABLE|TRUNCATE|DELETE FROM public\.ua_facilitators/i);
 });
 
 test("loja é mobile first e compra continua no parceiro", () => {
