@@ -83,7 +83,7 @@ export function CommunityOperationsOverview() {
         <CircleAlert className="text-[#d64e45]" size={22} />
         <h2 className="mt-4 text-lg font-extrabold">A visão da comunidade não carregou</h2>
         <p className="mt-2 text-sm leading-6 text-[#60708a]">
-          As ferramentas de moderação e facilitadores continuam disponíveis abaixo.
+          As ferramentas de moderação e da Loja Mundo Azul continuam disponíveis abaixo.
         </p>
       </section>
     );
@@ -118,7 +118,7 @@ export function CommunityOperationsOverview() {
             href="/gestao/comunidade/facilitadores"
             className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#cdd8e6] bg-white px-4 text-xs font-extrabold"
           >
-            <ShoppingBag size={16} /> Gerir facilitadores
+            <ShoppingBag size={16} /> Gerir Loja Mundo Azul
           </Link>
         </div>
       </div>
@@ -143,7 +143,7 @@ export function CommunityOperationsOverview() {
           icon={ShieldCheck}
         />
         <CommunityMetric
-          label="Facilitadores publicados"
+          label="Produtos publicados"
           value={publishedFacilitators}
           detail="Referências visíveis aos membros"
           icon={HeartHandshake}
@@ -184,7 +184,7 @@ export function CommunityOperationsOverview() {
               href="/gestao/comunidade/moderacao"
             />
             <QueueLink
-              label="Facilitadores em rascunho"
+              label="Produtos em rascunho"
               value={draftFacilitators}
               href="/gestao/comunidade/facilitadores"
             />

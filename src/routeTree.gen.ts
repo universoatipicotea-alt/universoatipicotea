@@ -26,6 +26,7 @@ import { Route as FacilitadoresRouteImport } from './routes/facilitadores'
 import { Route as ForumRouteImport } from './routes/forum'
 import { Route as GestaoRouteImport } from './routes/gestao'
 import { Route as InicioRouteImport } from './routes/inicio'
+import { Route as LojamundoazulRouteImport } from './routes/lojamundoazul'
 import { Route as MasterRouteImport } from './routes/master'
 import { Route as MinhaAssinaturaRouteImport } from './routes/minha-assinatura'
 import { Route as NovaSenhaRouteImport } from './routes/nova-senha'
@@ -40,8 +41,10 @@ import { Route as GestaoAcademiaRouteImport } from './routes/gestao_.academia'
 import { Route as GestaoComercialRouteImport } from './routes/gestao_.comercial'
 import { Route as GestaoComunidadeRouteImport } from './routes/gestao_.comunidade'
 import { Route as GestaoConteudosRouteImport } from './routes/gestao_.conteudos'
+import { Route as GestaoLojamundoazulRouteImport } from './routes/gestao_.lojamundoazul'
 import { Route as GestaoPlataformaRouteImport } from './routes/gestao_.plataforma'
 import { Route as GestaoReceitasRouteImport } from './routes/gestao_.receitas'
+import { Route as LojamundoazulMembrosRouteImport } from './routes/lojamundoazul_.membros'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
 import { Route as ReceitasCategoriaRouteImport } from './routes/receitas_.$categoria'
 import { Route as ApiProtectedDriveVideoSplatRouteImport } from './routes/api/protected-drive-video/$'
@@ -64,6 +67,8 @@ import { Route as GestaoConteudosReceitasRouteImport } from './routes/gestao_.co
 import { Route as GestaoPlataformaAcessosRouteImport } from './routes/gestao_.plataforma_.acessos'
 import { Route as GestaoPlataformaAparenciaRouteImport } from './routes/gestao_.plataforma_.aparencia'
 import { Route as GestaoReceitasCategoriasRouteImport } from './routes/gestao_.receitas_.categorias'
+import { Route as LojamundoazulColecaoSlugRouteImport } from './routes/lojamundoazul_.colecao_.$slug'
+import { Route as LojamundoazulProdutoSlugRouteImport } from './routes/lojamundoazul_.produto_.$slug'
 import { Route as ApiPublicUaImageSplatRouteImport } from './routes/api/public/ua-image/$'
 import { Route as ApiPublicUaVideoSplatRouteImport } from './routes/api/public/ua-video/$'
 
@@ -152,6 +157,11 @@ const InicioRoute = InicioRouteImport.update({
   path: '/inicio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LojamundoazulRoute = LojamundoazulRouteImport.update({
+  id: '/lojamundoazul',
+  path: '/lojamundoazul',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MasterRoute = MasterRouteImport.update({
   id: '/master',
   path: '/master',
@@ -222,6 +232,11 @@ const GestaoConteudosRoute = GestaoConteudosRouteImport.update({
   path: '/gestao/conteudos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GestaoLojamundoazulRoute = GestaoLojamundoazulRouteImport.update({
+  id: '/gestao_/lojamundoazul',
+  path: '/gestao/lojamundoazul',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GestaoPlataformaRoute = GestaoPlataformaRouteImport.update({
   id: '/gestao_/plataforma',
   path: '/gestao/plataforma',
@@ -230,6 +245,11 @@ const GestaoPlataformaRoute = GestaoPlataformaRouteImport.update({
 const GestaoReceitasRoute = GestaoReceitasRouteImport.update({
   id: '/gestao_/receitas',
   path: '/gestao/receitas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LojamundoazulMembrosRoute = LojamundoazulMembrosRouteImport.update({
+  id: '/lojamundoazul_/membros',
+  path: '/lojamundoazul/membros',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProdutoSlugRoute = ProdutoSlugRouteImport.update({
@@ -351,6 +371,18 @@ const GestaoReceitasCategoriasRoute =
     path: '/gestao/receitas/categorias',
     getParentRoute: () => rootRouteImport,
   } as any)
+const LojamundoazulColecaoSlugRoute =
+  LojamundoazulColecaoSlugRouteImport.update({
+    id: '/lojamundoazul_/colecao_/$slug',
+    path: '/lojamundoazul/colecao/$slug',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const LojamundoazulProdutoSlugRoute =
+  LojamundoazulProdutoSlugRouteImport.update({
+    id: '/lojamundoazul_/produto_/$slug',
+    path: '/lojamundoazul/produto/$slug',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicUaImageSplatRoute = ApiPublicUaImageSplatRouteImport.update({
   id: '/api/public/ua-image/$',
   path: '/api/public/ua-image/$',
@@ -380,6 +412,7 @@ export interface FileRoutesByFullPath {
   '/forum': typeof ForumRoute
   '/gestao': typeof GestaoRoute
   '/inicio': typeof InicioRoute
+  '/lojamundoazul': typeof LojamundoazulRoute
   '/master': typeof MasterRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/nova-senha': typeof NovaSenhaRoute
@@ -394,8 +427,10 @@ export interface FileRoutesByFullPath {
   '/gestao/comercial': typeof GestaoComercialRoute
   '/gestao/comunidade': typeof GestaoComunidadeRoute
   '/gestao/conteudos': typeof GestaoConteudosRoute
+  '/gestao/lojamundoazul': typeof GestaoLojamundoazulRoute
   '/gestao/plataforma': typeof GestaoPlataformaRoute
   '/gestao/receitas': typeof GestaoReceitasRoute
+  '/lojamundoazul/membros': typeof LojamundoazulMembrosRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/receitas/$categoria': typeof ReceitasCategoriaRoute
   '/api/protected-drive-video/$': typeof ApiProtectedDriveVideoSplatRoute
@@ -418,6 +453,8 @@ export interface FileRoutesByFullPath {
   '/gestao/plataforma/acessos': typeof GestaoPlataformaAcessosRoute
   '/gestao/plataforma/aparencia': typeof GestaoPlataformaAparenciaRoute
   '/gestao/receitas/categorias': typeof GestaoReceitasCategoriasRoute
+  '/lojamundoazul/colecao/$slug': typeof LojamundoazulColecaoSlugRoute
+  '/lojamundoazul/produto/$slug': typeof LojamundoazulProdutoSlugRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
   '/api/public/ua-video/$': typeof ApiPublicUaVideoSplatRoute
 }
@@ -439,6 +476,7 @@ export interface FileRoutesByTo {
   '/forum': typeof ForumRoute
   '/gestao': typeof GestaoRoute
   '/inicio': typeof InicioRoute
+  '/lojamundoazul': typeof LojamundoazulRoute
   '/master': typeof MasterRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/nova-senha': typeof NovaSenhaRoute
@@ -453,8 +491,10 @@ export interface FileRoutesByTo {
   '/gestao/comercial': typeof GestaoComercialRoute
   '/gestao/comunidade': typeof GestaoComunidadeRoute
   '/gestao/conteudos': typeof GestaoConteudosRoute
+  '/gestao/lojamundoazul': typeof GestaoLojamundoazulRoute
   '/gestao/plataforma': typeof GestaoPlataformaRoute
   '/gestao/receitas': typeof GestaoReceitasRoute
+  '/lojamundoazul/membros': typeof LojamundoazulMembrosRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/receitas/$categoria': typeof ReceitasCategoriaRoute
   '/api/protected-drive-video/$': typeof ApiProtectedDriveVideoSplatRoute
@@ -477,6 +517,8 @@ export interface FileRoutesByTo {
   '/gestao/plataforma/acessos': typeof GestaoPlataformaAcessosRoute
   '/gestao/plataforma/aparencia': typeof GestaoPlataformaAparenciaRoute
   '/gestao/receitas/categorias': typeof GestaoReceitasCategoriasRoute
+  '/lojamundoazul/colecao/$slug': typeof LojamundoazulColecaoSlugRoute
+  '/lojamundoazul/produto/$slug': typeof LojamundoazulProdutoSlugRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
   '/api/public/ua-video/$': typeof ApiPublicUaVideoSplatRoute
 }
@@ -499,6 +541,7 @@ export interface FileRoutesById {
   '/forum': typeof ForumRoute
   '/gestao': typeof GestaoRoute
   '/inicio': typeof InicioRoute
+  '/lojamundoazul': typeof LojamundoazulRoute
   '/master': typeof MasterRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/nova-senha': typeof NovaSenhaRoute
@@ -513,8 +556,10 @@ export interface FileRoutesById {
   '/gestao_/comercial': typeof GestaoComercialRoute
   '/gestao_/comunidade': typeof GestaoComunidadeRoute
   '/gestao_/conteudos': typeof GestaoConteudosRoute
+  '/gestao_/lojamundoazul': typeof GestaoLojamundoazulRoute
   '/gestao_/plataforma': typeof GestaoPlataformaRoute
   '/gestao_/receitas': typeof GestaoReceitasRoute
+  '/lojamundoazul_/membros': typeof LojamundoazulMembrosRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/receitas_/$categoria': typeof ReceitasCategoriaRoute
   '/api/protected-drive-video/$': typeof ApiProtectedDriveVideoSplatRoute
@@ -537,6 +582,8 @@ export interface FileRoutesById {
   '/gestao_/plataforma_/acessos': typeof GestaoPlataformaAcessosRoute
   '/gestao_/plataforma_/aparencia': typeof GestaoPlataformaAparenciaRoute
   '/gestao_/receitas_/categorias': typeof GestaoReceitasCategoriasRoute
+  '/lojamundoazul_/colecao_/$slug': typeof LojamundoazulColecaoSlugRoute
+  '/lojamundoazul_/produto_/$slug': typeof LojamundoazulProdutoSlugRoute
   '/api/public/ua-image/$': typeof ApiPublicUaImageSplatRoute
   '/api/public/ua-video/$': typeof ApiPublicUaVideoSplatRoute
 }
@@ -560,6 +607,7 @@ export interface FileRouteTypes {
     | '/forum'
     | '/gestao'
     | '/inicio'
+    | '/lojamundoazul'
     | '/master'
     | '/minha-assinatura'
     | '/nova-senha'
@@ -574,8 +622,10 @@ export interface FileRouteTypes {
     | '/gestao/comercial'
     | '/gestao/comunidade'
     | '/gestao/conteudos'
+    | '/gestao/lojamundoazul'
     | '/gestao/plataforma'
     | '/gestao/receitas'
+    | '/lojamundoazul/membros'
     | '/produto/$slug'
     | '/receitas/$categoria'
     | '/api/protected-drive-video/$'
@@ -598,6 +648,8 @@ export interface FileRouteTypes {
     | '/gestao/plataforma/acessos'
     | '/gestao/plataforma/aparencia'
     | '/gestao/receitas/categorias'
+    | '/lojamundoazul/colecao/$slug'
+    | '/lojamundoazul/produto/$slug'
     | '/api/public/ua-image/$'
     | '/api/public/ua-video/$'
   fileRoutesByTo: FileRoutesByTo
@@ -619,6 +671,7 @@ export interface FileRouteTypes {
     | '/forum'
     | '/gestao'
     | '/inicio'
+    | '/lojamundoazul'
     | '/master'
     | '/minha-assinatura'
     | '/nova-senha'
@@ -633,8 +686,10 @@ export interface FileRouteTypes {
     | '/gestao/comercial'
     | '/gestao/comunidade'
     | '/gestao/conteudos'
+    | '/gestao/lojamundoazul'
     | '/gestao/plataforma'
     | '/gestao/receitas'
+    | '/lojamundoazul/membros'
     | '/produto/$slug'
     | '/receitas/$categoria'
     | '/api/protected-drive-video/$'
@@ -657,6 +712,8 @@ export interface FileRouteTypes {
     | '/gestao/plataforma/acessos'
     | '/gestao/plataforma/aparencia'
     | '/gestao/receitas/categorias'
+    | '/lojamundoazul/colecao/$slug'
+    | '/lojamundoazul/produto/$slug'
     | '/api/public/ua-image/$'
     | '/api/public/ua-video/$'
   id:
@@ -678,6 +735,7 @@ export interface FileRouteTypes {
     | '/forum'
     | '/gestao'
     | '/inicio'
+    | '/lojamundoazul'
     | '/master'
     | '/minha-assinatura'
     | '/nova-senha'
@@ -692,8 +750,10 @@ export interface FileRouteTypes {
     | '/gestao_/comercial'
     | '/gestao_/comunidade'
     | '/gestao_/conteudos'
+    | '/gestao_/lojamundoazul'
     | '/gestao_/plataforma'
     | '/gestao_/receitas'
+    | '/lojamundoazul_/membros'
     | '/produto/$slug'
     | '/receitas_/$categoria'
     | '/api/protected-drive-video/$'
@@ -716,6 +776,8 @@ export interface FileRouteTypes {
     | '/gestao_/plataforma_/acessos'
     | '/gestao_/plataforma_/aparencia'
     | '/gestao_/receitas_/categorias'
+    | '/lojamundoazul_/colecao_/$slug'
+    | '/lojamundoazul_/produto_/$slug'
     | '/api/public/ua-image/$'
     | '/api/public/ua-video/$'
   fileRoutesById: FileRoutesById
@@ -738,6 +800,7 @@ export interface RootRouteChildren {
   ForumRoute: typeof ForumRoute
   GestaoRoute: typeof GestaoRoute
   InicioRoute: typeof InicioRoute
+  LojamundoazulRoute: typeof LojamundoazulRoute
   MasterRoute: typeof MasterRoute
   MinhaAssinaturaRoute: typeof MinhaAssinaturaRoute
   NovaSenhaRoute: typeof NovaSenhaRoute
@@ -752,8 +815,10 @@ export interface RootRouteChildren {
   GestaoComercialRoute: typeof GestaoComercialRoute
   GestaoComunidadeRoute: typeof GestaoComunidadeRoute
   GestaoConteudosRoute: typeof GestaoConteudosRoute
+  GestaoLojamundoazulRoute: typeof GestaoLojamundoazulRoute
   GestaoPlataformaRoute: typeof GestaoPlataformaRoute
   GestaoReceitasRoute: typeof GestaoReceitasRoute
+  LojamundoazulMembrosRoute: typeof LojamundoazulMembrosRoute
   ProdutoSlugRoute: typeof ProdutoSlugRoute
   ReceitasCategoriaRoute: typeof ReceitasCategoriaRoute
   ApiProtectedDriveVideoSplatRoute: typeof ApiProtectedDriveVideoSplatRoute
@@ -776,6 +841,8 @@ export interface RootRouteChildren {
   GestaoPlataformaAcessosRoute: typeof GestaoPlataformaAcessosRoute
   GestaoPlataformaAparenciaRoute: typeof GestaoPlataformaAparenciaRoute
   GestaoReceitasCategoriasRoute: typeof GestaoReceitasCategoriasRoute
+  LojamundoazulColecaoSlugRoute: typeof LojamundoazulColecaoSlugRoute
+  LojamundoazulProdutoSlugRoute: typeof LojamundoazulProdutoSlugRoute
   ApiPublicUaImageSplatRoute: typeof ApiPublicUaImageSplatRoute
   ApiPublicUaVideoSplatRoute: typeof ApiPublicUaVideoSplatRoute
 }
@@ -901,6 +968,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InicioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lojamundoazul': {
+      id: '/lojamundoazul'
+      path: '/lojamundoazul'
+      fullPath: '/lojamundoazul'
+      preLoaderRoute: typeof LojamundoazulRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/master': {
       id: '/master'
       path: '/master'
@@ -999,6 +1073,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GestaoConteudosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gestao_/lojamundoazul': {
+      id: '/gestao_/lojamundoazul'
+      path: '/gestao/lojamundoazul'
+      fullPath: '/gestao/lojamundoazul'
+      preLoaderRoute: typeof GestaoLojamundoazulRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/gestao_/plataforma': {
       id: '/gestao_/plataforma'
       path: '/gestao/plataforma'
@@ -1011,6 +1092,13 @@ declare module '@tanstack/react-router' {
       path: '/gestao/receitas'
       fullPath: '/gestao/receitas'
       preLoaderRoute: typeof GestaoReceitasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lojamundoazul_/membros': {
+      id: '/lojamundoazul_/membros'
+      path: '/lojamundoazul/membros'
+      fullPath: '/lojamundoazul/membros'
+      preLoaderRoute: typeof LojamundoazulMembrosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/produto/$slug': {
@@ -1167,6 +1255,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GestaoReceitasCategoriasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lojamundoazul_/colecao_/$slug': {
+      id: '/lojamundoazul_/colecao_/$slug'
+      path: '/lojamundoazul/colecao/$slug'
+      fullPath: '/lojamundoazul/colecao/$slug'
+      preLoaderRoute: typeof LojamundoazulColecaoSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lojamundoazul_/produto_/$slug': {
+      id: '/lojamundoazul_/produto_/$slug'
+      path: '/lojamundoazul/produto/$slug'
+      fullPath: '/lojamundoazul/produto/$slug'
+      preLoaderRoute: typeof LojamundoazulProdutoSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/ua-image/$': {
       id: '/api/public/ua-image/$'
       path: '/api/public/ua-image/$'
@@ -1202,6 +1304,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForumRoute: ForumRoute,
   GestaoRoute: GestaoRoute,
   InicioRoute: InicioRoute,
+  LojamundoazulRoute: LojamundoazulRoute,
   MasterRoute: MasterRoute,
   MinhaAssinaturaRoute: MinhaAssinaturaRoute,
   NovaSenhaRoute: NovaSenhaRoute,
@@ -1216,8 +1319,10 @@ const rootRouteChildren: RootRouteChildren = {
   GestaoComercialRoute: GestaoComercialRoute,
   GestaoComunidadeRoute: GestaoComunidadeRoute,
   GestaoConteudosRoute: GestaoConteudosRoute,
+  GestaoLojamundoazulRoute: GestaoLojamundoazulRoute,
   GestaoPlataformaRoute: GestaoPlataformaRoute,
   GestaoReceitasRoute: GestaoReceitasRoute,
+  LojamundoazulMembrosRoute: LojamundoazulMembrosRoute,
   ProdutoSlugRoute: ProdutoSlugRoute,
   ReceitasCategoriaRoute: ReceitasCategoriaRoute,
   ApiProtectedDriveVideoSplatRoute: ApiProtectedDriveVideoSplatRoute,
@@ -1240,6 +1345,8 @@ const rootRouteChildren: RootRouteChildren = {
   GestaoPlataformaAcessosRoute: GestaoPlataformaAcessosRoute,
   GestaoPlataformaAparenciaRoute: GestaoPlataformaAparenciaRoute,
   GestaoReceitasCategoriasRoute: GestaoReceitasCategoriasRoute,
+  LojamundoazulColecaoSlugRoute: LojamundoazulColecaoSlugRoute,
+  LojamundoazulProdutoSlugRoute: LojamundoazulProdutoSlugRoute,
   ApiPublicUaImageSplatRoute: ApiPublicUaImageSplatRoute,
   ApiPublicUaVideoSplatRoute: ApiPublicUaVideoSplatRoute,
 }

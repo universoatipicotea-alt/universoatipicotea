@@ -75,9 +75,9 @@ const areas: Record<
         icon: MessageCircleMore,
       },
       {
-        title: "Facilitadores",
+        title: "Loja Mundo Azul",
         description: "Recursos atuais e preparação do futuro catálogo.",
-        href: "/gestao/comunidade/facilitadores",
+        href: "/gestao/lojamundoazul",
         icon: ShoppingBag,
       },
     ],
