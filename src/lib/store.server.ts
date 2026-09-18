@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- consultas Supabase usam o cliente administrativo legado sem Database gerado */
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {

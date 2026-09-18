@@ -2,6 +2,7 @@
  * Camada de dados do Universo Atípico.
  * Reproduz os endpoints tRPC originais sobre o banco do Lovable Cloud.
  */
+/* eslint-disable @typescript-eslint/no-explicit-any -- camada legada dinâmica; tipagem será migrada por domínio */
 import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import {

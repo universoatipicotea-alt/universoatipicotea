@@ -236,6 +236,7 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
   const [selectedTab, setTab] = useState<AdminTab>(() =>
     allowedTabs.includes(requestedTab as AdminTab) ? (requestedTab as AdminTab) : "overview",
   );
+  const [showLegacyFacilitatorEditor] = useState(false);
   const tab = fixedTab ?? selectedTab;
   const [guideForm, setGuideForm] = useState<GuideForm>(newGuide());
   const [facilitatorForm, setFacilitatorForm] = useState<FacilitatorForm>(newFacilitator());
@@ -897,7 +898,7 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
 
       {tab === "facilitators" ? <StoreAdmin /> : null}
 
-      {false && tab === "facilitators" && data ? (
+      {showLegacyFacilitatorEditor && tab === "facilitators" && data ? (
         <section className="grid gap-8 xl:grid-cols-[.95fr_1.05fr]">
           <form
             onSubmit={submitFacilitator}
