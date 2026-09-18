@@ -76,7 +76,7 @@ export const managementSections: ManagementSection[] = [
     href: "/gestao/comunidade",
     label: "Comunidade e clientes",
     shortLabel: "Comunidade",
-    description: "Moderação, facilitadores, membros e atendimento.",
+    description: "Moderação, membros e atendimento.",
     icon: MessageCircleMore,
     destinations: [
       {
@@ -84,12 +84,15 @@ export const managementSections: ManagementSection[] = [
         label: "Moderação",
         icon: MessageCircleMore,
       },
-      {
-        href: "/gestao/comunidade/facilitadores",
-        label: "Facilitadores",
-        icon: ShoppingBag,
-      },
     ],
+  },
+  {
+    href: "/gestao/lojamundoazul",
+    label: "Loja Mundo Azul",
+    shortLabel: "Loja",
+    description: "Produtos, categorias, coleções e vitrine pública.",
+    icon: ShoppingBag,
+    destinations: [{ href: "/gestao/lojamundoazul", label: "Gestão da loja", icon: ShoppingBag }],
   },
   {
     href: "/gestao/comercial",

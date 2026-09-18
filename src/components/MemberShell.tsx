@@ -8,7 +8,7 @@ import {
   CreditCard,
   GraduationCap,
   Home,
-  Lightbulb,
+  ShoppingBag,
   LogOut,
   Menu,
   MessageCircle,
@@ -32,7 +32,7 @@ const PREFETCH_BY_HREF: Record<string, Array<[string, unknown]>> = {
     ["community.memberDashboard", null],
   ],
   "/comunidade": [["community.forum.list", null]],
-  "/facilitadores": [["community.memberDashboard", null]],
+  "/lojamundoazul/membros": [["store.home", { members: true }]],
   "/minha-assinatura": [["community.subscription.me", null]],
   "/perfil": [["community.profile.me", null]],
   "/admin": [["community.admin.dashboard", null]],
@@ -48,7 +48,7 @@ const navigation = [
   { href: "/academia", label: "Academia Atípica", icon: Compass },
   { href: "/biblioteca", label: "Biblioteca", icon: BookOpen },
   { href: "/comunidade", label: "Comunidade", icon: MessageCircle },
-  { href: "/facilitadores", label: "Facilitadores", icon: Lightbulb },
+  { href: "/lojamundoazul/membros", label: "Loja Mundo Azul", icon: ShoppingBag },
   { href: "/minha-assinatura", label: "Minha assinatura", icon: CreditCard },
   { href: "/ajuda", label: "Ajuda e segurança", icon: CircleHelp },
   { href: "/perfil", label: "Meu perfil", icon: CircleUserRound },
@@ -398,9 +398,15 @@ export function MemberShell({
             </div>
           </div>
         </aside>
-        <main className={`${immersiveMobile ? "bg-[var(--academy-cream)] lg:page-texture" : "page-texture"} min-w-0 flex-1`}>
-          <div className={`mx-auto w-full max-w-[1500px] ${immersiveMobile ? "px-0 pb-0 pt-3 sm:px-8 lg:px-12 lg:py-9" : "px-5 pb-24 pt-7 sm:px-8 lg:px-12 lg:py-9"}`}>
-            <div className={`${compactMobile || immersiveMobile ? "hidden sm:flex" : "flex"} mb-8 items-center justify-between gap-4 rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3 shadow-sm backdrop-blur sm:px-5`}>
+        <main
+          className={`${immersiveMobile ? "bg-[var(--academy-cream)] lg:page-texture" : "page-texture"} min-w-0 flex-1`}
+        >
+          <div
+            className={`mx-auto w-full max-w-[1500px] ${immersiveMobile ? "px-0 pb-0 pt-3 sm:px-8 lg:px-12 lg:py-9" : "px-5 pb-24 pt-7 sm:px-8 lg:px-12 lg:py-9"}`}
+          >
+            <div
+              className={`${compactMobile || immersiveMobile ? "hidden sm:flex" : "flex"} mb-8 items-center justify-between gap-4 rounded-2xl border border-[var(--line)] bg-white/70 px-4 py-3 shadow-sm backdrop-blur sm:px-5`}
+            >
               <div className="flex items-center gap-3">
                 <span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--sage-pale)] text-[var(--sage-deep)]">
                   <Sparkles size={16} />
@@ -421,11 +427,15 @@ export function MemberShell({
                 <Initials name={user.name} /> <span>{user.name || "Meu perfil"}</span>
               </Link>
             </div>
-            <div className={`${compactMobile || immersiveMobile ? "mb-5 px-5 pb-4 sm:mb-10 sm:px-0 sm:pb-8" : "mb-10 pb-8"} ${immersiveMobile ? "hidden sm:block" : "block"} border-b border-[var(--line)]`}>
+            <div
+              className={`${compactMobile || immersiveMobile ? "mb-5 px-5 pb-4 sm:mb-10 sm:px-0 sm:pb-8" : "mb-10 pb-8"} ${immersiveMobile ? "hidden sm:block" : "block"} border-b border-[var(--line)]`}
+            >
               <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[var(--sage)]">
                 {eyebrow}
               </p>
-               <h1 className={`display-font mt-3 font-semibold ${compactMobile ? "text-3xl sm:text-5xl" : "text-4xl sm:text-5xl"}`}>
+              <h1
+                className={`display-font mt-3 font-semibold ${compactMobile ? "text-3xl sm:text-5xl" : "text-4xl sm:text-5xl"}`}
+              >
                 {title}
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--ink-soft)]">
@@ -436,7 +446,9 @@ export function MemberShell({
           </div>
         </main>
       </div>
-       <nav className={`${immersiveMobile ? "hidden lg:hidden" : "flex"} fixed inset-x-0 bottom-0 z-30 border-t border-[var(--line)] bg-white/95 px-1.5 pt-2 pb-[calc(.5rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden`}>
+      <nav
+        className={`${immersiveMobile ? "hidden lg:hidden" : "flex"} fixed inset-x-0 bottom-0 z-30 border-t border-[var(--line)] bg-white/95 px-1.5 pt-2 pb-[calc(.5rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden`}
+      >
         {mobileNavigation.map((item) => {
           const Icon = item.icon;
           return (

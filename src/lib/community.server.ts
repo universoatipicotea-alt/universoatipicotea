@@ -35,6 +35,16 @@ import {
 } from "@shared/community";
 import { driveRollbackDecision, type DriveFile, type DriveImportCandidate } from "./drive-import";
 import { isVisualAssetSlot } from "./visual-assets";
+import {
+  storeCatalog,
+  storeHome,
+  storeProduct,
+  storeCart,
+  storeAdminCatalog,
+  saveStoreProduct,
+  saveStoreCollection,
+  saveStoreSettings,
+} from "./store.server";
 
 // Contrato público da validação: "O título deve ter entre 5 e 180 caracteres".
 
@@ -445,11 +455,12 @@ async function listPublicGuideCards() {
   return camel(data ?? []);
 }
 
-async function listPublishedFacilitators() {
+async function listPublishedFacilitators(publicOnly = false) {
   const { data } = await db()
     .from("ua_facilitators")
     .select("id,title,summary,category,source_label,link_url,image_url,created_at")
     .eq("status", "published")
+    .eq(publicOnly ? "visible_public" : "visible_members", true)
     .order("position", { ascending: true })
     .order("created_at", { ascending: false });
   return camel(data ?? []);
@@ -1204,11 +1215,11 @@ function safeName(fileName: string, mimeType: string) {
     ? "html"
     : mimeType.includes("pdf")
       ? "pdf"
-    : mimeType.includes("png")
-      ? "png"
-      : mimeType.includes("webp")
-        ? "webp"
-        : "jpg";
+      : mimeType.includes("png")
+        ? "png"
+        : mimeType.includes("webp")
+          ? "webp"
+          : "jpg";
   return `${base}-${Date.now()}.${extension}`;
 }
 
@@ -1853,6 +1864,32 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
   const input = (rawInput ?? {}) as any;
 
   switch (path) {
+    case "store.catalog":
+    case "store.home":
+    case "store.product":
+    case "store.cart": {
+      if (input.members === true) await assertMemberContent(await requireUser());
+      if (path === "store.catalog") return storeCatalog(input);
+      if (path === "store.product") return storeProduct(input);
+      if (path === "store.cart") return storeCart(input);
+      return storeHome(input.members === true);
+    }
+    case "store.admin.catalog": {
+      await requireAdmin();
+      return storeAdminCatalog(input);
+    }
+    case "store.admin.saveProduct": {
+      const user = await requireAdmin();
+      return saveStoreProduct(input, user.id);
+    }
+    case "store.admin.saveCollection": {
+      await requireAdmin();
+      return saveStoreCollection(input);
+    }
+    case "store.admin.saveSettings": {
+      await requireAdmin();
+      return saveStoreSettings(input);
+    }
     /* ---------------------------------- auth --------------------------------- */
     case "auth.ensure": {
       const user = await ensureUaUser(input.name);
@@ -1872,7 +1909,7 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         await Promise.all([
           getCommunityMetrics(),
           listPublicGuideCards(),
-          listPublishedFacilitators(),
+          listPublishedFacilitators(true),
           listPublishedProducts(true),
           getLandingSettings(),
           listPublicPreview(),
@@ -2609,7 +2646,8 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         !data?.html_key ||
         data.content_type !== "html" ||
         (data.status !== "published" && !privileged)
-      ) fail("Conteúdo indisponível.");
+      )
+        fail("Conteúdo indisponível.");
       const { createDriveMediaToken } = await import("./drive-media-token.server");
       const token = createDriveMediaToken(Number(data.id), 10 * 60);
       return { url: `/api/protected-html/${data.id}?token=${encodeURIComponent(token)}` };
@@ -3028,11 +3066,12 @@ export async function dispatch(path: string, rawInput: unknown): Promise<unknown
         position: input.position,
         updated_at: new Date().toISOString(),
       };
-      if (input.id) await db().from("ua_facilitators").update(values).eq("id", input.id);
-      else
-        await db()
-          .from("ua_facilitators")
-          .insert({ ...values, created_by: user.id });
+      const result = input.id
+        ? await db().from("ua_facilitators").update(values).eq("id", input.id)
+        : await db()
+            .from("ua_facilitators")
+            .insert({ ...values, slug: `produto-${crypto.randomUUID()}`, created_by: user.id });
+      if (result.error) fail("Não foi possível salvar o produto da loja.");
       return { success: true };
     }
     case "community.admin.moderateTopic": {

@@ -16,6 +16,7 @@ import { trpc } from "@/lib/trpc";
 import RecipesAdmin from "@/components/admin/RecipesAdmin";
 import TaxonomyAdmin from "@/components/admin/TaxonomyAdmin";
 import { AcademyLessonsAdmin } from "@/components/admin/AcademyLessonsAdmin";
+import StoreAdmin from "@/components/management/StoreAdmin";
 import {
   BookOpen,
   ChefHat,
@@ -331,11 +332,11 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
         ? { accepted: ["application/pdf"], max: 12 * 1024 * 1024, name: "PDF" }
         : kind === "html"
           ? { accepted: ["text/html"], max: 5 * 1024 * 1024, name: "HTML" }
-        : {
-            accepted: ["image/jpeg", "image/png", "image/webp"],
-            max: 6 * 1024 * 1024,
-            name: "imagem JPG, PNG ou WEBP",
-          };
+          : {
+              accepted: ["image/jpeg", "image/png", "image/webp"],
+              max: 6 * 1024 * 1024,
+              name: "imagem JPG, PNG ou WEBP",
+            };
     if (!rules.accepted.includes(file.type)) {
       toast.error(`Envie um arquivo ${rules.name}.`);
       return;
@@ -423,7 +424,7 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
       category: guide.category,
       moduleId: guide.moduleId ?? null,
       contentType: ["pdf", "video", "html"].includes(guide.contentType)
-        ? guide.contentType as GuideForm["contentType"]
+        ? (guide.contentType as GuideForm["contentType"])
         : "pdf",
       videoUrl: guide.videoUrl || "",
       estimatedDuration: guide.estimatedDuration || "",
@@ -461,7 +462,7 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
     { id: "recipeCategories", label: "Categorias de Receitas", icon: ChefHat },
     { id: "academyModules", label: "Módulos da Academia", icon: BookOpen },
     { id: "academyLessons", label: "Aulas da Academia", icon: GraduationCap },
-    { id: "facilitators", label: "Facilitadores", icon: Lightbulb },
+    { id: "facilitators", label: "Loja Mundo Azul", icon: Lightbulb },
     { id: "moderation", label: "Moderação", icon: ShieldAlert },
   ];
 
@@ -512,7 +513,7 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
               value={(recipes.data ?? []).filter((item) => item.status === "published").length}
               icon={ChefHat}
             />
-            <Stat label="facilitadores" value={data.stats.facilitators} icon={Lightbulb} />
+            <Stat label="produtos da loja" value={data.stats.facilitators} icon={Lightbulb} />
             <Stat label="interações" value={data.stats.conversations} icon={MessageCircleMore} />
           </div>
           <div className="mt-12 grid gap-5 lg:grid-cols-2">
@@ -522,8 +523,8 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
                 Publicar com intenção.
               </h2>
               <p className="mt-3 max-w-md text-sm leading-6 text-white/75">
-                Crie conteúdos da Academia e facilitadores sempre que houver algo útil, confiável e
-                bem contextualizado para compartilhar.
+                Crie conteúdos da Academia e produtos da Loja Mundo Azul sempre que houver algo
+                útil, confiável e bem contextualizado para compartilhar.
               </p>
               <Button
                 onClick={() => setTab("guides")}
@@ -791,7 +792,9 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
                     <strong className="mt-3 block text-xs">
                       {guideForm.htmlKey ? "HTML carregado" : "Adicionar HTML interativo"}
                     </strong>
-                    <span className="mt-1 block text-xs text-[var(--ink-soft)]">Arquivo .html · até 5 MB</span>
+                    <span className="mt-1 block text-xs text-[var(--ink-soft)]">
+                      Arquivo .html · até 5 MB
+                    </span>
                   </button>
                 ) : (
                   <div className="rounded-xl border border-dashed border-[var(--line)] bg-[var(--linen)] p-4 text-xs text-[var(--ink-soft)]">
@@ -892,7 +895,9 @@ export default function Admin({ fixedTab }: { fixedTab?: AdminTab } = {}) {
       {tab === "academyModules" ? <TaxonomyAdmin kind="module" enabled /> : null}
       {tab === "academyLessons" ? <AcademyLessonsAdmin /> : null}
 
-      {tab === "facilitators" && data ? (
+      {tab === "facilitators" ? <StoreAdmin /> : null}
+
+      {false && tab === "facilitators" && data ? (
         <section className="grid gap-8 xl:grid-cols-[.95fr_1.05fr]">
           <form
             onSubmit={submitFacilitator}
