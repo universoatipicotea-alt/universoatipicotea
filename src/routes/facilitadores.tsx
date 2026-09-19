@@ -3,7 +3,7 @@ import { Navigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/facilitadores")({
   ssr: false,
-  component: () => <Navigate to="/lojamundoazul" replace />,
+  component: () => <Navigate to="/lojamundoazul/membros" replace />,
   head: () => ({
     meta: [
       { title: "Loja Mundo Azul — Universo Atípico" },
