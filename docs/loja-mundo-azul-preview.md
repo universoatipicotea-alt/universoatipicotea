@@ -51,3 +51,37 @@ Após a migration ser aplicada no preview e os produtos serem publicados:
 - confirmar que a página não possui rolagem horizontal.
 
 O carrinho é uma lista local. Quantidade e variação precisam ser confirmadas no site parceiro; não existe checkout próprio nesta versão.
+
+## Bloqueio de infraestrutura verificado
+
+Em 18/09/2026, a revisão encontrou:
+
+- nenhum deployment ou environment configurado no GitHub;
+- nenhum secret ou variable de staging no repositório;
+- nenhuma URL de preview associada ao PR;
+- o projeto Lovable permaneceu carregando e não expôs um preview de branch;
+- o fallback versionado aponta para o backend Lovable Cloud de produção;
+- a cadeia de migrations do repositório não contém o baseline completo para criar um banco vazio.
+
+Por isso, a migration não foi executada e nenhum produto foi tornado público.
+
+### Ação externa necessária
+
+Uma pessoa com acesso à infraestrutura Lovable/Supabase deve:
+
+1. provisionar um projeto de staging isolado ou clonar somente o schema e os registros necessários, sanitizando dados pessoais;
+2. configurar no ambiente de preview da branch:
+   - `SUPABASE_URL`;
+   - `SUPABASE_PUBLISHABLE_KEY`;
+   - `SUPABASE_SERVICE_ROLE_KEY`;
+   - `VITE_SUPABASE_URL`;
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`;
+   - `LOVABLE_DB_MIGRATION_URL`, quando o runner de migrations utilizar essa variável;
+3. confirmar que todas as URLs e chaves pertencem ao staging, e não ao projeto `*-prod.lovable.cloud`;
+4. aplicar `supabase/migrations/20260918120000_store_mundo_azul.sql` somente no banco de staging;
+5. configurar os redirects de autenticação para a URL de preview;
+6. disponibilizar uma conta de teste membro e uma conta Admin/Admin Master no staging;
+7. publicar dois ou três produtos existentes seguindo o checklist acima;
+8. gerar a URL HTTPS do preview e repetir a revisão visual em 390 px, 430 px e desktop.
+
+Não usar `supabase db push --linked`, SQL Editor ou credenciais cujo destino não esteja inequivocamente identificado como staging.
