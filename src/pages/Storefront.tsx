@@ -8,7 +8,6 @@ import {
   Plus,
   Minus,
   UserRound,
-  ZoomIn,
 } from "lucide-react";
 import { Brand } from "@/components/Brand";
 import { MemberShell } from "@/components/MemberShell";
@@ -22,6 +21,15 @@ import {
   type StoreSettings,
 } from "@shared/store";
 import "./store.css";
+import { ProductGallery } from "@/components/store/ProductGallery";
+import {
+  TrackerIntro,
+  TrackerOfferNotes,
+  TrackerSections,
+  trackerSlug,
+  trackerTitle,
+  trackerSummary,
+} from "@/components/store/TrackerLanding";
 
 type CartItem = { id: number; variant: string; quantity: number };
 type Catalog = {
@@ -350,7 +358,7 @@ export default function Storefront({
       </header>
       <main className="store-main">
         {slug ? (
-          <ProductDetail slug={slug} members={members} onAdd={add} />
+          <ProductDetail key={slug} slug={slug} members={members} onAdd={add} />
         ) : (
           <>
             {!collection && !search && !category && home.data && (
@@ -592,10 +600,12 @@ function ProductDetail({
     related: StoreProduct[];
     complementary: StoreProduct[];
   } | null>("store.product", { slug, members });
-  const [imageIndex, setImageIndex] = useState(0);
-  const [zoom, setZoom] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [variantIndex, setVariantIndex] = useState(0);
+  const landing =
+    slug === trackerSlug &&
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("layout") === "landing";
   if (query.isPending) return <p role="status">Carregando produto…</p>;
   if (query.isError)
     return (
@@ -613,7 +623,12 @@ function ProductDetail({
     );
   const p = query.data.product,
     d = p.shopDetails,
-    images = [...new Set([p.imageUrl, ...d.gallery].filter(Boolean))],
+    images = [...new Set([p.imageUrl, ...d.gallery].filter(Boolean))].filter(
+      // These two existing promotional montages depict child/map tracking that is unverified.
+      (src) =>
+        !landing ||
+        !/c5fc46d7-1e8e-47e5-985f-5c4ba1dce1ea|d0bd31f5-2bb5-47b6-be95-782d5eeadc99/.test(src),
+    ),
     variant = d.variants[variantIndex],
     url = variant?.url || p.linkUrl,
     available = d.availability !== "unavailable" && (!variant || variant.available),
@@ -625,35 +640,30 @@ function ProductDetail({
         <span>/</span>
         <span>{p.title}</span>
       </nav>
-      <div className="store-product">
-        <section aria-label="Galeria do produto">
-          <button
-            className="store-gallery-main"
-            onClick={() => setZoom(true)}
-            disabled={!images.length}
-            aria-label={`Ampliar imagem de ${p.title}`}
-          >
-            <Picture src={images[imageIndex] ?? ""} alt={p.title} priority />
-            <ZoomIn size={22} />
-          </button>
-          <div className="store-thumbnails">
-            {images.map((src, i) => (
-              <button
-                key={src}
-                aria-label={`Ver imagem ${i + 1}`}
-                aria-pressed={i === imageIndex}
-                onClick={() => setImageIndex(i)}
-              >
-                <Picture src={src} alt={`${p.title}, imagem ${i + 1}`} />
-              </button>
-            ))}
-          </div>
-        </section>
-        <section className="store-buy">
+      {landing && <TrackerIntro />}
+      <div
+        className={`store-product${landing ? " tracker-offer" : ""}`}
+        id={landing ? "tracker-offer" : undefined}
+      >
+        <div>
+          <ProductGallery key={p.id} images={images} title={landing ? trackerTitle : p.title} />
+          {landing && (
+            <p className="tracker-image-note">
+              Imagens do catálogo. Confirme com o vendedor o modelo e os acessórios que acompanham a
+              compra.
+            </p>
+          )}
+        </div>
+        <section
+          className="store-buy"
+          id={landing ? "tracker-purchase" : undefined}
+          aria-label="Escolher produto e comprar"
+        >
           <span>{p.category}</span>
-          <h1>{p.title}</h1>
+          <h1>{landing ? trackerTitle : p.title}</h1>
           <Price product={p} />
-          <p>{p.summary}</p>
+          <p>{landing ? trackerSummary : p.summary}</p>
+          {landing && <TrackerOfferNotes />}
           {d.variants.length > 0 && (
             <label>
               Variação
@@ -681,7 +691,8 @@ function ProductDetail({
           <Quantity value={quantity} onChange={setQuantity} />
           {purchasable ? (
             <a className="store-primary" href={url} target="_blank" rel="noopener noreferrer">
-              {p.sourceLabel || "Comprar no parceiro"} <ArrowUpRight size={18} />
+              {landing ? "Comprar agora" : p.sourceLabel || "Comprar no parceiro"}{" "}
+              <ArrowUpRight size={18} />
             </a>
           ) : (
             <button disabled className="store-primary">
@@ -699,39 +710,42 @@ function ProductDetail({
           <small>A quantidade e a variação devem ser confirmadas no site parceiro.</small>
         </section>
       </div>
-      <div className="store-product-copy">
-        {[
-          ["Sobre o produto", d.description || p.summary],
-          ["Destaques", d.highlights],
-          ["Como explorar", d.usage],
-          ["Detalhes", d.specifications],
-          ["Cuidados", d.care],
-        ]
-          .filter(([, text]) => text)
-          .map(([title, text]) => (
-            <section key={title}>
-              <h2>{title}</h2>
-              <p>{text}</p>
-            </section>
-          ))}
-        <div className="store-support-images">
-          {d.supportImages.filter(Boolean).map((src, i) => (
-            <Picture key={src} src={src} alt={`${p.title} — detalhe ${i + 1}`} />
-          ))}
+      {landing ? (
+        <TrackerSections />
+      ) : (
+        <div className="store-product-copy">
+          {[
+            ["Sobre o produto", d.description || p.summary],
+            ["Destaques", d.highlights],
+            ["Como explorar", d.usage],
+            ["Detalhes", d.specifications],
+            ["Cuidados", d.care],
+          ]
+            .filter(([, text]) => text)
+            .map(([title, text]) => (
+              <section key={title}>
+                <h2>{title}</h2>
+                <p>{text}</p>
+              </section>
+            ))}
+          <div className="store-support-images">
+            {d.supportImages.filter(Boolean).map((src, i) => (
+              <Picture key={src} src={src} alt={`${p.title} — detalhe ${i + 1}`} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+      {landing && (
+        <aside className="tracker-mobile-cta" aria-label="Atalho para escolher e comprar">
+          <Price product={p} />
+          <a className="store-primary" href="#tracker-purchase">
+            {purchasable ? "Escolher e comprar" : "Ver disponibilidade"} <ArrowUpRight size={17} />
+          </a>
+        </aside>
+      )}
       <ProductGroup title="Você também pode gostar" items={query.data.related} members={members} />
       <ProductGroup title="Monte seu kit" items={query.data.complementary} members={members} />
       <UniverseBlock />
-      <Dialog open={zoom} onOpenChange={setZoom}>
-        <DialogContent className="store-dialog store-zoom">
-          <DialogTitle>{p.title}</DialogTitle>
-          <DialogDescription>
-            Imagem {imageIndex + 1} de {images.length}
-          </DialogDescription>
-          <Picture src={images[imageIndex] ?? ""} alt={p.title} priority />
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
